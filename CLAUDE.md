@@ -11,7 +11,7 @@
 
 ## 🛠 Stack
 
-- **Frontend:** Next.js 15 (App Router) + Tailwind CSS + React Query + shadcn/ui
+- **Frontend:** Next.js 16 (App Router) + Tailwind CSS v4 + React Query + shadcn/ui
 - **Backend:** NestJS 10 + Prisma + PostgreSQL
 - **Monorepo:** Turborepo + pnpm workspaces (Node 20+, pnpm 9+)
 - **Storage:** Cloudflare R2 (imagens)
@@ -86,44 +86,46 @@ Pra cada task que você (Claude Code) for executar:
 ## 📊 Status das tasks
 
 Atualize esta seção a cada task concluída. Use os emojis:
+
 - ⏳ Em progresso
 - ✅ Concluída e mergeada
 - 🚫 Cancelada/removida
 - ⏸️ Bloqueada (aguardando algo)
 
-| # | Task | Status | Branch | PR |
-|---|------|--------|--------|-----|
-| 1 | Setup do monorepo | ⏳ Em progresso | `chore/01-monorepo-setup` | - |
-| 2 | Banco de dados e Prisma | - | - | - |
-| 3 | ~~Deploy de desenvolvimento~~ | 🚫 Removida (sem deploy de dev, roda local) | - | - |
-| 4 | CI/CD e qualidade de código | - | - | - |
-| 5 | Autenticação Admin | - | - | - |
-| 6 | Autenticação Cliente | - | - | - |
-| 7 | Layout do painel admin | - | - | - |
-| 8 | Layout da loja pública | - | - | - |
-| 9 | Categorias e tabelas de medidas | - | - | - |
-| 10 | Produtos com variações + IA descrição | - | - | - |
-| 11 | Gestão de Estoque com baixa manual | - | - | - |
-| 12 | Catálogo, busca e filtros | - | - | - |
-| 13 | Página de Produto (PDP) | - | - | - |
-| 14 | Carrinho com reserva de estoque | - | - | - |
-| 15 | Wishlist e Conta do Cliente | - | - | - |
-| 16 | Checkout multi-step | - | - | - |
-| 17 | Integração Melhor Envio | - | - | - |
-| 18 | Integração Mercado Pago | - | - | - |
-| 19 | Webhook MP + finalização | - | - | - |
-| 20 | Sistema de Cupons | - | - | - |
-| 21 | Sistema de Reviews com foto | - | - | - |
-| 22 | E-mails transacionais (Resend) | - | - | - |
-| 23 | Dashboard admin | - | - | - |
-| 24 | Páginas institucionais e SEO | - | - | - |
-| 25 | Provisionamento de produção + Go-live | - | - | - |
+| #   | Task                                  | Status                                      | Branch                    | PR  |
+| --- | ------------------------------------- | ------------------------------------------- | ------------------------- | --- |
+| 1   | Setup do monorepo                     | ⏳ Aguardando validação                     | `chore/01-monorepo-setup` | -   |
+| 2   | Banco de dados e Prisma               | -                                           | -                         | -   |
+| 3   | ~~Deploy de desenvolvimento~~         | 🚫 Removida (sem deploy de dev, roda local) | -                         | -   |
+| 4   | CI/CD e qualidade de código           | -                                           | -                         | -   |
+| 5   | Autenticação Admin                    | -                                           | -                         | -   |
+| 6   | Autenticação Cliente                  | -                                           | -                         | -   |
+| 7   | Layout do painel admin                | -                                           | -                         | -   |
+| 8   | Layout da loja pública                | -                                           | -                         | -   |
+| 9   | Categorias e tabelas de medidas       | -                                           | -                         | -   |
+| 10  | Produtos com variações + IA descrição | -                                           | -                         | -   |
+| 11  | Gestão de Estoque com baixa manual    | -                                           | -                         | -   |
+| 12  | Catálogo, busca e filtros             | -                                           | -                         | -   |
+| 13  | Página de Produto (PDP)               | -                                           | -                         | -   |
+| 14  | Carrinho com reserva de estoque       | -                                           | -                         | -   |
+| 15  | Wishlist e Conta do Cliente           | -                                           | -                         | -   |
+| 16  | Checkout multi-step                   | -                                           | -                         | -   |
+| 17  | Integração Melhor Envio               | -                                           | -                         | -   |
+| 18  | Integração Mercado Pago               | -                                           | -                         | -   |
+| 19  | Webhook MP + finalização              | -                                           | -                         | -   |
+| 20  | Sistema de Cupons                     | -                                           | -                         | -   |
+| 21  | Sistema de Reviews com foto           | -                                           | -                         | -   |
+| 22  | E-mails transacionais (Resend)        | -                                           | -                         | -   |
+| 23  | Dashboard admin                       | -                                           | -                         | -   |
+| 24  | Páginas institucionais e SEO          | -                                           | -                         | -   |
+| 25  | Provisionamento de produção + Go-live | -                                           | -                         | -   |
 
 ## 📝 Log de mudanças relevantes
 
 > Anote aqui qualquer decisão importante, mudança de stack, descoberta de bug, ou contexto que sessões futuras precisem saber.
 
 - `2026-05-05` — Projeto iniciado. Decidido sem deploy de dev (Vercel bloqueada, sem Railway). Tudo local até go-live na Hostinger.
+- `2026-05-05` — Task #1 (Setup monorepo) executada. Next.js 16 + Tailwind v4 instalados (latest). Aguardando validação humana antes do push.
 
 ## ⚠️ Coisas que NÃO podem ser esquecidas
 
