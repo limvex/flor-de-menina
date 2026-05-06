@@ -16,10 +16,6 @@
     "noImplicitAny": false,
     "strictBindCallApply": false,
     "forceConsistentCasingInFileNames": false,
-    "noFallthroughCasesInSwitch": false,
-    "paths": {
-      "@flor/types": ["../../packages/types/src/index.ts"],
-      "@flor/database": ["../../packages/database/src/index.ts"]
-    }
+    "noFallthroughCasesInSwitch": false
   }
 }

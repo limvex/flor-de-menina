@@ -93,6 +93,7 @@ export class AuthController {
   }
 
   @Post('admin/logout')
+  @HttpCode(200)
   async logout(@Res({ passthrough: true }) res: Response) {
     res.clearCookie('access_token', { path: '/' });
     res.clearCookie('refresh_token', { path: '/auth/admin/refresh' });
