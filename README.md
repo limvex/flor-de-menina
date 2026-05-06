@@ -1,5 +1,7 @@
 # Flor de Menina — E-commerce
 
+[![CI](https://github.com/linvex-software/flor-de-menina/actions/workflows/ci.yml/badge.svg)](https://github.com/linvex-software/flor-de-menina/actions/workflows/ci.yml)
+
 E-commerce de moda da Flor de Menina (Maceió-AL). Desenvolvido pela [Limvex](https://limvex.com).
 
 ## Stack
