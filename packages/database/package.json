@@ -11,7 +11,7 @@
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
     "db:reset": "prisma migrate reset --force && pnpm db:seed",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "prisma generate && tsc --noEmit"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -25,6 +25,7 @@
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
+    "@types/pg": "^8.20.0",
     "bcrypt": "^5.1.1",
     "prisma": "^7.8.0",
     "tsx": "^4.21.0",
