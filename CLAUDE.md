@@ -103,7 +103,7 @@ Atualize esta seção a cada task concluída. Use os emojis:
 | #   | Task                                  | Status                                      | Branch                    | PR  |
 | --- | ------------------------------------- | ------------------------------------------- | ------------------------- | --- |
 | 1   | Setup do monorepo                     | ✅ Concluída                                | `chore/01-monorepo-setup` | #26 |
-| 2   | Banco de dados e Prisma               | -                                           | -                         | -   |
+| 2   | Banco de dados e Prisma               | ⏳ Aguardando validação                     | `feat/02-database-prisma` | -   |
 | 3   | ~~Deploy de desenvolvimento~~         | 🚫 Removida (sem deploy de dev, roda local) | -                         | -   |
 | 4   | CI/CD e qualidade de código           | -                                           | -                         | -   |
 | 5   | Autenticação Admin                    | -                                           | -                         | -   |
@@ -134,6 +134,7 @@ Atualize esta seção a cada task concluída. Use os emojis:
 
 - `2026-05-05` — Projeto iniciado. Decidido sem deploy de dev (Vercel bloqueada, sem Railway). Tudo local até go-live na Hostinger.
 - `2026-05-05` — Task #1 (Setup monorepo) concluída e mergeada via PR #26. Adicionado gate de validação de relevância no workflow.
+- `2026-05-05` — Task #2 (Banco e Prisma) executada. 20 modelos. Prisma 7 com driver adapter pg. Porta do postgres: 5434. Aguardando validação humana.
 
 ## ⚠️ Coisas que NÃO podem ser esquecidas
 

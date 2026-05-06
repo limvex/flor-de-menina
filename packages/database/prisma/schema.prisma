@@ -1,0 +1,517 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================================
+// USUÁRIOS E AUTENTICAÇÃO
+// ============================================================
+
+enum UserRole {
+  CUSTOMER
+  OPERATOR
+  ADMIN
+}
+
+model User {
+  id            String    @id
+  email         String    @unique
+  passwordHash  String?
+  name          String
+  cpf           String?   @unique
+  phone         String?
+  role          UserRole  @default(CUSTOMER)
+  emailVerified Boolean   @default(false)
+  googleId      String?   @unique
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  addresses          Address[]
+  carts              Cart[]
+  wishlists          Wishlist[]
+  orders             Order[]
+  reviews            Review[]
+  reviewsModerated   Review[]            @relation("ReviewModerator")
+  stockMovements     StockMovement[]
+  emailVerifications EmailVerification[]
+  passwordResets     PasswordReset[]
+  couponUsages       CouponUsage[]
+
+  @@index([email])
+  @@index([role])
+}
+
+model EmailVerification {
+  id        String    @id
+  userId    String
+  token     String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+}
+
+model PasswordReset {
+  id        String    @id
+  userId    String
+  token     String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+}
+
+model Address {
+  id           String   @id
+  userId       String
+  label        String? // "Casa", "Trabalho"
+  recipient    String
+  zipCode      String
+  street       String
+  number       String
+  complement   String?
+  neighborhood String
+  city         String
+  state        String // UF
+  country      String   @default("BR")
+  isDefault    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ============================================================
+// CATÁLOGO
+// ============================================================
+
+model Category {
+  id             String    @id
+  slug           String    @unique
+  name           String
+  description    String?
+  parentId       String?
+  measureTable   Json? // { cols: [...], rows: [[...]] }
+  isActive       Boolean   @default(true)
+  position       Int       @default(0)
+  seoTitle       String?
+  seoDescription String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryHierarchy")
+  products Product[]
+
+  @@index([slug])
+  @@index([isActive])
+}
+
+model Product {
+  id               String    @id
+  slug             String    @unique
+  name             String
+  description      String    @db.Text
+  shortDescription String?
+  basePrice        Decimal   @db.Decimal(10, 2)
+  compareAtPrice   Decimal?  @db.Decimal(10, 2)
+  categoryId       String
+  isActive         Boolean   @default(true)
+  isFeatured       Boolean   @default(false)
+  weight           Int? // gramas
+  width            Int? // cm
+  height           Int? // cm
+  length           Int? // cm
+  seoTitle         String?
+  seoDescription   String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  deletedAt        DateTime?
+
+  category      Category         @relation(fields: [categoryId], references: [id])
+  images        ProductImage[]
+  variants      ProductVariant[]
+  reviews       Review[]
+  cartItems     CartItem[]
+  wishlistItems WishlistItem[]
+  orderItems    OrderItem[]
+
+  @@index([slug])
+  @@index([categoryId])
+  @@index([isActive])
+  @@index([isFeatured])
+}
+
+model ProductImage {
+  id        String   @id
+  productId String
+  url       String
+  alt       String?
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+}
+
+model ProductVariant {
+  id        String   @id
+  productId String
+  sku       String   @unique
+  size      String? // P, M, G, GG, 38, 40, etc
+  color     String? // Preto, Branco, Vermelho
+  colorHex  String? // #000000
+  price     Decimal? @db.Decimal(10, 2) // null = usa basePrice do produto
+  stock     Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  product        Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  stockMovements StockMovement[]
+  cartItems      CartItem[]
+  wishlistItems  WishlistItem[]
+  orderItems     OrderItem[]
+
+  @@index([productId])
+  @@index([sku])
+}
+
+// ============================================================
+// ESTOQUE
+// ============================================================
+
+enum StockMovementType {
+  IN // entrada (compra de fornecedor, ajuste positivo)
+  OUT // saída (venda online)
+  ADJUST // ajuste manual (perda, correção, venda balcão)
+}
+
+model StockMovement {
+  id        String            @id
+  variantId String
+  userId    String?
+  type      StockMovementType
+  quantity  Int // sempre positivo; tipo determina sinal
+  reason    String
+  orderId   String?
+  createdAt DateTime          @default(now())
+
+  variant ProductVariant @relation(fields: [variantId], references: [id])
+  user    User?          @relation(fields: [userId], references: [id])
+  order   Order?         @relation(fields: [orderId], references: [id])
+
+  @@index([variantId])
+  @@index([createdAt])
+}
+
+// ============================================================
+// CARRINHO E WISHLIST
+// ============================================================
+
+model Cart {
+  id        String    @id
+  userId    String?
+  sessionId String?   @unique // para visitantes
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  user  User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items CartItem[]
+
+  @@index([userId])
+}
+
+model CartItem {
+  id            String    @id
+  cartId        String
+  productId     String
+  variantId     String
+  quantity      Int
+  reservedUntil DateTime? // reserva de 15min
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  cart    Cart           @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product        @relation(fields: [productId], references: [id])
+  variant ProductVariant @relation(fields: [variantId], references: [id])
+
+  @@unique([cartId, variantId])
+  @@index([reservedUntil])
+}
+
+model Wishlist {
+  id        String   @id
+  userId    String   @unique
+  createdAt DateTime @default(now())
+
+  user  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items WishlistItem[]
+}
+
+model WishlistItem {
+  id         String   @id
+  wishlistId String
+  productId  String
+  variantId  String?
+  createdAt  DateTime @default(now())
+
+  wishlist Wishlist        @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+  product  Product         @relation(fields: [productId], references: [id])
+  variant  ProductVariant? @relation(fields: [variantId], references: [id])
+
+  @@unique([wishlistId, productId, variantId])
+}
+
+// ============================================================
+// PEDIDOS
+// ============================================================
+
+enum OrderStatus {
+  PENDING // criado, aguardando pagamento
+  PAID // pagamento aprovado
+  PROCESSING // separando pedido
+  SHIPPED // enviado
+  DELIVERED // entregue
+  CANCELLED // cancelado
+  REFUNDED // reembolsado
+}
+
+model Order {
+  id              String      @id
+  userId          String
+  number          String      @unique // FM-2026-00001
+  status          OrderStatus @default(PENDING)
+  subtotal        Decimal     @db.Decimal(10, 2)
+  shippingCost    Decimal     @db.Decimal(10, 2)
+  discount        Decimal     @default(0) @db.Decimal(10, 2)
+  total           Decimal     @db.Decimal(10, 2)
+  shippingAddress Json // snapshot do endereço no momento do pedido
+  couponId        String?
+  couponCode      String?
+  notes           String?     @db.Text
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  user           User            @relation(fields: [userId], references: [id])
+  items          OrderItem[]
+  payment        Payment?
+  shipping       Shipping?
+  stockMovements StockMovement[]
+  coupon         Coupon?         @relation(fields: [couponId], references: [id])
+  couponUsages   CouponUsage[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([number])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id              String  @id
+  orderId         String
+  productId       String
+  variantId       String
+  productName     String // snapshot
+  variantSize     String? // snapshot
+  variantColor    String? // snapshot
+  productImageUrl String? // snapshot
+  unitPrice       Decimal @db.Decimal(10, 2)
+  quantity        Int
+  subtotal        Decimal @db.Decimal(10, 2)
+
+  order   Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product        @relation(fields: [productId], references: [id])
+  variant ProductVariant @relation(fields: [variantId], references: [id])
+
+  @@index([orderId])
+}
+
+// ============================================================
+// PAGAMENTO
+// ============================================================
+
+enum PaymentProvider {
+  MERCADO_PAGO
+  MOCK
+}
+
+enum PaymentMethod {
+  PIX
+  CREDIT_CARD
+}
+
+enum PaymentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  REFUNDED
+  CANCELLED
+}
+
+model Payment {
+  id            String          @id
+  orderId       String          @unique
+  provider      PaymentProvider
+  method        PaymentMethod
+  status        PaymentStatus   @default(PENDING)
+  amount        Decimal         @db.Decimal(10, 2)
+  installments  Int             @default(1)
+  transactionId String?         @unique
+  qrCode        String?         @db.Text // PIX QR code
+  qrCodeBase64  String?         @db.Text
+  pixCopyPaste  String?         @db.Text
+  paidAt        DateTime?
+  rawResponse   Json? // payload do gateway
+  webhookEvents Json? // log de webhooks recebidos
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@index([transactionId])
+  @@index([status])
+}
+
+// ============================================================
+// FRETE
+// ============================================================
+
+enum ShippingProvider {
+  MELHOR_ENVIO
+  MOCK
+}
+
+model Shipping {
+  id            String           @id
+  orderId       String           @unique
+  provider      ShippingProvider
+  serviceName   String // PAC, Sedex, Jadlog, etc
+  serviceCode   String?
+  trackingCode  String?
+  estimatedDays Int?
+  cost          Decimal          @db.Decimal(10, 2)
+  shippedAt     DateTime?
+  deliveredAt   DateTime?
+  rawResponse   Json?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@index([trackingCode])
+}
+
+// ============================================================
+// CUPONS
+// ============================================================
+
+enum CouponType {
+  PERCENTAGE
+  FIXED
+}
+
+model Coupon {
+  id                String     @id
+  code              String     @unique
+  type              CouponType
+  value             Decimal    @db.Decimal(10, 2) // % ou R$
+  minCartValue      Decimal?   @db.Decimal(10, 2)
+  maxUses           Int?
+  maxUsesPerUser    Int?       @default(1)
+  uses              Int        @default(0)
+  validFrom         DateTime?
+  validUntil        DateTime?
+  firstPurchaseOnly Boolean    @default(false)
+  isActive          Boolean    @default(true)
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  orders       Order[]
+  couponUsages CouponUsage[]
+
+  @@index([code])
+  @@index([isActive])
+}
+
+model CouponUsage {
+  id        String   @id
+  couponId  String
+  userId    String
+  orderId   String
+  createdAt DateTime @default(now())
+
+  coupon Coupon @relation(fields: [couponId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+  order  Order  @relation(fields: [orderId], references: [id])
+
+  @@unique([couponId, orderId])
+  @@index([userId])
+}
+
+// ============================================================
+// REVIEWS
+// ============================================================
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Review {
+  id              String       @id
+  productId       String
+  userId          String
+  rating          Int // 1-5
+  title           String?
+  comment         String       @db.Text
+  photos          String[] // URLs no R2
+  status          ReviewStatus @default(PENDING)
+  moderatedById   String?
+  moderatedAt     DateTime?
+  rejectionReason String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  product     Product @relation(fields: [productId], references: [id])
+  user        User    @relation(fields: [userId], references: [id])
+  moderatedBy User?   @relation("ReviewModerator", fields: [moderatedById], references: [id])
+
+  @@index([productId])
+  @@index([status])
+}
+
+// ============================================================
+// PÁGINAS INSTITUCIONAIS
+// ============================================================
+
+model InstitutionalPage {
+  id             String   @id
+  slug           String   @unique
+  title          String
+  content        String   @db.Text
+  isActive       Boolean  @default(true)
+  seoTitle       String?
+  seoDescription String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([slug])
+}
