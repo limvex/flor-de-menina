@@ -9,7 +9,6 @@ import {
   HttpCode,
   UnauthorizedException,
 } from '@nestjs/common';
-import { ThrottlerGuard } from '@nestjs/throttler';
 import { Response, Request } from 'express';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './strategies/jwt-auth.guard';
@@ -21,7 +20,6 @@ interface AuthenticatedRequest extends Request {
 }
 
 @Controller('auth')
-@UseGuards(ThrottlerGuard)
 export class AuthController {
   constructor(private authService: AuthService) {}
 
