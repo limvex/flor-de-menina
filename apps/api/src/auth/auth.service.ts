@@ -30,7 +30,6 @@ export interface AuthUser {
 
 const ACCESS_TOKEN_EXPIRY = '15m';
 const REFRESH_TOKEN_EXPIRY = '7d';
-const BCRYPT_ROUNDS = 12;
 
 @Injectable()
 export class AuthService {
