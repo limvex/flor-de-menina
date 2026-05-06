@@ -107,7 +107,7 @@ Atualize esta seção a cada task concluída. Use os emojis:
 | 3   | ~~Deploy de desenvolvimento~~         | 🚫 Removida (sem deploy de dev, roda local) | -                         | -   |
 | 4   | CI/CD e qualidade de código           | ✅ Concluída                                | `chore/04-ci-quality`     | #28 |
 | 5   | Autenticação Admin                    | ✅ Concluída                                | `feat/05-auth-admin`      | #42 |
-| 6   | Autenticação Cliente                  | -                                           | -                         | -   |
+| 6   | Autenticação Cliente                  | ⏳ Aguardando validação                     | `feat/06-auth-cliente`    | -   |
 | 7   | Layout do painel admin                | -                                           | -                         | -   |
 | 8   | Layout da loja pública                | -                                           | -                         | -   |
 | 9   | Categorias e tabelas de medidas       | -                                           | -                         | -   |
@@ -138,6 +138,8 @@ Atualize esta seção a cada task concluída. Use os emojis:
 - `2026-05-06` — Task #4 (CI/CD) concluída via PR #28. Badge, Dependabot, prisma-validate. Branch protection é manual (opcional).
 - `2026-05-06` — Task #5 (Auth Admin) implementação completa. API validada (bateria completa: login 200/401, refresh, logout, rate limit, roles, cookies). Frontend: /admin/login, middleware, server actions, logout. Aguardando CI para merge.
 - `2026-05-06` — AVISO: JWT não tem denylist/blocklist. Logout apenas limpa cookie no browser; access_token ainda válido por 15min. Implementar blocklist Redis antes do go-live (Task futura).
+- `2026-05-06` — Task #6 (Auth cliente) executada. Schema atualizado com Session model. MailService com adapter Maildev. GoogleService com mock. 30/32 testes manuais passados (T3 e T16 com rate limit de dev — comportamento correto). Build OK em ambos apps. Aguardando validação humana.
+- `2026-05-06` — FIX: Node.js v25 carrega `.ts` nativamente (type stripping), incompatível com ts-node. Solução: compilar `@flor/database` para `dist/` com `tsc -p tsconfig.build.json`, criar symlink `dist/generated → src/generated`, adicionar `@prisma/client-runtime-utils` como dep direta. API rodada via `node --env-file=.env apps/api/dist/main.js`.
 
 ## ⚠️ Coisas que NÃO podem ser esquecidas
 
@@ -146,6 +148,10 @@ Atualize esta seção a cada task concluída. Use os emojis:
 - **NUNCA pular checklist da issue** sem avisar
 - **SEMPRE rodar `pnpm lint && pnpm typecheck && pnpm build`** antes de considerar uma task pronta
 - **SEMPRE atualizar este `CLAUDE.md`** ao final de cada task
+- **Cookies de cliente vs admin são SEPARADOS**: `flor_customer_token` / `flor_customer_refresh` ≠ `access_token` / `refresh_token` (admin). Nunca cruzar.
+- **MAIL_PROVIDER=maildev em dev** → Maildev UI em `http://localhost:1080`. Resend será implementado na Task #22.
+- **MOCK_GOOGLE_OAUTH=true em dev** até credenciais reais do Google Cloud Console chegarem.
+- **Para subir a API**: `pnpm --filter @flor/api build && node --env-file=.env apps/api/dist/main.js` (não usar `nest start --watch` com Node.js v25).
 
 ## 🔗 Links úteis
 
