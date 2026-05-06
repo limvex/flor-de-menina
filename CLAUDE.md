@@ -49,7 +49,7 @@
 ```
 flor-de-menina/
 ├── apps/
-│   ├── web/          → Next.js 15 (loja pública + /admin)
+│   ├── web/          → Next.js 16 (loja pública + /admin)
 │   └── api/          → NestJS 10 (REST API)
 ├── packages/
 │   ├── database/     → Prisma schema + client compartilhado
@@ -73,15 +73,23 @@ flor-de-menina/
 
 Pra cada task que você (Claude Code) for executar:
 
-1. **Leia este `CLAUDE.md` primeiro** (você está fazendo isso agora ✅)
-2. Leia a issue: `gh issue view N --repo linvex-software/flor-de-menina`
+1. **Leia este `CLAUDE.md` primeiro**
+2. **🛑 GATE DE VALIDAÇÃO — OBRIGATÓRIO antes de tocar em código:**
+   - Leia a issue: `gh issue view N --repo linvex-software/flor-de-menina`
+   - Leia o estado atual do projeto (último log de mudanças, status das tasks anteriores)
+   - Pergunte explicitamente: **"Esta task ainda faz sentido com as decisões atuais?"**
+   - Se sim → siga
+   - Se a task tá desatualizada, contradiz decisão recente, ou virou desnecessária → **PARE, explique ao usuário, sugira alternativa (atualizar/remover/dividir).** Não execute às cegas.
+   - Exemplo: a Task #3 (deploy gratuito) foi cancelada porque decisão recente foi "sem deploy de dev". Esse tipo de checagem evita retrabalho.
 3. Leia `docs/PROJECT.md` e `docs/CONTRIBUTING.md`
 4. Confirme branch correta: `git checkout -b <branch-da-issue>`
 5. Execute o checklist da issue **em ordem**
 6. Rode os testes da issue
 7. Faça commits pequenos com conventional commits em português
 8. **NÃO faça push automaticamente** — espere validação humana
-9. Quando o usuário validar e mergear, **atualize a seção "Status das tasks" deste arquivo**
+9. Quando o usuário validar, faça push, abra PR, espere CI, mergeie squash, delete branch
+10. **Atualize a seção "Status das tasks" deste arquivo**
+11. Adicione entrada no "Log de mudanças" com data e resumo
 
 ## 📊 Status das tasks
 
@@ -94,7 +102,7 @@ Atualize esta seção a cada task concluída. Use os emojis:
 
 | #   | Task                                  | Status                                      | Branch                    | PR  |
 | --- | ------------------------------------- | ------------------------------------------- | ------------------------- | --- |
-| 1   | Setup do monorepo                     | ⏳ Aguardando validação                     | `chore/01-monorepo-setup` | -   |
+| 1   | Setup do monorepo                     | ✅ Concluída                                | `chore/01-monorepo-setup` | #26 |
 | 2   | Banco de dados e Prisma               | -                                           | -                         | -   |
 | 3   | ~~Deploy de desenvolvimento~~         | 🚫 Removida (sem deploy de dev, roda local) | -                         | -   |
 | 4   | CI/CD e qualidade de código           | -                                           | -                         | -   |
@@ -125,7 +133,7 @@ Atualize esta seção a cada task concluída. Use os emojis:
 > Anote aqui qualquer decisão importante, mudança de stack, descoberta de bug, ou contexto que sessões futuras precisem saber.
 
 - `2026-05-05` — Projeto iniciado. Decidido sem deploy de dev (Vercel bloqueada, sem Railway). Tudo local até go-live na Hostinger.
-- `2026-05-05` — Task #1 (Setup monorepo) executada. Next.js 16 + Tailwind v4 instalados (latest). Aguardando validação humana antes do push.
+- `2026-05-05` — Task #1 (Setup monorepo) concluída e mergeada via PR #26. Adicionado gate de validação de relevância no workflow.
 
 ## ⚠️ Coisas que NÃO podem ser esquecidas
 
