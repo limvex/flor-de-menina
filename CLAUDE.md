@@ -107,7 +107,7 @@ Atualize esta seção a cada task concluída. Use os emojis:
 | 3   | ~~Deploy de desenvolvimento~~         | 🚫 Removida (sem deploy de dev, roda local) | -                         | -   |
 | 4   | CI/CD e qualidade de código           | ✅ Concluída                                | `chore/04-ci-quality`     | #28 |
 | 5   | Autenticação Admin                    | ✅ Concluída                                | `feat/05-auth-admin`      | #42 |
-| 6   | Autenticação Cliente                  | ⏳ Aguardando validação                     | `feat/06-auth-cliente`    | -   |
+| 6   | Autenticação Cliente                  | ✅ Concluída                                | `feat/06-auth-cliente`    | #43 |
 | 7   | Layout do painel admin                | -                                           | -                         | -   |
 | 8   | Layout da loja pública                | -                                           | -                         | -   |
 | 9   | Categorias e tabelas de medidas       | -                                           | -                         | -   |
