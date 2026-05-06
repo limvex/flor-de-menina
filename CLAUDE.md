@@ -100,33 +100,33 @@ Atualize esta seção a cada task concluída. Use os emojis:
 - 🚫 Cancelada/removida
 - ⏸️ Bloqueada (aguardando algo)
 
-| #   | Task                                  | Status                                      | Branch                    | PR  |
-| --- | ------------------------------------- | ------------------------------------------- | ------------------------- | --- |
-| 1   | Setup do monorepo                     | ✅ Concluída                                | `chore/01-monorepo-setup` | #26 |
-| 2   | Banco de dados e Prisma               | ✅ Concluída                                | `feat/02-database-prisma` | #27 |
-| 3   | ~~Deploy de desenvolvimento~~         | 🚫 Removida (sem deploy de dev, roda local) | -                         | -   |
-| 4   | CI/CD e qualidade de código           | ✅ Concluída                                | `chore/04-ci-quality`     | #28 |
-| 5   | Autenticação Admin                    | ⏳ Em progresso (PR #42)                    | `feat/05-auth-admin`      | #42 |
-| 6   | Autenticação Cliente                  | -                                           | -                         | -   |
-| 7   | Layout do painel admin                | -                                           | -                         | -   |
-| 8   | Layout da loja pública                | -                                           | -                         | -   |
-| 9   | Categorias e tabelas de medidas       | -                                           | -                         | -   |
-| 10  | Produtos com variações + IA descrição | -                                           | -                         | -   |
-| 11  | Gestão de Estoque com baixa manual    | -                                           | -                         | -   |
-| 12  | Catálogo, busca e filtros             | -                                           | -                         | -   |
-| 13  | Página de Produto (PDP)               | -                                           | -                         | -   |
-| 14  | Carrinho com reserva de estoque       | -                                           | -                         | -   |
-| 15  | Wishlist e Conta do Cliente           | -                                           | -                         | -   |
-| 16  | Checkout multi-step                   | -                                           | -                         | -   |
-| 17  | Integração Melhor Envio               | -                                           | -                         | -   |
-| 18  | Integração Mercado Pago               | -                                           | -                         | -   |
-| 19  | Webhook MP + finalização              | -                                           | -                         | -   |
-| 20  | Sistema de Cupons                     | -                                           | -                         | -   |
-| 21  | Sistema de Reviews com foto           | -                                           | -                         | -   |
-| 22  | E-mails transacionais (Resend)        | -                                           | -                         | -   |
-| 23  | Dashboard admin                       | -                                           | -                         | -   |
-| 24  | Páginas institucionais e SEO          | -                                           | -                         | -   |
-| 25  | Provisionamento de produção + Go-live | -                                           | -                         | -   |
+| #   | Task                                  | Status                                              | Branch                    | PR  |
+| --- | ------------------------------------- | --------------------------------------------------- | ------------------------- | --- |
+| 1   | Setup do monorepo                     | ✅ Concluída                                        | `chore/01-monorepo-setup` | #26 |
+| 2   | Banco de dados e Prisma               | ✅ Concluída                                        | `feat/02-database-prisma` | #27 |
+| 3   | ~~Deploy de desenvolvimento~~         | 🚫 Removida (sem deploy de dev, roda local)         | -                         | -   |
+| 4   | CI/CD e qualidade de código           | ✅ Concluída                                        | `chore/04-ci-quality`     | #28 |
+| 5   | Autenticação Admin                    | ⏳ Em progresso — validação completa, aguardando CI | `feat/05-auth-admin`      | #42 |
+| 6   | Autenticação Cliente                  | -                                                   | -                         | -   |
+| 7   | Layout do painel admin                | -                                                   | -                         | -   |
+| 8   | Layout da loja pública                | -                                                   | -                         | -   |
+| 9   | Categorias e tabelas de medidas       | -                                                   | -                         | -   |
+| 10  | Produtos com variações + IA descrição | -                                                   | -                         | -   |
+| 11  | Gestão de Estoque com baixa manual    | -                                                   | -                         | -   |
+| 12  | Catálogo, busca e filtros             | -                                                   | -                         | -   |
+| 13  | Página de Produto (PDP)               | -                                                   | -                         | -   |
+| 14  | Carrinho com reserva de estoque       | -                                                   | -                         | -   |
+| 15  | Wishlist e Conta do Cliente           | -                                                   | -                         | -   |
+| 16  | Checkout multi-step                   | -                                                   | -                         | -   |
+| 17  | Integração Melhor Envio               | -                                                   | -                         | -   |
+| 18  | Integração Mercado Pago               | -                                                   | -                         | -   |
+| 19  | Webhook MP + finalização              | -                                                   | -                         | -   |
+| 20  | Sistema de Cupons                     | -                                                   | -                         | -   |
+| 21  | Sistema de Reviews com foto           | -                                                   | -                         | -   |
+| 22  | E-mails transacionais (Resend)        | -                                                   | -                         | -   |
+| 23  | Dashboard admin                       | -                                                   | -                         | -   |
+| 24  | Páginas institucionais e SEO          | -                                                   | -                         | -   |
+| 25  | Provisionamento de produção + Go-live | -                                                   | -                         | -   |
 
 ## 📝 Log de mudanças relevantes
 
@@ -136,7 +136,7 @@ Atualize esta seção a cada task concluída. Use os emojis:
 - `2026-05-05` — Task #1 (Setup monorepo) concluída e mergeada via PR #26. Adicionado gate de validação de relevância no workflow.
 - `2026-05-05` — Task #2 (Banco e Prisma) concluída via PR #27. 20 modelos, Prisma 7, porta 5434.
 - `2026-05-06` — Task #4 (CI/CD) concluída via PR #28. Badge, Dependabot, prisma-validate. Branch protection é manual (opcional).
-- `2026-05-06` — Task #5 (Auth Admin) em progresso. API implementada e validada (bateria completa: login 200/401, refresh, logout, rate limit, roles, cookies). Pendente: frontend /admin/login, middleware, server actions.
+- `2026-05-06` — Task #5 (Auth Admin) implementação completa. API validada (bateria completa: login 200/401, refresh, logout, rate limit, roles, cookies). Frontend: /admin/login, middleware, server actions, logout. Aguardando CI para merge.
 - `2026-05-06` — AVISO: JWT não tem denylist/blocklist. Logout apenas limpa cookie no browser; access_token ainda válido por 15min. Implementar blocklist Redis antes do go-live (Task futura).
 
 ## ⚠️ Coisas que NÃO podem ser esquecidas
