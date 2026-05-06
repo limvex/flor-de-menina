@@ -105,7 +105,7 @@ Atualize esta seção a cada task concluída. Use os emojis:
 | 1   | Setup do monorepo                     | ✅ Concluída                                | `chore/01-monorepo-setup` | #26 |
 | 2   | Banco de dados e Prisma               | ✅ Concluída                                | `feat/02-database-prisma` | #27 |
 | 3   | ~~Deploy de desenvolvimento~~         | 🚫 Removida (sem deploy de dev, roda local) | -                         | -   |
-| 4   | CI/CD e qualidade de código           | ⏳ Em progresso                             | `chore/04-ci-quality`     | -   |
+| 4   | CI/CD e qualidade de código           | ✅ Concluída                                | `chore/04-ci-quality`     | #28 |
 | 5   | Autenticação Admin                    | -                                           | -                         | -   |
 | 6   | Autenticação Cliente                  | -                                           | -                         | -   |
 | 7   | Layout do painel admin                | -                                           | -                         | -   |
@@ -135,7 +135,8 @@ Atualize esta seção a cada task concluída. Use os emojis:
 - `2026-05-05` — Projeto iniciado. Decidido sem deploy de dev (Vercel bloqueada, sem Railway). Tudo local até go-live na Hostinger.
 - `2026-05-05` — Task #1 (Setup monorepo) concluída e mergeada via PR #26. Adicionado gate de validação de relevância no workflow.
 - `2026-05-05` — Task #2 (Banco e Prisma) concluída via PR #27. 20 modelos, Prisma 7, porta 5434.
-- `2026-05-06` — Task #4 (CI/CD) em progresso. Adicionado prisma-validate, CodeQL, Dependabot, badge no README.
+- `2026-05-06` — Task #4 (CI/CD) concluída via PR #28. Badge, Dependabot, prisma-validate. Branch protection é manual (opcional).
+- `2026-05-06` — Task #5 (Auth Admin) em progresso.
 
 ## ⚠️ Coisas que NÃO podem ser esquecidas
 
