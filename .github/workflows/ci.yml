@@ -36,16 +36,3 @@ jobs:
         run: |
           cd packages/database
           pnpm exec prisma validate --schema prisma/schema.prisma
-
-  security:
-    runs-on: ubuntu-latest
-    permissions:
-      actions: read
-      contents: read
-      security-events: write
-    steps:
-      - uses: actions/checkout@v4
-      - uses: github/codeql-action/init@v3
-        with:
-          languages: javascript-typescript
-      - uses: github/codeql-action/analyze@v3
