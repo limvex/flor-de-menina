@@ -21,6 +21,7 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { GoogleCallbackDto } from './dto/google-callback.dto';
+import { ResendVerificationDto } from './dto/resend-verification.dto';
 
 const ACCESS_COOKIE = 'flor_customer_token';
 const REFRESH_COOKIE = 'flor_customer_refresh';
@@ -120,8 +121,8 @@ export class CustomerAuthController {
   @Post('resend-verification')
   @HttpCode(200)
   @Throttle({ default: { ttl: 3600000, limit: 3 } })
-  async resendVerification(@Body() body: { email: string }) {
-    await this.service.resendVerification(body.email);
+  async resendVerification(@Body() dto: ResendVerificationDto) {
+    await this.service.resendVerification(dto.email);
     return { success: true };
   }
 
