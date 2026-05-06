@@ -138,7 +138,6 @@ export class CustomerAuthService {
       throw new UnauthorizedException('Token inválido');
     }
 
-    const refreshHash = await bcrypt.hash(refreshToken, BCRYPT_ROUNDS);
     const session = await prisma.session.findFirst({
       where: {
         userId: payload.sub,
