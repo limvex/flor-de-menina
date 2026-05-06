@@ -1,0 +1,141 @@
+# CLAUDE.md — Contexto do projeto Flor de Menina
+
+> Este arquivo é o contexto persistente que **toda sessão do Claude Code DEVE LER ANTES** de começar qualquer trabalho. Atualize este arquivo ao final de cada task concluída.
+
+## 📋 Sobre o projeto
+
+**Cliente:** Flor de Menina (loja de moda física em Maceió-AL, 13 anos, 293k seguidores Instagram, dona Daniela Costa)
+**Empresa executora:** Limvex (limvex.com)
+**Repo:** `linvex-software/flor-de-menina`
+**Domínio:** `flordemenina.site`
+
+## 🛠 Stack
+
+- **Frontend:** Next.js 15 (App Router) + Tailwind CSS + React Query + shadcn/ui
+- **Backend:** NestJS 10 + Prisma + PostgreSQL
+- **Monorepo:** Turborepo + pnpm workspaces (Node 20+, pnpm 9+)
+- **Storage:** Cloudflare R2 (imagens)
+- **E-mail:** Resend
+- **Pagamento:** Mercado Pago (PIX + cartão, conta CNPJ)
+- **Frete:** Melhor Envio (OAuth2)
+- **IA descrição:** OpenRouter (Haiku/GPT-4o-mini)
+- **Login social:** Google
+- **Deploy desenvolvimento:** **NENHUM** (roda 100% local com Docker Compose)
+- **Deploy produção:** Hostinger KVM 2 (BR) + Coolify (Issue #25)
+
+## 🎯 Decisões arquiteturais travadas
+
+- Loja única (single-tenant), sem multi-tenant
+- Sem PDV (baixa de estoque manual no admin substitui)
+- Cadastro obrigatório pra comprar (sem guest checkout)
+- Login social: **só Google + e-mail/senha** (Apple removido)
+- Reserva de estoque: 15 minutos no carrinho
+- Frete grátis por região: NE mais barato, SE/Sul mais caro (config no admin)
+- Reviews com foto, moderação manual pela dona
+- Wishlist sim
+- IA pra gerar descrição de produto via OpenRouter
+- Mock funcional de pagamento e frete enquanto credenciais não chegam (`MOCK_PAYMENT=true`, `MOCK_SHIPPING=true`)
+- Tasks GRANDES (não fragmentar): 1 grande > 3 pequenas
+
+## 🎨 Identidade visual
+
+- Estilo: minimalista, inspirado em [mirak.com.br](https://www.mirak.com.br/)
+- Paleta: marrom/bege/dourado (extraída da logo da Flor de Menina)
+- Tipografia: serif elegante (títulos) + sans clean (corpo)
+- Mobile-first (80%+ tráfego virá de Instagram → mobile)
+
+## 📁 Estrutura do monorepo
+
+```
+flor-de-menina/
+├── apps/
+│   ├── web/          → Next.js 15 (loja pública + /admin)
+│   └── api/          → NestJS 10 (REST API)
+├── packages/
+│   ├── database/     → Prisma schema + client compartilhado
+│   ├── types/        → Tipos TS + Zod schemas
+│   └── ui/           → Componentes React compartilhados (shadcn)
+├── docs/             → PROJECT.md, CONTRIBUTING.md, DEPLOY.md, SCOPE.md
+├── docker-compose.yml
+└── turbo.json
+```
+
+## 🔄 Convenções
+
+- **TypeScript strict** em todo o projeto
+- **Imports absolutos:** `@/`, `@flor/database`, `@flor/types`, `@flor/ui`
+- **Nomes em inglês** no código; **comentários e UI em português**
+- **Conventional commits em português:** `feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`
+- **Branches:** `feat/NN-nome-curto`, `fix/NN-nome-curto`, `chore/NN-nome-curto` (NN = número da issue)
+- **PRs:** referencia issue com `Closes #N`, precisa de CI passing
+
+## 🚦 Workflow de cada task
+
+Pra cada task que você (Claude Code) for executar:
+
+1. **Leia este `CLAUDE.md` primeiro** (você está fazendo isso agora ✅)
+2. Leia a issue: `gh issue view N --repo linvex-software/flor-de-menina`
+3. Leia `docs/PROJECT.md` e `docs/CONTRIBUTING.md`
+4. Confirme branch correta: `git checkout -b <branch-da-issue>`
+5. Execute o checklist da issue **em ordem**
+6. Rode os testes da issue
+7. Faça commits pequenos com conventional commits em português
+8. **NÃO faça push automaticamente** — espere validação humana
+9. Quando o usuário validar e mergear, **atualize a seção "Status das tasks" deste arquivo**
+
+## 📊 Status das tasks
+
+Atualize esta seção a cada task concluída. Use os emojis:
+- ⏳ Em progresso
+- ✅ Concluída e mergeada
+- 🚫 Cancelada/removida
+- ⏸️ Bloqueada (aguardando algo)
+
+| # | Task | Status | Branch | PR |
+|---|------|--------|--------|-----|
+| 1 | Setup do monorepo | ⏳ Em progresso | `chore/01-monorepo-setup` | - |
+| 2 | Banco de dados e Prisma | - | - | - |
+| 3 | ~~Deploy de desenvolvimento~~ | 🚫 Removida (sem deploy de dev, roda local) | - | - |
+| 4 | CI/CD e qualidade de código | - | - | - |
+| 5 | Autenticação Admin | - | - | - |
+| 6 | Autenticação Cliente | - | - | - |
+| 7 | Layout do painel admin | - | - | - |
+| 8 | Layout da loja pública | - | - | - |
+| 9 | Categorias e tabelas de medidas | - | - | - |
+| 10 | Produtos com variações + IA descrição | - | - | - |
+| 11 | Gestão de Estoque com baixa manual | - | - | - |
+| 12 | Catálogo, busca e filtros | - | - | - |
+| 13 | Página de Produto (PDP) | - | - | - |
+| 14 | Carrinho com reserva de estoque | - | - | - |
+| 15 | Wishlist e Conta do Cliente | - | - | - |
+| 16 | Checkout multi-step | - | - | - |
+| 17 | Integração Melhor Envio | - | - | - |
+| 18 | Integração Mercado Pago | - | - | - |
+| 19 | Webhook MP + finalização | - | - | - |
+| 20 | Sistema de Cupons | - | - | - |
+| 21 | Sistema de Reviews com foto | - | - | - |
+| 22 | E-mails transacionais (Resend) | - | - | - |
+| 23 | Dashboard admin | - | - | - |
+| 24 | Páginas institucionais e SEO | - | - | - |
+| 25 | Provisionamento de produção + Go-live | - | - | - |
+
+## 📝 Log de mudanças relevantes
+
+> Anote aqui qualquer decisão importante, mudança de stack, descoberta de bug, ou contexto que sessões futuras precisem saber.
+
+- `2026-05-05` — Projeto iniciado. Decidido sem deploy de dev (Vercel bloqueada, sem Railway). Tudo local até go-live na Hostinger.
+
+## ⚠️ Coisas que NÃO podem ser esquecidas
+
+- **NUNCA commitar `.env`** — só `.env.example`
+- **NUNCA fazer push sem validação humana** durante desenvolvimento
+- **NUNCA pular checklist da issue** sem avisar
+- **SEMPRE rodar `pnpm lint && pnpm typecheck && pnpm build`** antes de considerar uma task pronta
+- **SEMPRE atualizar este `CLAUDE.md`** ao final de cada task
+
+## 🔗 Links úteis
+
+- Repo: https://github.com/linvex-software/flor-de-menina
+- Project board: https://github.com/orgs/linvex-software/projects/7
+- Instagram da cliente: https://instagram.com/flordemeninaoficial
+- Referência visual: https://www.mirak.com.br/
