@@ -7,3 +7,10 @@ export type Pagination = {
   limit: number;
   total: number;
 };
+
+export type AdminUser = {
+  id: string;
+  email: string;
+  name: string;
+  role: 'ADMIN' | 'OPERATOR';
+};

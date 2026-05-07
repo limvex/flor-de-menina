@@ -2,7 +2,7 @@ import 'dotenv/config';
 import { PrismaClient } from '../src/generated/prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
-import { UserRole, StockMovementType } from '../src/generated/prisma/enums';
+import { UserRole, StockMovementType } from '../src/generated/prisma';
 import { createId } from '@paralleldrive/cuid2';
 import bcrypt from 'bcrypt';
 
