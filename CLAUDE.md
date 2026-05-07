@@ -100,33 +100,33 @@ Atualize esta seção a cada task concluída. Use os emojis:
 - 🚫 Cancelada/removida
 - ⏸️ Bloqueada (aguardando algo)
 
-| #   | Task                                  | Status                                      | Branch                    | PR  |
-| --- | ------------------------------------- | ------------------------------------------- | ------------------------- | --- |
-| 1   | Setup do monorepo                     | ✅ Concluída                                | `chore/01-monorepo-setup` | #26 |
-| 2   | Banco de dados e Prisma               | ✅ Concluída                                | `feat/02-database-prisma` | #27 |
-| 3   | ~~Deploy de desenvolvimento~~         | 🚫 Removida (sem deploy de dev, roda local) | -                         | -   |
-| 4   | CI/CD e qualidade de código           | ✅ Concluída                                | `chore/04-ci-quality`     | #28 |
-| 5   | Autenticação Admin                    | ✅ Concluída                                | `feat/05-auth-admin`      | #42 |
-| 6   | Autenticação Cliente                  | ✅ Concluída                                | `feat/06-auth-cliente`    | #43 |
-| 7   | Layout do painel admin                | ✅ Concluída                                | `feat/07-admin-layout`    | #44 |
-| 8   | Layout da loja pública                | ✅ Concluída                                | `feat/08-loja-layout`     | -   |
-| 9   | Categorias e tabelas de medidas       | ✅ Concluída                                | `feat/09-categorias`      | -   |
-| 10  | Produtos com variações + IA descrição | -                                           | -                         | -   |
-| 11  | Gestão de Estoque com baixa manual    | -                                           | -                         | -   |
-| 12  | Catálogo, busca e filtros             | -                                           | -                         | -   |
-| 13  | Página de Produto (PDP)               | -                                           | -                         | -   |
-| 14  | Carrinho com reserva de estoque       | -                                           | -                         | -   |
-| 15  | Wishlist e Conta do Cliente           | -                                           | -                         | -   |
-| 16  | Checkout multi-step                   | -                                           | -                         | -   |
-| 17  | Integração Melhor Envio               | -                                           | -                         | -   |
-| 18  | Integração Mercado Pago               | -                                           | -                         | -   |
-| 19  | Webhook MP + finalização              | -                                           | -                         | -   |
-| 20  | Sistema de Cupons                     | -                                           | -                         | -   |
-| 21  | Sistema de Reviews com foto           | -                                           | -                         | -   |
-| 22  | E-mails transacionais (Resend)        | -                                           | -                         | -   |
-| 23  | Dashboard admin                       | -                                           | -                         | -   |
-| 24  | Páginas institucionais e SEO          | -                                           | -                         | -   |
-| 25  | Provisionamento de produção + Go-live | -                                           | -                         | -   |
+| #   | Task                                  | Status                                      | Branch                          | PR  |
+| --- | ------------------------------------- | ------------------------------------------- | ------------------------------- | --- |
+| 1   | Setup do monorepo                     | ✅ Concluída                                | `chore/01-monorepo-setup`       | #26 |
+| 2   | Banco de dados e Prisma               | ✅ Concluída                                | `feat/02-database-prisma`       | #27 |
+| 3   | ~~Deploy de desenvolvimento~~         | 🚫 Removida (sem deploy de dev, roda local) | -                               | -   |
+| 4   | CI/CD e qualidade de código           | ✅ Concluída                                | `chore/04-ci-quality`           | #28 |
+| 5   | Autenticação Admin                    | ✅ Concluída                                | `feat/05-auth-admin`            | #42 |
+| 6   | Autenticação Cliente                  | ✅ Concluída                                | `feat/06-auth-cliente`          | #43 |
+| 7   | Layout do painel admin                | -                                           | -                               | -   |
+| 8   | Layout da loja pública                | -                                           | -                               | -   |
+| 9   | Categorias e tabelas de medidas       | -                                           | -                               | -   |
+| 10  | Produtos com variações + IA descrição | ⏳ Aguardando validação                     | `feat/10-produtos-variacoes-ia` | -   |
+| 11  | Gestão de Estoque com baixa manual    | -                                           | -                               | -   |
+| 12  | Catálogo, busca e filtros             | -                                           | -                               | -   |
+| 13  | Página de Produto (PDP)               | -                                           | -                               | -   |
+| 14  | Carrinho com reserva de estoque       | -                                           | -                               | -   |
+| 15  | Wishlist e Conta do Cliente           | -                                           | -                               | -   |
+| 16  | Checkout multi-step                   | -                                           | -                               | -   |
+| 17  | Integração Melhor Envio               | -                                           | -                               | -   |
+| 18  | Integração Mercado Pago               | -                                           | -                               | -   |
+| 19  | Webhook MP + finalização              | -                                           | -                               | -   |
+| 20  | Sistema de Cupons                     | -                                           | -                               | -   |
+| 21  | Sistema de Reviews com foto           | -                                           | -                               | -   |
+| 22  | E-mails transacionais (Resend)        | -                                           | -                               | -   |
+| 23  | Dashboard admin                       | -                                           | -                               | -   |
+| 24  | Páginas institucionais e SEO          | -                                           | -                               | -   |
+| 25  | Provisionamento de produção + Go-live | -                                           | -                               | -   |
 
 ## 📝 Log de mudanças relevantes
 
@@ -140,10 +140,7 @@ Atualize esta seção a cada task concluída. Use os emojis:
 - `2026-05-06` — AVISO: JWT não tem denylist/blocklist. Logout apenas limpa cookie no browser; access_token ainda válido por 15min. Implementar blocklist Redis antes do go-live (Task futura).
 - `2026-05-06` — Task #6 (Auth cliente) executada. Schema atualizado com Session model. MailService com adapter Maildev. GoogleService com mock. 30/32 testes manuais passados (T3 e T16 com rate limit de dev — comportamento correto). Build OK em ambos apps. Aguardando validação humana.
 - `2026-05-06` — FIX: Node.js v25 carrega `.ts` nativamente (type stripping), incompatível com ts-node. Solução: compilar `@flor/database` para `dist/` com `tsc -p tsconfig.build.json`, criar symlink `dist/generated → src/generated`, adicionar `@prisma/client-runtime-utils` como dep direta. API rodada via `node --env-file=.env apps/api/dist/main.js`.
-- `2026-05-06` — Task #7 (Layout admin) concluída via PR #44. AdminShell com sidebar, breadcrumbs, Sheet mobile, DataTable, FormSection, EmptyState, ConfirmDialog, AdminPageHeader.
-- `2026-05-06` — FIX CI: adicionado `pnpm --filter @flor/database db:generate` no job `validate` do CI antes de lint/typecheck/build. Sem esse passo, `./generated/prisma` não existe e o build quebra com TS2307.
-- `2026-05-07` — Task #8 (Layout loja pública) concluída. TopBar, Header sticky, NavMenu desktop, MobileDrawer, Footer (newsletter + colunas + barra inferior), páginas placeholder (home, wishlist, conta, carrinho, 404). EmptyState movido para `components/shared/`.
-- `2026-05-07` — Task #9 (Categorias) concluída. API NestJS: CRUD admin + endpoints públicos (/categories). Schema Prisma: @@unique([parentId, slug]), sizeChart Json, sortOrder. Admin UI: CategoryListTable, CategoryForm, SizeChartEditor, SizeChartPreview. Páginas: /admin/categorias, /nova, /[id]. Seed corrigido (upsert com null não funciona no Prisma). NavMenu da loja agora busca categorias ativas dinamicamente via API. Build OK nos três apps.
+- `2026-05-07` — Task #10 (Produtos + IA) executada em 2 sessões. Backend: modules products/uploads/ai/categories completos. R2 com 3 tamanhos WebP (thumb/card/full) via Sharp. OpenRouter mock=True por padrão (chave não configurada em dev). Frontend: lista admin com filtros/bulk, formulário completo, drag-drop imagens, editor variações, modal IA. Jest: 37 testes passando. Playwright E2E: 15 testes passando. Smoke API: 11/11. Obs: `slug` ESM substituído por função local; `z.coerce` Zod v4 trocado por `valueAsNumber`. Aguardando validação humana.
 
 ## ⚠️ Coisas que NÃO podem ser esquecidas
 
@@ -156,6 +153,12 @@ Atualize esta seção a cada task concluída. Use os emojis:
 - **MAIL_PROVIDER=maildev em dev** → Maildev UI em `http://localhost:1080`. Resend será implementado na Task #22.
 - **MOCK_GOOGLE_OAUTH=true em dev** até credenciais reais do Google Cloud Console chegarem.
 - **Para subir a API**: `pnpm --filter @flor/api build && node --env-file=.env apps/api/dist/main.js` (não usar `nest start --watch` com Node.js v25).
+- **Imagens NÃO são deletadas no soft delete de produto** — preserva histórico de pedidos futuros.
+- **OpenRouter sem chave = MOCK MODE** automático, descrição vem com prefixo `[MOCK]`.
+- **3 tamanhos por imagem sempre**: thumb (200x200), card (600x800), full (1200x1600) — tudo WebP.
+- **Slug único e auto-incremental**: se "vestido-midi" existe, cria "vestido-midi-2", etc.
+- **Login admin é `POST /auth/admin/login`** (não `/auth/login`).
+- **`slug` package é ESM** — usar a função `slugify()` local em `products.service.ts`.
 
 ## 🔗 Links úteis
 
