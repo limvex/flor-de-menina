@@ -4,6 +4,10 @@
   "testEnvironment": "node",
   "testRegex": ".e2e-spec.ts$",
   "transform": {
-    "^.+\\.(t|j)s$": "ts-jest"
+    "^.+\\.(t|j)s$": ["ts-jest", { "tsconfig": { "esModuleInterop": true } }]
+  },
+  "setupFiles": ["<rootDir>/setup-env.js"],
+  "moduleNameMapper": {
+    "^@paralleldrive/cuid2$": "<rootDir>/__mocks__/cuid2.js"
   }
 }

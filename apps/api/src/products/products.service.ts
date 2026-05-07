@@ -4,7 +4,13 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { createId, prisma, Prisma, StockMovementType } from '@flor/database';
+import {
+  createId,
+  prisma,
+  Prisma,
+  StockMovementType,
+  StockMovementSource,
+} from '@flor/database';
 function slugify(text: string): string {
   return text
     .toLowerCase()
@@ -342,7 +348,13 @@ export class ProductsService {
                   stockDiff > 0
                     ? StockMovementType.IN
                     : StockMovementType.ADJUST,
+                source:
+                  stockDiff > 0
+                    ? StockMovementSource.MANUAL_IN
+                    : StockMovementSource.MANUAL_ADJUST,
                 quantity: Math.abs(stockDiff),
+                stockBefore: existing.stock,
+                stockAfter: variant.stock,
                 reason: 'Ajuste manual via admin',
               },
             });
@@ -369,7 +381,10 @@ export class ProductsService {
                 id: createId(),
                 variantId: newId,
                 type: StockMovementType.IN,
+                source: StockMovementSource.MANUAL_IN,
                 quantity: variant.stock,
+                stockBefore: 0,
+                stockAfter: variant.stock,
                 reason: 'Estoque inicial',
               },
             });
