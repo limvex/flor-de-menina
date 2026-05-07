@@ -180,7 +180,7 @@ export class ProductsService {
       where: { slug },
       include: {
         category: {
-          select: { id: true, name: true, slug: true, measureTable: true },
+          select: { id: true, name: true, slug: true, sizeChart: true },
         },
         images: { orderBy: { position: 'asc' } },
         variants: {
