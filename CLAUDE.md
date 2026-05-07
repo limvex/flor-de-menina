@@ -112,7 +112,7 @@ Atualize esta seção a cada task concluída. Use os emojis:
 | 8   | Layout da loja pública                | ✅ Concluída                                | -                               | -   |
 | 9   | Categorias e tabelas de medidas       | ✅ Concluída                                | -                               | -   |
 | 10  | Produtos com variações + IA descrição | ✅ Concluída                                | `feat/10-produtos-variacoes-ia` | #47 |
-| 11  | Gestão de Estoque com baixa manual    | -                                           | -                               | -   |
+| 11  | Gestão de Estoque com baixa manual    | ✅ Concluída                                | `feat/11-stock-management`      | -   |
 | 12  | Catálogo, busca e filtros             | -                                           | -                               | -   |
 | 13  | Página de Produto (PDP)               | -                                           | -                               | -   |
 | 14  | Carrinho com reserva de estoque       | -                                           | -                               | -   |
@@ -141,6 +141,7 @@ Atualize esta seção a cada task concluída. Use os emojis:
 - `2026-05-06` — Task #6 (Auth cliente) executada. Schema atualizado com Session model. MailService com adapter Maildev. GoogleService com mock. 30/32 testes manuais passados (T3 e T16 com rate limit de dev — comportamento correto). Build OK em ambos apps. Aguardando validação humana.
 - `2026-05-06` — FIX: Node.js v25 carrega `.ts` nativamente (type stripping), incompatível com ts-node. Solução: compilar `@flor/database` para `dist/` com `tsc -p tsconfig.build.json`, criar symlink `dist/generated → src/generated`, adicionar `@prisma/client-runtime-utils` como dep direta. API rodada via `node --env-file=.env apps/api/dist/main.js`.
 - `2026-05-07` — Task #10 concluída e mergeada via PR #47. CRUD completo de produtos com R2 (3 tamanhos WebP via Sharp), IA via OpenRouter com mock fallback, admin com filtros/bulk/drag-drop/modal IA, 37 testes Jest + 15 E2E Playwright + 8 edge cases de erro, validação visual aprovada. OBS: Category schema mudou na Task #9 (measureTable→sizeChart, position→sortOrder); products.service adaptado.
+- `2026-05-07` — Task #11 (Gestão de Estoque) implementada. Módulo stock na API com endpoints IN/OUT/ADJUST/counter-sale, SELECT FOR UPDATE contra race condition, histórico paginado com filtros. Admin: /admin/estoque (lista com filtros/alertas), modal de movimentação com Controller (Select controlado), página de histórico por variante. `pnpm dev` agora sobe a API automaticamente via concurrently (nest build + node --watch). Movimentação automática por pedidos será integrada na Task #20.
 
 ## ⚠️ Coisas que NÃO podem ser esquecidas
 

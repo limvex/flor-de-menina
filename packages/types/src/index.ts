@@ -23,3 +23,13 @@ export type {
   CategoryTree,
   CategoryPublicDto,
 } from './category.schema';
+export { LOW_STOCK_THRESHOLD } from './stock.schema';
+export type {
+  StockMovementType,
+  StockMovementSource,
+  StockStatus,
+  ProductWithStockSummary,
+  VariantStockSummary,
+  VariantStockDetail,
+  StockMovementHistoryItem,
+} from './stock.schema';
