@@ -9,7 +9,7 @@
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "node --env-file=../../.env dist/main.js",
-    "dev": "dotenv -e ../../.env -- nest start --watch",
+    "dev": "nest build --watch",
     "start:dev": "nest start --watch",
     "typecheck": "tsc --noEmit",
     "start:debug": "nest start --debug --watch",
@@ -22,12 +22,15 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1044.0",
+    "@aws-sdk/s3-request-presigner": "^3.1044.0",
     "@flor/database": "workspace:*",
     "@flor/types": "workspace:*",
     "@nestjs/common": "^10.0.0",
     "@nestjs/config": "^4.0.4",
     "@nestjs/core": "^10.0.0",
     "@nestjs/jwt": "^10.2.0",
+    "@nestjs/mapped-types": "^2.1.1",
     "@nestjs/passport": "^10.0.3",
     "@nestjs/platform-express": "^10.0.0",
     "@nestjs/throttler": "^5.2.0",
@@ -36,12 +39,15 @@
     "class-validator": "^0.15.1",
     "cookie-parser": "^1.4.7",
     "google-auth-library": "^10.6.2",
+    "multer": "^2.1.1",
     "nodemailer": "^8.0.7",
+    "openai": "^6.36.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.1",
-    "zod": "^4.4.3"
+    "sharp": "^0.34.5",
+    "slug": "^11.0.1"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",
@@ -51,13 +57,14 @@
     "@types/cookie-parser": "^1.4.7",
     "@types/express": "^5.0.0",
     "@types/jest": "^29.5.2",
+    "@types/multer": "^2.1.0",
     "@types/node": "^20.3.1",
     "@types/nodemailer": "^8.0.0",
     "@types/passport-jwt": "^4.0.1",
+    "@types/slug": "^5.0.9",
     "@types/supertest": "^6.0.0",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
-    "dotenv-cli": "^11.0.0",
     "eslint": "^8.0.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "^5.0.0",
@@ -80,7 +87,14 @@
     "rootDir": "src",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
-      "^.+\\.(t|j)s$": "ts-jest"
+      "^.+\\.(t|j)s$": [
+        "ts-jest",
+        {
+          "tsconfig": {
+            "esModuleInterop": true
+          }
+        }
+      ]
     },
     "collectCoverageFrom": [
       "**/*.(t|j)s"

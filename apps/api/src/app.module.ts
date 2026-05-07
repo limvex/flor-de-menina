@@ -9,6 +9,9 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { CustomerAuthModule } from './auth/customer/customer-auth.module';
 import { CategoriesModule } from './modules/categories/categories.module';
+import { ProductsModule } from './products/products.module';
+import { UploadsModule } from './uploads/uploads.module';
+import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [
@@ -18,6 +21,9 @@ import { CategoriesModule } from './modules/categories/categories.module';
     UsersModule,
     CustomerAuthModule,
     CategoriesModule,
+    ProductsModule,
+    UploadsModule,
+    AiModule,
   ],
   controllers: [AppController],
   providers: [

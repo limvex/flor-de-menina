@@ -176,7 +176,9 @@ model Product {
 model ProductImage {
   id        String   @id
   productId String
-  url       String
+  url       String   // full (1200x1600)
+  thumbUrl  String?  // thumb (200x200)
+  cardUrl   String?  // card (600x800)
   alt       String?
   position  Int      @default(0)
   createdAt DateTime @default(now())
