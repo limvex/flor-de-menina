@@ -108,7 +108,7 @@ Atualize esta seção a cada task concluída. Use os emojis:
 | 4   | CI/CD e qualidade de código           | ✅ Concluída                                | `chore/04-ci-quality`     | #28 |
 | 5   | Autenticação Admin                    | ✅ Concluída                                | `feat/05-auth-admin`      | #42 |
 | 6   | Autenticação Cliente                  | ✅ Concluída                                | `feat/06-auth-cliente`    | #43 |
-| 7   | Layout do painel admin                | -                                           | -                         | -   |
+| 7   | Layout do painel admin                | ✅ Concluída                                | `feat/07-admin-layout`    | #44 |
 | 8   | Layout da loja pública                | -                                           | -                         | -   |
 | 9   | Categorias e tabelas de medidas       | -                                           | -                         | -   |
 | 10  | Produtos com variações + IA descrição | -                                           | -                         | -   |
@@ -140,6 +140,8 @@ Atualize esta seção a cada task concluída. Use os emojis:
 - `2026-05-06` — AVISO: JWT não tem denylist/blocklist. Logout apenas limpa cookie no browser; access_token ainda válido por 15min. Implementar blocklist Redis antes do go-live (Task futura).
 - `2026-05-06` — Task #6 (Auth cliente) executada. Schema atualizado com Session model. MailService com adapter Maildev. GoogleService com mock. 30/32 testes manuais passados (T3 e T16 com rate limit de dev — comportamento correto). Build OK em ambos apps. Aguardando validação humana.
 - `2026-05-06` — FIX: Node.js v25 carrega `.ts` nativamente (type stripping), incompatível com ts-node. Solução: compilar `@flor/database` para `dist/` com `tsc -p tsconfig.build.json`, criar symlink `dist/generated → src/generated`, adicionar `@prisma/client-runtime-utils` como dep direta. API rodada via `node --env-file=.env apps/api/dist/main.js`.
+- `2026-05-06` — Task #7 (Layout admin) concluída via PR #44. AdminShell com sidebar, breadcrumbs, Sheet mobile, DataTable, FormSection, EmptyState, ConfirmDialog, AdminPageHeader.
+- `2026-05-06` — FIX CI: adicionado `pnpm --filter @flor/database db:generate` no job `validate` do CI antes de lint/typecheck/build. Sem esse passo, `./generated/prisma` não existe e o build quebra com TS2307.
 
 ## ⚠️ Coisas que NÃO podem ser esquecidas
 
