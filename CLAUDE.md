@@ -108,10 +108,10 @@ Atualize esta seção a cada task concluída. Use os emojis:
 | 4   | CI/CD e qualidade de código           | ✅ Concluída                                | `chore/04-ci-quality`           | #28 |
 | 5   | Autenticação Admin                    | ✅ Concluída                                | `feat/05-auth-admin`            | #42 |
 | 6   | Autenticação Cliente                  | ✅ Concluída                                | `feat/06-auth-cliente`          | #43 |
-| 7   | Layout do painel admin                | -                                           | -                               | -   |
-| 8   | Layout da loja pública                | -                                           | -                               | -   |
-| 9   | Categorias e tabelas de medidas       | -                                           | -                               | -   |
-| 10  | Produtos com variações + IA descrição | ⏳ Aguardando validação                     | `feat/10-produtos-variacoes-ia` | -   |
+| 7   | Layout do painel admin                | ✅ Concluída                                | -                               | -   |
+| 8   | Layout da loja pública                | ✅ Concluída                                | -                               | -   |
+| 9   | Categorias e tabelas de medidas       | ✅ Concluída                                | -                               | -   |
+| 10  | Produtos com variações + IA descrição | ✅ Concluída                                | `feat/10-produtos-variacoes-ia` | #47 |
 | 11  | Gestão de Estoque com baixa manual    | -                                           | -                               | -   |
 | 12  | Catálogo, busca e filtros             | -                                           | -                               | -   |
 | 13  | Página de Produto (PDP)               | -                                           | -                               | -   |
@@ -140,7 +140,7 @@ Atualize esta seção a cada task concluída. Use os emojis:
 - `2026-05-06` — AVISO: JWT não tem denylist/blocklist. Logout apenas limpa cookie no browser; access_token ainda válido por 15min. Implementar blocklist Redis antes do go-live (Task futura).
 - `2026-05-06` — Task #6 (Auth cliente) executada. Schema atualizado com Session model. MailService com adapter Maildev. GoogleService com mock. 30/32 testes manuais passados (T3 e T16 com rate limit de dev — comportamento correto). Build OK em ambos apps. Aguardando validação humana.
 - `2026-05-06` — FIX: Node.js v25 carrega `.ts` nativamente (type stripping), incompatível com ts-node. Solução: compilar `@flor/database` para `dist/` com `tsc -p tsconfig.build.json`, criar symlink `dist/generated → src/generated`, adicionar `@prisma/client-runtime-utils` como dep direta. API rodada via `node --env-file=.env apps/api/dist/main.js`.
-- `2026-05-07` — Task #10 (Produtos + IA) executada em 2 sessões. Backend: modules products/uploads/ai/categories completos. R2 com 3 tamanhos WebP (thumb/card/full) via Sharp. OpenRouter mock=True por padrão (chave não configurada em dev). Frontend: lista admin com filtros/bulk, formulário completo, drag-drop imagens, editor variações, modal IA. Jest: 37 testes passando. Playwright E2E: 15 testes passando. Smoke API: 11/11. Obs: `slug` ESM substituído por função local; `z.coerce` Zod v4 trocado por `valueAsNumber`. Aguardando validação humana.
+- `2026-05-07` — Task #10 concluída e mergeada via PR #47. CRUD completo de produtos com R2 (3 tamanhos WebP via Sharp), IA via OpenRouter com mock fallback, admin com filtros/bulk/drag-drop/modal IA, 37 testes Jest + 15 E2E Playwright + 8 edge cases de erro, validação visual aprovada. OBS: Category schema mudou na Task #9 (measureTable→sizeChart, position→sortOrder); products.service adaptado.
 
 ## ⚠️ Coisas que NÃO podem ser esquecidas
 
