@@ -222,14 +222,17 @@ enum StockMovementType {
 }
 
 model StockMovement {
-  id        String            @id
-  variantId String
-  userId    String?
-  type      StockMovementType
-  quantity  Int // sempre positivo; tipo determina sinal
-  reason    String
-  orderId   String?
-  createdAt DateTime          @default(now())
+  id            String            @id
+  variantId     String
+  userId        String?
+  type          StockMovementType
+  quantity      Int // sempre positivo; tipo determina sinal
+  reason        String
+  orderId       String?
+  previousStock Int // estoque ANTES da movimentação (auditoria)
+  newStock      Int // estoque DEPOIS da movimentação (auditoria)
+  metadata      Json? // pra futuras integrações (CSV import, webhook, etc)
+  createdAt     DateTime          @default(now())
 
   variant ProductVariant @relation(fields: [variantId], references: [id])
   user    User?          @relation(fields: [userId], references: [id])
@@ -515,6 +518,16 @@ model Review {
 
   @@index([productId])
   @@index([status])
+}
+
+// ============================================================
+// CONFIGURAÇÕES GLOBAIS
+// ============================================================
+
+model Setting {
+  key       String @id
+  value     Json
+  updatedAt DateTime @updatedAt
 }
 
 // ============================================================

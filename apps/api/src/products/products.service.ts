@@ -344,6 +344,8 @@ export class ProductsService {
                     : StockMovementType.ADJUST,
                 quantity: Math.abs(stockDiff),
                 reason: 'Ajuste manual via admin',
+                previousStock: existing.stock,
+                newStock: variant.stock,
               },
             });
           }
@@ -371,6 +373,8 @@ export class ProductsService {
                 type: StockMovementType.IN,
                 quantity: variant.stock,
                 reason: 'Estoque inicial',
+                previousStock: 0,
+                newStock: variant.stock,
               },
             });
           }

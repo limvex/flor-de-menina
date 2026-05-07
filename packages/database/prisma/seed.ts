@@ -194,8 +194,10 @@ async function main() {
       const existing = await prisma.productVariant.findUnique({ where: { sku } });
       if (existing) continue;
 
-      const variant = await prisma.productVariant.create({
-        data: {
+      const variant = await prisma.productVariant.upsert({
+        where: { sku },
+        update: {},
+        create: {
           id: createId(),
           productId: product.id,
           sku,
@@ -214,6 +216,8 @@ async function main() {
           type: StockMovementType.IN,
           quantity: v.stock,
           reason: 'Estoque inicial (seed)',
+          previousStock: 0,
+          newStock: v.stock,
         },
       });
     }

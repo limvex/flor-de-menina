@@ -12,6 +12,9 @@ import { CategoriesModule } from './modules/categories/categories.module';
 import { ProductsModule } from './products/products.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { AiModule } from './ai/ai.module';
+import { StockModule } from './stock/stock.module';
+import { SettingsModule } from './settings/settings.module';
+import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
   imports: [
@@ -24,6 +27,9 @@ import { AiModule } from './ai/ai.module';
     ProductsModule,
     UploadsModule,
     AiModule,
+    StockModule,
+    SettingsModule,
+    PrismaModule,
   ],
   controllers: [AppController],
   providers: [

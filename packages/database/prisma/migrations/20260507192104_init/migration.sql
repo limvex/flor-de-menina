@@ -68,6 +68,20 @@ CREATE TABLE "PasswordReset" (
 );
 
 -- CreateTable
+CREATE TABLE "Session" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "refreshHash" TEXT NOT NULL,
+    "userAgent" TEXT,
+    "ipAddress" TEXT,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "revokedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Session_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "Address" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
@@ -95,9 +109,9 @@ CREATE TABLE "Category" (
     "name" TEXT NOT NULL,
     "description" TEXT,
     "parentId" TEXT,
-    "measureTable" JSONB,
+    "sizeChart" JSONB,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
-    "position" INTEGER NOT NULL DEFAULT 0,
+    "sortOrder" INTEGER NOT NULL DEFAULT 0,
     "seoTitle" TEXT,
     "seoDescription" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -137,6 +151,8 @@ CREATE TABLE "ProductImage" (
     "id" TEXT NOT NULL,
     "productId" TEXT NOT NULL,
     "url" TEXT NOT NULL,
+    "thumbUrl" TEXT,
+    "cardUrl" TEXT,
     "alt" TEXT,
     "position" INTEGER NOT NULL DEFAULT 0,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -170,6 +186,9 @@ CREATE TABLE "StockMovement" (
     "quantity" INTEGER NOT NULL,
     "reason" TEXT NOT NULL,
     "orderId" TEXT,
+    "previousStock" INTEGER NOT NULL,
+    "newStock" INTEGER NOT NULL,
+    "metadata" JSONB,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "StockMovement_pkey" PRIMARY KEY ("id")
@@ -350,6 +369,15 @@ CREATE TABLE "Review" (
 );
 
 -- CreateTable
+CREATE TABLE "Setting" (
+    "key" TEXT NOT NULL,
+    "value" JSONB NOT NULL,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Setting_pkey" PRIMARY KEY ("key")
+);
+
+-- CreateTable
 CREATE TABLE "InstitutionalPage" (
     "id" TEXT NOT NULL,
     "slug" TEXT NOT NULL,
@@ -392,16 +420,19 @@ CREATE UNIQUE INDEX "PasswordReset_token_key" ON "PasswordReset"("token");
 CREATE INDEX "PasswordReset_token_idx" ON "PasswordReset"("token");
 
 -- CreateIndex
+CREATE INDEX "Session_userId_idx" ON "Session"("userId");
+
+-- CreateIndex
+CREATE INDEX "Session_refreshHash_idx" ON "Session"("refreshHash");
+
+-- CreateIndex
 CREATE INDEX "Address_userId_idx" ON "Address"("userId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Category_slug_key" ON "Category"("slug");
-
--- CreateIndex
-CREATE INDEX "Category_slug_idx" ON "Category"("slug");
-
--- CreateIndex
 CREATE INDEX "Category_isActive_idx" ON "Category"("isActive");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Category_parentId_slug_key" ON "Category"("parentId", "slug");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Product_slug_key" ON "Product"("slug");
@@ -522,6 +553,9 @@ ALTER TABLE "EmailVerification" ADD CONSTRAINT "EmailVerification_userId_fkey" F
 
 -- AddForeignKey
 ALTER TABLE "PasswordReset" ADD CONSTRAINT "PasswordReset_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Session" ADD CONSTRAINT "Session_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Address" ADD CONSTRAINT "Address_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
