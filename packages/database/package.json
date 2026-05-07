@@ -6,6 +6,8 @@
   "main": "./dist/index.js",
   "types": "./src/index.ts",
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "postbuild": "node scripts/link-generated.js",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
