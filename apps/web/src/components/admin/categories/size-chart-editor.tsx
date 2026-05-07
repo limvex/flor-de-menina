@@ -151,14 +151,14 @@ export function SizeChartEditor({ value, onChange, inherited }: SizeChartEditorP
           </div>
 
           <div className="overflow-x-auto rounded-lg border border-flor-100">
-            <table className="w-full min-w-[400px] border-collapse text-sm">
+            <table className="w-full min-w-100 border-collapse text-sm">
               <thead>
                 <tr className="bg-flor-50">
                   <th className="border border-flor-200 px-2 py-1.5 text-left text-xs font-medium text-flor-600 w-36">
                     {draft.columnHeader}
                   </th>
                   {draft.columns.map((col, i) => (
-                    <th key={i} className="border border-flor-200 px-1 py-1 min-w-[80px]">
+                    <th key={i} className="border border-flor-200 px-1 py-1 min-w-20">
                       <div className="flex items-center gap-1">
                         <Input
                           value={col}
