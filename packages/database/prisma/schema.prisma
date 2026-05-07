@@ -221,22 +221,36 @@ enum StockMovementType {
   ADJUST // ajuste manual (perda, correção, venda balcão)
 }
 
+enum StockMovementSource {
+  MANUAL_IN // recebimento manual
+  MANUAL_ADJUST // ajuste manual de inventário
+  COUNTER_SALE // venda balcão
+  ONLINE_ORDER // pedido online
+  ORDER_CANCELLED // cancelamento de pedido
+  ORDER_REFUNDED // reembolso
+  LOSS // perda/avaria
+  RETURN // devolução de cliente
+}
+
 model StockMovement {
-  id        String            @id
-  variantId String
-  userId    String?
-  type      StockMovementType
-  quantity  Int // sempre positivo; tipo determina sinal
-  reason    String
-  orderId   String?
-  createdAt DateTime          @default(now())
+  id          String               @id
+  variantId   String
+  userId      String?
+  type        StockMovementType
+  source      StockMovementSource
+  quantity    Int // sempre positivo; tipo determina sinal
+  stockBefore Int
+  stockAfter  Int
+  reason      String?
+  orderId     String?
+  createdAt   DateTime             @default(now())
 
   variant ProductVariant @relation(fields: [variantId], references: [id])
   user    User?          @relation(fields: [userId], references: [id])
   order   Order?         @relation(fields: [orderId], references: [id])
 
-  @@index([variantId])
-  @@index([createdAt])
+  @@index([variantId, createdAt])
+  @@index([source])
 }
 
 // ============================================================
