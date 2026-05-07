@@ -33,13 +33,14 @@ async function main() {
       slug: 'vestidos',
       name: 'Vestidos',
       description: 'Vestidos para todas as ocasiões',
-      measureTable: {
-        cols: ['Tamanho', 'Busto (cm)', 'Cintura (cm)', 'Quadril (cm)'],
+      sizeChart: {
+        title: 'Guia de Medidas',
+        columnHeader: 'TAMANHO',
+        columns: ['P', 'M', 'G', 'GG'],
         rows: [
-          ['P', '84-88', '64-68', '90-94'],
-          ['M', '88-92', '68-72', '94-98'],
-          ['G', '92-96', '72-76', '98-102'],
-          ['GG', '96-100', '76-80', '102-106'],
+          { label: 'Busto (cm)', values: ['84-88', '88-92', '92-96', '96-100'] },
+          { label: 'Cintura (cm)', values: ['64-68', '68-72', '72-76', '76-80'] },
+          { label: 'Quadril (cm)', values: ['90-94', '94-98', '98-102', '102-106'] },
         ],
       },
     },
@@ -47,13 +48,13 @@ async function main() {
       slug: 'blusas',
       name: 'Blusas',
       description: 'Blusas e camisas',
-      measureTable: {
-        cols: ['Tamanho', 'Busto (cm)', 'Cintura (cm)'],
+      sizeChart: {
+        title: 'Guia de Medidas',
+        columnHeader: 'TAMANHO',
+        columns: ['P', 'M', 'G', 'GG'],
         rows: [
-          ['P', '84-88', '64-68'],
-          ['M', '88-92', '68-72'],
-          ['G', '92-96', '72-76'],
-          ['GG', '96-100', '76-80'],
+          { label: 'Busto (cm)', values: ['84-88', '88-92', '92-96', '96-100'] },
+          { label: 'Cintura (cm)', values: ['64-68', '68-72', '72-76', '76-80'] },
         ],
       },
     },
@@ -61,14 +62,14 @@ async function main() {
       slug: 'calcas',
       name: 'Calças',
       description: 'Calças, jeans e leggings',
-      measureTable: {
-        cols: ['Tamanho', 'Cintura (cm)', 'Quadril (cm)', 'Comprimento (cm)'],
+      sizeChart: {
+        title: 'Guia de Medidas',
+        columnHeader: 'NUMERAÇÃO',
+        columns: ['36', '38', '40', '42', '44'],
         rows: [
-          ['36', '64', '90', '100'],
-          ['38', '68', '94', '101'],
-          ['40', '72', '98', '102'],
-          ['42', '76', '102', '103'],
-          ['44', '80', '106', '104'],
+          { label: 'Cintura (cm)', values: ['64', '68', '72', '76', '80'] },
+          { label: 'Quadril (cm)', values: ['90', '94', '98', '102', '106'] },
+          { label: 'Comprimento (cm)', values: ['100', '101', '102', '103', '104'] },
         ],
       },
     },
@@ -76,35 +77,40 @@ async function main() {
       slug: 'bolsas',
       name: 'Bolsas',
       description: 'Bolsas, clutches e mochilas',
-      measureTable: null,
+      sizeChart: null,
     },
     {
       slug: 'acessorios',
       name: 'Acessórios',
       description: 'Cintos, lenços, colares e brincos',
-      measureTable: null,
+      sizeChart: null,
     },
   ];
 
   for (const [i, cat] of categorias.entries()) {
-    await prisma.category.upsert({
-      where: { slug: cat.slug },
-      update: {},
-      create: {
-        id: createId(),
-        slug: cat.slug,
-        name: cat.name,
-        description: cat.description,
-        measureTable: cat.measureTable ?? undefined,
-        position: i,
-      },
+    // Prisma não suporta upsert com chave composta contendo null;
+    // usamos findFirst + create como alternativa segura.
+    const existing = await prisma.category.findFirst({
+      where: { slug: cat.slug, parentId: null },
     });
+    if (!existing) {
+      await prisma.category.create({
+        data: {
+          id: createId(),
+          slug: cat.slug,
+          name: cat.name,
+          description: cat.description,
+          sizeChart: cat.sizeChart ?? undefined,
+          sortOrder: i,
+        },
+      });
+    }
   }
   console.log(`✅ ${categorias.length} categorias criadas`);
 
-  const vestidos = await prisma.category.findUnique({ where: { slug: 'vestidos' } });
-  const blusas = await prisma.category.findUnique({ where: { slug: 'blusas' } });
-  const bolsas = await prisma.category.findUnique({ where: { slug: 'bolsas' } });
+  const vestidos = await prisma.category.findFirst({ where: { slug: 'vestidos', parentId: null } });
+  const blusas = await prisma.category.findFirst({ where: { slug: 'blusas', parentId: null } });
+  const bolsas = await prisma.category.findFirst({ where: { slug: 'bolsas', parentId: null } });
 
   const produtos = [
     {

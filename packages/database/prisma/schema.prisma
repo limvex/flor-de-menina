@@ -117,13 +117,13 @@ model Address {
 
 model Category {
   id             String    @id
-  slug           String    @unique
+  slug           String
   name           String
   description    String?
   parentId       String?
-  measureTable   Json? // { cols: [...], rows: [[...]] }
+  sizeChart      Json?
   isActive       Boolean   @default(true)
-  position       Int       @default(0)
+  sortOrder      Int       @default(0)
   seoTitle       String?
   seoDescription String?
   createdAt      DateTime  @default(now())
@@ -134,7 +134,7 @@ model Category {
   children Category[] @relation("CategoryHierarchy")
   products Product[]
 
-  @@index([slug])
+  @@unique([parentId, slug])
   @@index([isActive])
 }
 

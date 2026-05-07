@@ -109,8 +109,8 @@ Atualize esta seção a cada task concluída. Use os emojis:
 | 5   | Autenticação Admin                    | ✅ Concluída                                | `feat/05-auth-admin`      | #42 |
 | 6   | Autenticação Cliente                  | ✅ Concluída                                | `feat/06-auth-cliente`    | #43 |
 | 7   | Layout do painel admin                | ✅ Concluída                                | `feat/07-admin-layout`    | #44 |
-| 8   | Layout da loja pública                | -                                           | -                         | -   |
-| 9   | Categorias e tabelas de medidas       | -                                           | -                         | -   |
+| 8   | Layout da loja pública                | ✅ Concluída                                | `feat/08-loja-layout`     | -   |
+| 9   | Categorias e tabelas de medidas       | ✅ Concluída                                | `feat/09-categorias`      | -   |
 | 10  | Produtos com variações + IA descrição | -                                           | -                         | -   |
 | 11  | Gestão de Estoque com baixa manual    | -                                           | -                         | -   |
 | 12  | Catálogo, busca e filtros             | -                                           | -                         | -   |
@@ -142,6 +142,8 @@ Atualize esta seção a cada task concluída. Use os emojis:
 - `2026-05-06` — FIX: Node.js v25 carrega `.ts` nativamente (type stripping), incompatível com ts-node. Solução: compilar `@flor/database` para `dist/` com `tsc -p tsconfig.build.json`, criar symlink `dist/generated → src/generated`, adicionar `@prisma/client-runtime-utils` como dep direta. API rodada via `node --env-file=.env apps/api/dist/main.js`.
 - `2026-05-06` — Task #7 (Layout admin) concluída via PR #44. AdminShell com sidebar, breadcrumbs, Sheet mobile, DataTable, FormSection, EmptyState, ConfirmDialog, AdminPageHeader.
 - `2026-05-06` — FIX CI: adicionado `pnpm --filter @flor/database db:generate` no job `validate` do CI antes de lint/typecheck/build. Sem esse passo, `./generated/prisma` não existe e o build quebra com TS2307.
+- `2026-05-07` — Task #8 (Layout loja pública) concluída. TopBar, Header sticky, NavMenu desktop, MobileDrawer, Footer (newsletter + colunas + barra inferior), páginas placeholder (home, wishlist, conta, carrinho, 404). EmptyState movido para `components/shared/`.
+- `2026-05-07` — Task #9 (Categorias) concluída. API NestJS: CRUD admin + endpoints públicos (/categories). Schema Prisma: @@unique([parentId, slug]), sizeChart Json, sortOrder. Admin UI: CategoryListTable, CategoryForm, SizeChartEditor, SizeChartPreview. Páginas: /admin/categorias, /nova, /[id]. Seed corrigido (upsert com null não funciona no Prisma). NavMenu da loja agora busca categorias ativas dinamicamente via API. Build OK nos três apps.
 
 ## ⚠️ Coisas que NÃO podem ser esquecidas
 

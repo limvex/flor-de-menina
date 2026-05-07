@@ -14,3 +14,12 @@ export type AdminUser = {
   name: string;
   role: 'ADMIN' | 'OPERATOR';
 };
+
+export { SizeChartSchema } from './size-chart.schema';
+export type { SizeChart } from './size-chart.schema';
+export type {
+  CategoryDto,
+  CategoryAdminDto,
+  CategoryTree,
+  CategoryPublicDto,
+} from './category.schema';

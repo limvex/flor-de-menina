@@ -1,47 +1,70 @@
 'use client';
 
-import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronDown } from 'lucide-react';
+import Link from 'next/link';
+import { ChevronDown, Loader2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { navItems } from './nav-config';
+import { fetchCategoriesTree } from '@/lib/loja/categories-api';
+import type { CategoryPublicDto } from '@flor/types';
 
 export function NavMenu() {
   const router = useRouter();
+  const [categories, setCategories] = useState<CategoryPublicDto[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchCategoriesTree()
+      .then(setCategories)
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <nav aria-label="Menu principal" className="hidden lg:flex items-center gap-8">
+        <Loader2 className="size-4 animate-spin text-flor-400" />
+      </nav>
+    );
+  }
+
+  if (categories.length === 0) {
+    return null;
+  }
 
   return (
     <nav aria-label="Menu principal" className="hidden lg:flex items-center gap-8">
-      {navItems.map((item) =>
-        item.children ? (
-          <DropdownMenu key={item.label}>
+      {categories.map((cat) =>
+        cat.children.length > 0 ? (
+          <DropdownMenu key={cat.id}>
             <DropdownMenuTrigger className="flex items-center gap-1 font-sans text-xs font-medium tracking-[0.15em] uppercase text-flor-700 hover:text-flor-900 transition-colors focus-visible:outline-none cursor-default">
-              {item.label}
+              {cat.name}
               <ChevronDown className="h-3 w-3" />
             </DropdownMenuTrigger>
             <DropdownMenuContent className="min-w-[180px]">
-              {item.children.map((child) => (
+              {cat.children.map((child) => (
                 <DropdownMenuItem
-                  key={child.href}
-                  onClick={() => router.push(child.href)}
+                  key={child.id}
+                  onClick={() => router.push(`/categoria/${child.slug}`)}
                   className="font-sans text-sm text-flor-700 cursor-pointer"
                 >
-                  {child.label}
+                  {child.name}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
         ) : (
           <Link
-            key={item.label}
-            href={item.href!}
+            key={cat.id}
+            href={`/categoria/${cat.slug}`}
             className="group relative font-sans text-xs font-medium tracking-[0.15em] uppercase text-flor-700 hover:text-flor-900 transition-colors"
           >
-            {item.label}
+            {cat.name}
             <span className="absolute -bottom-1 left-0 h-px w-0 bg-flor-500 transition-all duration-200 group-hover:w-full" />
           </Link>
         ),
