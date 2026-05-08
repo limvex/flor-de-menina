@@ -1,4 +1,12 @@
-import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import {
+  IsArray,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+} from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 
 export class ListProductsDto {
@@ -26,13 +34,15 @@ export class ListPublicProductsDto {
     24;
   @IsString() @IsOptional() search?: string;
   @IsString() @IsOptional() categorySlug?: string;
-  @IsString()
+  @IsArray()
+  @IsString({ each: true })
   @IsOptional()
   @Transform(({ value }) =>
     Array.isArray(value) ? value : typeof value === 'string' ? [value] : [],
   )
   sizes?: string[];
-  @IsString()
+  @IsArray()
+  @IsString({ each: true })
   @IsOptional()
   @Transform(({ value }) =>
     Array.isArray(value) ? value : typeof value === 'string' ? [value] : [],

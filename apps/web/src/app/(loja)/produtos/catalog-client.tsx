@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+import { parseAsArrayOf, parseAsString, parseAsInteger, parseAsFloat, useQueryStates } from 'nuqs';
 import { ProductGrid } from '@/components/loja/product-grid';
 import { ProductGridSkeleton } from '@/components/loja/product-skeleton';
 import { EmptyState } from '@/components/loja/empty-state';
@@ -25,13 +26,29 @@ interface CatalogClientProps {
 const EMPTY_FACETS: Facets = { sizes: [], colors: [], priceMin: 0, priceMax: 1000 };
 
 export function CatalogClient({ initialCategorySlug, initialSearch }: CatalogClientProps) {
-  // Estado de filtros
-  const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
-  const [selectedColors, setSelectedColors] = useState<string[]>([]);
-  const [minPrice, setMinPrice] = useState<number | undefined>();
-  const [maxPrice, setMaxPrice] = useState<number | undefined>();
-  const [sort, setSort] = useState('relevance');
-  const [page, setPage] = useState(1);
+  // Filtros sincronizados com a URL via nuqs
+  const [filters, setFilters] = useQueryStates(
+    {
+      sizes: parseAsArrayOf(parseAsString).withDefault([]),
+      colors: parseAsArrayOf(parseAsString).withDefault([]),
+      minPrice: parseAsFloat,
+      maxPrice: parseAsFloat,
+      sort: parseAsString.withDefault('relevance'),
+      page: parseAsInteger.withDefault(1),
+    },
+    { history: 'replace' },
+  );
+
+  const { sizes: selectedSizes, colors: selectedColors, minPrice, maxPrice, sort, page } = filters;
+
+  // Handlers que resetam para página 1 ao mudar filtros
+  const setSelectedSizes = (v: string[]) => void setFilters({ sizes: v, page: 1 });
+  const setSelectedColors = (v: string[]) => void setFilters({ colors: v, page: 1 });
+  const handlePriceChange = (min?: number, max?: number) =>
+    void setFilters({ minPrice: min ?? null, maxPrice: max ?? null, page: 1 });
+  const setSort = (v: string) => void setFilters({ sort: v, page: 1 });
+
+  // Estado de UI que não precisa ir pra URL
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   // Estado de dados
@@ -55,8 +72,8 @@ export function CatalogClient({ initialCategorySlug, initialSearch }: CatalogCli
           categorySlug: initialCategorySlug,
           sizes: selectedSizes,
           colors: selectedColors,
-          minPrice,
-          maxPrice,
+          minPrice: minPrice ?? undefined,
+          maxPrice: maxPrice ?? undefined,
           sort,
         });
         setProducts((prev) => (append ? [...prev, ...data.items] : data.items));
@@ -73,8 +90,8 @@ export function CatalogClient({ initialCategorySlug, initialSearch }: CatalogCli
   );
 
   useEffect(() => {
-    setPage(1);
-    void fetchProducts(1, false);
+    void fetchProducts(page, false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchProducts]);
 
   useEffect(() => {
@@ -87,32 +104,29 @@ export function CatalogClient({ initialCategorySlug, initialSearch }: CatalogCli
 
   const handleLoadMore = () => {
     const next = page + 1;
-    setPage(next);
+    void setFilters({ page: next });
     void fetchProducts(next, true);
   };
 
-  const handlePriceChange = (min?: number, max?: number) => {
-    setMinPrice(min);
-    setMaxPrice(max);
-  };
-
-  const clearAll = () => {
-    setSelectedSizes([]);
-    setSelectedColors([]);
-    setMinPrice(undefined);
-    setMaxPrice(undefined);
-    setSort('relevance');
-  };
+  const clearAll = () =>
+    void setFilters({
+      sizes: [],
+      colors: [],
+      minPrice: null,
+      maxPrice: null,
+      sort: 'relevance',
+      page: 1,
+    });
 
   // Chips dos filtros ativos
   const activeFilters = [
     ...selectedSizes.map((s) => ({
       label: `Tamanho ${s}`,
-      onRemove: () => setSelectedSizes((prev) => prev.filter((x) => x !== s)),
+      onRemove: () => setSelectedSizes(selectedSizes.filter((x) => x !== s)),
     })),
     ...selectedColors.map((c) => ({
       label: c,
-      onRemove: () => setSelectedColors((prev) => prev.filter((x) => x !== c)),
+      onRemove: () => setSelectedColors(selectedColors.filter((x) => x !== c)),
     })),
     ...(minPrice != null || maxPrice != null
       ? [
@@ -151,8 +165,8 @@ export function CatalogClient({ initialCategorySlug, initialSearch }: CatalogCli
           facets={facets}
           selectedSizes={selectedSizes}
           selectedColors={selectedColors}
-          minPrice={minPrice}
-          maxPrice={maxPrice}
+          minPrice={minPrice ?? undefined}
+          maxPrice={maxPrice ?? undefined}
           onSizesChange={setSelectedSizes}
           onColorsChange={setSelectedColors}
           onPriceChange={handlePriceChange}
@@ -198,8 +212,8 @@ export function CatalogClient({ initialCategorySlug, initialSearch }: CatalogCli
         facets={facets}
         selectedSizes={selectedSizes}
         selectedColors={selectedColors}
-        minPrice={minPrice}
-        maxPrice={maxPrice}
+        minPrice={minPrice ?? undefined}
+        maxPrice={maxPrice ?? undefined}
         total={total}
         onSizesChange={setSelectedSizes}
         onColorsChange={setSelectedColors}
