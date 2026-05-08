@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { Search, X } from 'lucide-react';
 
 interface HeaderSearchProps {
@@ -9,6 +10,7 @@ interface HeaderSearchProps {
 
 export function HeaderSearch({ onClose }: HeaderSearchProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -24,8 +26,11 @@ export function HeaderSearch({ onClose }: HeaderSearchProps) {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const value = inputRef.current?.value ?? '';
-    console.log('busca:', value);
+    const value = inputRef.current?.value.trim() ?? '';
+    if (value) {
+      router.push(`/buscar?q=${encodeURIComponent(value)}`);
+      onClose();
+    }
   }
 
   return (
