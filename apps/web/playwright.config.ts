@@ -15,7 +15,13 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      testIgnore: /catalog-mobile\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 } },
+    },
+    {
+      name: 'mobile',
+      testMatch: /catalog-mobile\.spec\.ts$/,
+      use: { ...devices['Pixel 7'] },
     },
   ],
   webServer: {

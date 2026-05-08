@@ -76,7 +76,6 @@ export function FooterColumns() {
               className="inline-flex items-center gap-2 font-sans text-sm text-flor-500 transition-colors hover:text-flor-800"
               aria-label="Instagram da Flor de Menina"
             >
-              {/* TODO: confirmar handle real com a cliente */}
               <InstagramIcon className="h-5 w-5" />
               @lojaflordemenina
             </a>

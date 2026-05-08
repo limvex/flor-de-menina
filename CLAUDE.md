@@ -113,7 +113,7 @@ Atualize esta seção a cada task concluída. Use os emojis:
 | 9   | Categorias e tabelas de medidas       | ✅ Concluída                                | -                               | -   |
 | 10  | Produtos com variações + IA descrição | ✅ Concluída                                | `feat/10-produtos-variacoes-ia` | #47 |
 | 11  | Gestão de Estoque com baixa manual    | ✅ Concluída                                | `feat/11-stock-management`      | -   |
-| 12  | Catálogo, busca e filtros             | -                                           | -                               | -   |
+| 12  | Catálogo, busca e filtros             | ⏳ Aguardando testes                        | `feat/12-catalogo-busca`        | -   |
 | 13  | Página de Produto (PDP)               | -                                           | -                               | -   |
 | 14  | Carrinho com reserva de estoque       | -                                           | -                               | -   |
 | 15  | Wishlist e Conta do Cliente           | -                                           | -                               | -   |
@@ -142,6 +142,7 @@ Atualize esta seção a cada task concluída. Use os emojis:
 - `2026-05-06` — FIX: Node.js v25 carrega `.ts` nativamente (type stripping), incompatível com ts-node. Solução: compilar `@flor/database` para `dist/` com `tsc -p tsconfig.build.json`, criar symlink `dist/generated → src/generated`, adicionar `@prisma/client-runtime-utils` como dep direta. API rodada via `node --env-file=.env apps/api/dist/main.js`.
 - `2026-05-07` — Task #10 concluída e mergeada via PR #47. CRUD completo de produtos com R2 (3 tamanhos WebP via Sharp), IA via OpenRouter com mock fallback, admin com filtros/bulk/drag-drop/modal IA, 37 testes Jest + 15 E2E Playwright + 8 edge cases de erro, validação visual aprovada. OBS: Category schema mudou na Task #9 (measureTable→sizeChart, position→sortOrder); products.service adaptado.
 - `2026-05-07` — Task #11 (Gestão de Estoque) implementada. Módulo stock na API com endpoints IN/OUT/ADJUST/counter-sale, SELECT FOR UPDATE contra race condition, histórico paginado com filtros. Admin: /admin/estoque (lista com filtros/alertas), modal de movimentação com Controller (Select controlado), página de histórico por variante. `pnpm dev` agora sobe a API automaticamente via concurrently (nest build + node --watch). Movimentação automática por pedidos será integrada na Task #20.
+- `2026-05-07` — Task #12 (Catálogo) construída. Backend: listPublic refatorado com filtros avançados (categorySlug, sizes, colors, minPrice, maxPrice, sort 5 opções) + endpoint GET /products/public/facets. Frontend: ProductCard com hover/badges/swatches, filtros sidebar desktop + bottom sheet mobile (sem nuqs — estado local), sort, paginação "Carregar mais", quick view modal, skeleton, empty state, breadcrumbs. SEO: sitemap dinâmico, robots.txt. Bonus: header-search integrado com /buscar (removido console.log). Pendente: migration pg_trgm precisa ser aplicada quando banco subir (`docker compose up -d`).
 
 ## ⚠️ Coisas que NÃO podem ser esquecidas
 
@@ -160,6 +161,12 @@ Atualize esta seção a cada task concluída. Use os emojis:
 - **Slug único e auto-incremental**: se "vestido-midi" existe, cria "vestido-midi-2", etc.
 - **Login admin é `POST /auth/admin/login`** (não `/auth/login`).
 - **`slug` package é ESM** — usar a função `slugify()` local em `products.service.ts`.
+- **`/produtos` e `/categoria/[slug]` usam Server Component para metadata + CatalogClient (Client) para interatividade**
+- **Mobile: filtros em bottom sheet (`side="bottom"`)** — não drawer lateral
+- **Paginação "Carregar mais"** — não infinite scroll automático (decisão proposital)
+- **Quick view tem TODO(task-#14) e TODO(task-#15)** — integrar quando essas tasks chegarem
+- **Migration pg_trgm** criada em `packages/database/prisma/migrations/20260507220000_pg_trgm_search/` — aplicar com banco ativo via `pnpm --filter @flor/database db:migrate`
+- **Categorias API pública**: GET `/categories` (lista árvore) e GET `/categories/:slug` (detalhe) — usados no sitemap e na página de categoria
 
 ## 🔗 Links úteis
 

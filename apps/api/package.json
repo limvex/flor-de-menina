@@ -66,6 +66,7 @@
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
     "concurrently": "^9.2.1",
+    "dotenv": "^17.4.2",
     "eslint": "^8.0.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "^5.0.0",
@@ -92,11 +93,22 @@
         "ts-jest",
         {
           "tsconfig": {
-            "esModuleInterop": true
-          }
+            "esModuleInterop": true,
+            "allowJs": true
+          },
+          "isolatedModules": true
         }
       ]
     },
+    "transformIgnorePatterns": [
+      "node_modules/(?!(@paralleldrive/cuid2)/)"
+    ],
+    "moduleNameMapper": {
+      "^@paralleldrive/cuid2$": "<rootDir>/../test/cuid2-mock.js"
+    },
+    "setupFiles": [
+      "<rootDir>/../test/jest-setup.ts"
+    ],
     "collectCoverageFrom": [
       "**/*.(t|j)s"
     ],

@@ -124,48 +124,210 @@ export class ProductsService {
 
   async listPublic(dto: ListPublicProductsDto) {
     const page = dto.page ?? 1;
-    const limit = dto.limit ?? 20;
+    const limit = dto.limit ?? 24;
     const skip = (page - 1) * limit;
+
+    const variantWhere: Prisma.ProductVariantWhereInput = { isActive: true };
+    if (dto.sizes?.length) variantWhere.size = { in: dto.sizes };
+    if (dto.colors?.length) variantWhere.color = { in: dto.colors };
 
     const where: Prisma.ProductWhereInput = {
       isActive: true,
       deletedAt: null,
     };
 
-    if (dto.categoryId) where.categoryId = dto.categoryId;
+    if (dto.categorySlug) where.category = { slug: dto.categorySlug };
 
-    if (dto.search) {
+    // Busca textual com pg_trgm: tolerante a typos (ex: "vestdo" → "vestido").
+    // word_similarity casa termos curtos com substrings de textos maiores —
+    // mais robusto que similarity() puro para nome de produto + descrição longa.
+    // Para termos muito curtos (1 char) caímos em ILIKE puro pra não exigir trigram.
+    let trigramOrderIds: string[] | null = null;
+    const searchTerm = dto.search?.trim() ?? '';
+    if (searchTerm.length >= 2) {
+      const rows = await prisma.$queryRaw<Array<{ id: string }>>`
+        SELECT id FROM "Product"
+        WHERE "isActive" = true
+          AND "deletedAt" IS NULL
+          AND (
+            name ILIKE ${`%${searchTerm}%`}
+            OR description ILIKE ${`%${searchTerm}%`}
+            OR word_similarity(${searchTerm}, name) > 0.35
+            OR (description IS NOT NULL AND word_similarity(${searchTerm}, description) > 0.35)
+          )
+        ORDER BY
+          GREATEST(
+            word_similarity(${searchTerm}, name),
+            COALESCE(word_similarity(${searchTerm}, description), 0)
+          ) DESC
+        LIMIT 500
+      `;
+      const ids = rows.map((r) => r.id);
+      if (ids.length === 0) {
+        return { items: [], total: 0, page, limit, totalPages: 0 };
+      }
+      where.id = { in: ids };
+      trigramOrderIds = ids;
+    } else if (searchTerm.length === 1) {
       where.OR = [
-        { name: { contains: dto.search, mode: 'insensitive' } },
-        { slug: { contains: dto.search, mode: 'insensitive' } },
+        { name: { contains: searchTerm, mode: 'insensitive' } },
+        { description: { contains: searchTerm, mode: 'insensitive' } },
       ];
     }
 
-    const sortField = dto.sort ?? 'createdAt';
+    if (dto.minPrice != null || dto.maxPrice != null) {
+      where.basePrice = {};
+      if (dto.minPrice != null)
+        (where.basePrice as Prisma.DecimalFilter).gte = dto.minPrice;
+      if (dto.maxPrice != null)
+        (where.basePrice as Prisma.DecimalFilter).lte = dto.maxPrice;
+    }
 
-    const [items, total] = await Promise.all([
+    // Filtro de variantes — produto deve ter ao menos uma variante com tamanho/cor informados
+    if (dto.sizes?.length || dto.colors?.length) {
+      where.variants = { some: variantWhere };
+    }
+
+    // Ordenação. Quando há busca trigram com sort=relevance, ordenamos pelo ranking
+    // calculado no SQL raw (trigramOrderIds) — Prisma não tem operador de similarity nativo.
+    let orderBy: Prisma.ProductOrderByWithRelationInput | undefined = {
+      createdAt: 'desc',
+    };
+    if (dto.sort === 'newest') orderBy = { createdAt: 'desc' };
+    else if (dto.sort === 'price_asc') orderBy = { basePrice: 'asc' };
+    else if (dto.sort === 'price_desc') orderBy = { basePrice: 'desc' };
+    else if (dto.sort === 'relevance' && trigramOrderIds) {
+      // Vamos ordenar manualmente em memória após o fetch
+      orderBy = undefined;
+    }
+    // bestselling: padrão mais recente até Task #18+ trazer dados de pedido
+
+    // Considera "novidade" produtos criados nos últimos 30 dias.
+    const NEW_THRESHOLD_MS = 30 * 24 * 60 * 60 * 1000;
+
+    // Quando ordenamos por relevância trigram, buscamos todos os IDs candidatos
+    // (sem skip/take) e fatiamos manualmente para preservar a ordem do ranking.
+    const useTrigramOrder = orderBy === undefined && trigramOrderIds != null;
+
+    const [products, total] = await Promise.all([
       prisma.product.findMany({
         where,
-        skip,
-        take: limit,
-        orderBy: { [sortField]: 'desc' },
+        ...(useTrigramOrder ? {} : { skip, take: limit }),
+        ...(orderBy ? { orderBy } : {}),
         include: {
           category: { select: { id: true, name: true, slug: true } },
           images: {
             orderBy: { position: 'asc' },
             take: 2,
-            select: { id: true, thumbUrl: true, cardUrl: true, url: true },
+            select: { cardUrl: true, url: true },
           },
           variants: {
             where: { isActive: true },
-            select: { stock: true, price: true, size: true, color: true },
+            select: {
+              stock: true,
+              price: true,
+              size: true,
+              color: true,
+              colorHex: true,
+            },
           },
         },
       }),
       prisma.product.count({ where }),
     ]);
 
-    return { items, total, page, limit };
+    let pagedProducts = products;
+    if (useTrigramOrder && trigramOrderIds) {
+      const rank = new Map(trigramOrderIds.map((id, idx) => [id, idx]));
+      const sorted = [...products].sort(
+        (a, b) => (rank.get(a.id) ?? Infinity) - (rank.get(b.id) ?? Infinity),
+      );
+      pagedProducts = sorted.slice(skip, skip + limit);
+    }
+
+    const items = pagedProducts.map((p) => {
+      const totalStock = p.variants.reduce((sum, v) => sum + v.stock, 0);
+      const isOutOfStock = totalStock === 0;
+      // Mostra "Última peça" quando há 1 ou 2 unidades no estoque total.
+      const isLastPiece = !isOutOfStock && totalStock <= 2;
+      const isNew = Date.now() - p.createdAt.getTime() < NEW_THRESHOLD_MS;
+
+      // Cores únicas (nome + hex) para swatches acessíveis no frontend.
+      const colorHexSet = new Map<string, string>();
+      p.variants.forEach((v) => {
+        if (v.color) colorHexSet.set(v.color, v.colorHex ?? '#999999');
+      });
+      const availableColors = Array.from(colorHexSet.entries()).map(
+        ([name, hex]) => ({ name, hex }),
+      );
+
+      const primaryImage = p.images[0]?.cardUrl ?? p.images[0]?.url ?? null;
+      const secondaryImage = p.images[1]?.cardUrl ?? p.images[1]?.url ?? null;
+
+      return {
+        id: p.id,
+        slug: p.slug,
+        name: p.name,
+        basePrice: Number(p.basePrice),
+        compareAtPrice:
+          p.compareAtPrice != null ? Number(p.compareAtPrice) : null,
+        primaryImage,
+        secondaryImage,
+        isOutOfStock,
+        isLastPiece,
+        isNew,
+        availableColors,
+        category: p.category,
+        createdAt: p.createdAt,
+        updatedAt: p.updatedAt,
+      };
+    });
+
+    const totalPages = Math.ceil(total / limit);
+
+    return { items, total, page, limit, totalPages };
+  }
+
+  async getFacets(categorySlug?: string) {
+    const productWhere: Prisma.ProductWhereInput = {
+      isActive: true,
+      deletedAt: null,
+      ...(categorySlug && { category: { slug: categorySlug } }),
+    };
+
+    const [variants, priceAgg] = await Promise.all([
+      prisma.productVariant.findMany({
+        where: { isActive: true, product: productWhere },
+        select: { size: true, color: true, colorHex: true },
+      }),
+      prisma.product.aggregate({
+        where: productWhere,
+        _min: { basePrice: true },
+        _max: { basePrice: true },
+      }),
+    ]);
+
+    const sizeSet = new Set<string>();
+    variants.forEach((v) => {
+      if (v.size) sizeSet.add(v.size);
+    });
+    const sizes = Array.from(sizeSet).sort();
+
+    const colorsMap = new Map<string, string>();
+    variants.forEach((v) => {
+      if (v.color) colorsMap.set(v.color, v.colorHex ?? '#999999');
+    });
+    const colors = Array.from(colorsMap.entries()).map(([name, hex]) => ({
+      name,
+      hex,
+    }));
+
+    return {
+      sizes,
+      colors,
+      priceMin: Number(priceAgg._min.basePrice ?? 0),
+      priceMax: Number(priceAgg._max.basePrice ?? 1000),
+    };
   }
 
   async getById(id: string) {
