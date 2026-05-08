@@ -13,6 +13,7 @@ import { ProductsModule } from './products/products.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { AiModule } from './ai/ai.module';
 import { StockModule } from './modules/stock/stock.module';
+import { WishlistModule } from './wishlist/wishlist.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { StockModule } from './modules/stock/stock.module';
     UploadsModule,
     AiModule,
     StockModule,
+    WishlistModule,
   ],
   controllers: [AppController],
   providers: [

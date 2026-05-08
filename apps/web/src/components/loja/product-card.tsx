@@ -4,8 +4,12 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Heart } from 'lucide-react';
 import { useState } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
+import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { formatPrice } from '@/lib/format';
+import { useWishlist } from '@/hooks/use-wishlist';
+import { useAuth } from '@/lib/auth/use-auth';
 import type { PublicProduct } from '@/lib/api/products-public';
 
 interface ProductCardProps {
@@ -15,6 +19,10 @@ interface ProductCardProps {
 
 export function ProductCard({ product, onQuickView }: ProductCardProps) {
   const [hovered, setHovered] = useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
+  const { user } = useAuth();
+  const { isInWishlist, toggleWishlist, isLoading: wishlistLoading } = useWishlist(product.id);
   const displayImage =
     hovered && product.secondaryImage ? product.secondaryImage : product.primaryImage;
 
@@ -71,16 +79,29 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
             )}
           </div>
 
-          {/* Wishlist — TODO(task-#15): integrar módulo de wishlist */}
+          {/* Wishlist */}
           <button
             type="button"
-            aria-label="Adicionar à lista de desejos"
-            onClick={(e) => {
+            aria-label={isInWishlist ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+            disabled={wishlistLoading}
+            onClick={async (e) => {
               e.preventDefault();
+              if (!user) {
+                router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
+                return;
+              }
+              try {
+                await toggleWishlist({ productId: product.id });
+                toast.success(isInWishlist ? 'Removido dos favoritos' : 'Adicionado aos favoritos');
+              } catch {
+                toast.error('Erro ao atualizar favoritos');
+              }
             }}
-            className="absolute right-2 top-2 rounded-full bg-white/90 p-2 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-white"
+            className="absolute right-2 top-2 rounded-full bg-white/90 p-2 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-white disabled:opacity-50"
           >
-            <Heart className="h-4 w-4 text-stone-700" />
+            <Heart
+              className={`h-4 w-4 ${isInWishlist ? 'fill-stone-700 text-stone-700' : 'text-stone-700'}`}
+            />
           </button>
 
           {/* Quick view — TODO(task-#14): integrar carrinho no modal */}
