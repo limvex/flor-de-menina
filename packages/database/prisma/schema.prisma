@@ -176,9 +176,9 @@ model Product {
 model ProductImage {
   id        String   @id
   productId String
-  url       String   // full (1200x1600)
-  thumbUrl  String?  // thumb (200x200)
-  cardUrl   String?  // card (600x800)
+  url       String // full (1200x1600)
+  thumbUrl  String? // thumb (200x200)
+  cardUrl   String? // card (600x800)
   alt       String?
   position  Int      @default(0)
   createdAt DateTime @default(now())
@@ -233,7 +233,7 @@ enum StockMovementSource {
 }
 
 model StockMovement {
-  id          String               @id
+  id          String              @id
   variantId   String
   userId      String?
   type        StockMovementType
@@ -243,7 +243,7 @@ model StockMovement {
   stockAfter  Int
   reason      String?
   orderId     String?
-  createdAt   DateTime             @default(now())
+  createdAt   DateTime            @default(now())
 
   variant ProductVariant @relation(fields: [variantId], references: [id])
   user    User?          @relation(fields: [userId], references: [id])
