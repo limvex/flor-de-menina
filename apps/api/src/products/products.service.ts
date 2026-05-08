@@ -353,7 +353,7 @@ export class ProductsService {
         images: { orderBy: { position: 'asc' } },
         variants: {
           where: { isActive: true },
-          orderBy: { createdAt: 'asc' },
+          orderBy: [{ size: 'asc' }, { color: 'asc' }],
         },
       },
     });
@@ -362,7 +362,74 @@ export class ProductsService {
       throw new NotFoundException('Produto não encontrado');
     }
 
-    return product;
+    const totalStock = product.variants.reduce((s, v) => s + v.stock, 0);
+    const isOutOfStock = totalStock === 0;
+    const isLastPiece = !isOutOfStock && totalStock <= 2;
+    const NEW_THRESHOLD_MS = 30 * 24 * 60 * 60 * 1000;
+    const isNew = Date.now() - product.createdAt.getTime() < NEW_THRESHOLD_MS;
+
+    // Busca 4 produtos relacionados (mesma categoria, excluindo o atual)
+    const relatedRaw = await prisma.product.findMany({
+      where: {
+        categoryId: product.categoryId,
+        id: { not: product.id },
+        isActive: true,
+        deletedAt: null,
+      },
+      take: 4,
+      orderBy: [{ isFeatured: 'desc' }, { createdAt: 'desc' }],
+      include: {
+        images: {
+          take: 2,
+          orderBy: { position: 'asc' },
+          select: { cardUrl: true, url: true },
+        },
+        variants: {
+          where: { isActive: true },
+          select: { stock: true, color: true, colorHex: true },
+        },
+        category: { select: { name: true, slug: true } },
+      },
+    });
+
+    const relatedProducts = relatedRaw.map((p) => {
+      const stock = p.variants.reduce((s, v) => s + v.stock, 0);
+      const colorHexSet = new Map<string, string>();
+      p.variants.forEach((v) => {
+        if (v.color) colorHexSet.set(v.color, v.colorHex ?? '#999999');
+      });
+      const availableColors = Array.from(colorHexSet.entries()).map(
+        ([name, hex]) => ({ name, hex }),
+      );
+      return {
+        id: p.id,
+        slug: p.slug,
+        name: p.name,
+        basePrice: Number(p.basePrice),
+        compareAtPrice:
+          p.compareAtPrice != null ? Number(p.compareAtPrice) : null,
+        primaryImage: p.images[0]?.cardUrl ?? p.images[0]?.url ?? null,
+        secondaryImage: p.images[1]?.cardUrl ?? p.images[1]?.url ?? null,
+        availableColors,
+        totalStock: stock,
+        isOutOfStock: stock === 0,
+        isLastPiece: stock > 0 && stock <= 2,
+        isNew: Date.now() - p.createdAt.getTime() < NEW_THRESHOLD_MS,
+        category: p.category,
+      };
+    });
+
+    return {
+      ...product,
+      basePrice: Number(product.basePrice),
+      compareAtPrice:
+        product.compareAtPrice != null ? Number(product.compareAtPrice) : null,
+      totalStock,
+      isOutOfStock,
+      isLastPiece,
+      isNew,
+      relatedProducts,
+    };
   }
 
   async create(dto: CreateProductDto) {
