@@ -114,7 +114,7 @@ Atualize esta seção a cada task concluída. Use os emojis:
 | 10  | Produtos com variações + IA descrição | ✅ Concluída                                | `feat/10-produtos-variacoes-ia` | #47 |
 | 11  | Gestão de Estoque com baixa manual    | ✅ Concluída                                | `feat/11-stock-management`      | -   |
 | 12  | Catálogo, busca e filtros             | ✅ Concluída                                | `feat/12-catalogo-busca`        | #50 |
-| 13  | Página de Produto (PDP)               | -                                           | -                               | -   |
+| 13  | Página de Produto (PDP)               | ⏳ Aguardando testes (Cursor)               | `feat/13-pdp-produto`           | -   |
 | 14  | Carrinho com reserva de estoque       | -                                           | -                               | -   |
 | 15  | Wishlist e Conta do Cliente           | -                                           | -                               | -   |
 | 16  | Checkout multi-step                   | -                                           | -                               | -   |
@@ -144,6 +144,7 @@ Atualize esta seção a cada task concluída. Use os emojis:
 - `2026-05-07` — Task #11 (Gestão de Estoque) implementada. Módulo stock na API com endpoints IN/OUT/ADJUST/counter-sale, SELECT FOR UPDATE contra race condition, histórico paginado com filtros. Admin: /admin/estoque (lista com filtros/alertas), modal de movimentação com Controller (Select controlado), página de histórico por variante. `pnpm dev` agora sobe a API automaticamente via concurrently (nest build + node --watch). Movimentação automática por pedidos será integrada na Task #20.
 - `2026-05-07` — Task #12 (Catálogo) construída. Backend: listPublic refatorado com filtros avançados (categorySlug, sizes, colors, minPrice, maxPrice, sort 5 opções) + endpoint GET /products/public/facets. Frontend: ProductCard com hover/badges/swatches, filtros sidebar desktop + bottom sheet mobile (sem nuqs — estado local), sort, paginação "Carregar mais", quick view modal, skeleton, empty state, breadcrumbs. SEO: sitemap dinâmico, robots.txt. Bonus: header-search integrado com /buscar (removido console.log). Pendente: migration pg_trgm precisa ser aplicada quando banco subir (`docker compose up -d`).
 - `2026-05-09` — Task #12 (Catálogo) concluída e mergeada via PR #50. Backend com pg_trgm typo-tolerant + filtros + facets. Frontend com URL state via nuqs, filter chips, quick view e badges. SEO com sitemap dinâmico e JSON-LD ItemList. Validação final: 67 Vitest + 79 Playwright + 9 bugs corrigidos. TODOs não bloqueantes para Task #25: Lighthouse em produção, a11y completo e color-contrast.
+- `2026-05-09` — Task #13 (PDP) construída. Galeria com swipe mobile (Embla) + zoom desktop, variant selector com swatches de cor e chips de tamanho, sticky mobile CTA, calculadora de frete placeholder, wishlist FUNCIONAL (backend CRUD + hook React Query + botão PDP + heart card), Schema.org Product, OG/Twitter cards, "Você também pode gostar" com produtos da mesma categoria, reviews placeholder estruturado, indicador "Restam X peças", breadcrumbs, tabs Descrição/Detalhes/Trocas. Smoke test OK (200/404/401). Próximo: testes automatizados.
 
 ## ⚠️ Coisas que NÃO podem ser esquecidas
 
@@ -171,6 +172,15 @@ Atualize esta seção a cada task concluída. Use os emojis:
 - **pg_trgm extension é OBRIGATÓRIA** — a busca typo-tolerant quebra sem ela; garantir migration em ambientes novos
 - **Filtros sincronizam com URL via nuqs** (`useQueryStates({ history: 'replace' })`) — mudanças devem ser compartilháveis
 - **Sitemap consome `/products/public` e `/categories` paginado** — manter API pública acessível em produção
+- **Wishlist funcional na PDP e no card** — backend CRUD completo (idempotente). Página /conta/favoritos fica pra Task #15.
+- **Add to cart é PLACEHOLDER** — toast funciona mas não persiste (TODO task-#14)
+- **Cálculo de frete é PLACEHOLDER** — retorna mock fixo (TODO task-#17)
+- **Reviews é placeholder** — seção visível mas vazia (TODO task-#21)
+- **Compre junto** — 4 produtos da mesma categoria, orderBy isFeatured desc + createdAt desc
+- **Schema.org Product** — InStock/OutOfStock conforme totalStock
+- **Sticky mobile CTA** — fixo no rodapé só em mobile (md:hidden)
+- **`/produto/[slug]`** — Server Component com metadata dinâmica + Schema.org + PdpClient como Client Component
+- **Guard de wishlist**: `CustomerJwtGuard` (não `CustomerJwtAuthGuard`) — classe se chama `CustomerJwtGuard` em `auth/customer/customer-jwt.guard.ts`
 
 ## 🔗 Links úteis
 
