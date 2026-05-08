@@ -51,11 +51,14 @@ export function QuickViewModal({ product, onClose }: QuickViewModalProps) {
                   Cores disponíveis
                 </p>
                 <div className="flex gap-2">
-                  {product.availableColors.map((color, i) => (
+                  {product.availableColors.map((color) => (
                     <span
-                      key={i}
+                      key={color.name}
                       className="h-6 w-6 rounded-full border border-stone-200"
-                      style={{ backgroundColor: color }}
+                      style={{ backgroundColor: color.hex }}
+                      title={color.name}
+                      aria-label={color.name}
+                      role="img"
                     />
                   ))}
                 </div>

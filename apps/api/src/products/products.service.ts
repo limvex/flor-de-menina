@@ -138,10 +138,40 @@ export class ProductsService {
 
     if (dto.categorySlug) where.category = { slug: dto.categorySlug };
 
-    if (dto.search) {
+    // Busca textual com pg_trgm: tolerante a typos (ex: "vestdo" → "vestido").
+    // word_similarity casa termos curtos com substrings de textos maiores —
+    // mais robusto que similarity() puro para nome de produto + descrição longa.
+    // Para termos muito curtos (1 char) caímos em ILIKE puro pra não exigir trigram.
+    let trigramOrderIds: string[] | null = null;
+    const searchTerm = dto.search?.trim() ?? '';
+    if (searchTerm.length >= 2) {
+      const rows = await prisma.$queryRaw<Array<{ id: string }>>`
+        SELECT id FROM "Product"
+        WHERE "isActive" = true
+          AND "deletedAt" IS NULL
+          AND (
+            name ILIKE ${`%${searchTerm}%`}
+            OR description ILIKE ${`%${searchTerm}%`}
+            OR word_similarity(${searchTerm}, name) > 0.35
+            OR (description IS NOT NULL AND word_similarity(${searchTerm}, description) > 0.35)
+          )
+        ORDER BY
+          GREATEST(
+            word_similarity(${searchTerm}, name),
+            COALESCE(word_similarity(${searchTerm}, description), 0)
+          ) DESC
+        LIMIT 500
+      `;
+      const ids = rows.map((r) => r.id);
+      if (ids.length === 0) {
+        return { items: [], total: 0, page, limit, totalPages: 0 };
+      }
+      where.id = { in: ids };
+      trigramOrderIds = ids;
+    } else if (searchTerm.length === 1) {
       where.OR = [
-        { name: { contains: dto.search, mode: 'insensitive' } },
-        { description: { contains: dto.search, mode: 'insensitive' } },
+        { name: { contains: searchTerm, mode: 'insensitive' } },
+        { description: { contains: searchTerm, mode: 'insensitive' } },
       ];
     }
 
@@ -158,21 +188,32 @@ export class ProductsService {
       where.variants = { some: variantWhere };
     }
 
-    // Ordenação
-    let orderBy: Prisma.ProductOrderByWithRelationInput = { createdAt: 'desc' };
+    // Ordenação. Quando há busca trigram com sort=relevance, ordenamos pelo ranking
+    // calculado no SQL raw (trigramOrderIds) — Prisma não tem operador de similarity nativo.
+    let orderBy: Prisma.ProductOrderByWithRelationInput | undefined = {
+      createdAt: 'desc',
+    };
     if (dto.sort === 'newest') orderBy = { createdAt: 'desc' };
     else if (dto.sort === 'price_asc') orderBy = { basePrice: 'asc' };
     else if (dto.sort === 'price_desc') orderBy = { basePrice: 'desc' };
-    // relevance e bestselling: padrão mais recente até Task #18+ trazer dados de pedido
+    else if (dto.sort === 'relevance' && trigramOrderIds) {
+      // Vamos ordenar manualmente em memória após o fetch
+      orderBy = undefined;
+    }
+    // bestselling: padrão mais recente até Task #18+ trazer dados de pedido
 
-    const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+    // Considera "novidade" produtos criados nos últimos 30 dias.
+    const NEW_THRESHOLD_MS = 30 * 24 * 60 * 60 * 1000;
+
+    // Quando ordenamos por relevância trigram, buscamos todos os IDs candidatos
+    // (sem skip/take) e fatiamos manualmente para preservar a ordem do ranking.
+    const useTrigramOrder = orderBy === undefined && trigramOrderIds != null;
 
     const [products, total] = await Promise.all([
       prisma.product.findMany({
         where,
-        skip,
-        take: limit,
-        orderBy,
+        ...(useTrigramOrder ? {} : { skip, take: limit }),
+        ...(orderBy ? { orderBy } : {}),
         include: {
           category: { select: { id: true, name: true, slug: true } },
           images: {
@@ -195,18 +236,30 @@ export class ProductsService {
       prisma.product.count({ where }),
     ]);
 
-    const items = products.map((p) => {
+    let pagedProducts = products;
+    if (useTrigramOrder && trigramOrderIds) {
+      const rank = new Map(trigramOrderIds.map((id, idx) => [id, idx]));
+      const sorted = [...products].sort(
+        (a, b) => (rank.get(a.id) ?? Infinity) - (rank.get(b.id) ?? Infinity),
+      );
+      pagedProducts = sorted.slice(skip, skip + limit);
+    }
+
+    const items = pagedProducts.map((p) => {
       const totalStock = p.variants.reduce((sum, v) => sum + v.stock, 0);
       const isOutOfStock = totalStock === 0;
-      const isLastPiece = !isOutOfStock && totalStock === 1;
-      const isNew = Date.now() - p.createdAt.getTime() < ONE_WEEK_MS;
+      // Mostra "Última peça" quando há 1 ou 2 unidades no estoque total.
+      const isLastPiece = !isOutOfStock && totalStock <= 2;
+      const isNew = Date.now() - p.createdAt.getTime() < NEW_THRESHOLD_MS;
 
-      // Hexadecimais únicos para swatches no frontend
+      // Cores únicas (nome + hex) para swatches acessíveis no frontend.
       const colorHexSet = new Map<string, string>();
       p.variants.forEach((v) => {
-        if (v.color && v.colorHex) colorHexSet.set(v.color, v.colorHex);
+        if (v.color) colorHexSet.set(v.color, v.colorHex ?? '#999999');
       });
-      const availableColors = Array.from(colorHexSet.values());
+      const availableColors = Array.from(colorHexSet.entries()).map(
+        ([name, hex]) => ({ name, hex }),
+      );
 
       const primaryImage = p.images[0]?.cardUrl ?? p.images[0]?.url ?? null;
       const secondaryImage = p.images[1]?.cardUrl ?? p.images[1]?.url ?? null;

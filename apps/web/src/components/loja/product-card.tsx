@@ -118,12 +118,15 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
             </span>
           </div>
           {product.availableColors.length > 0 && (
-            <div className="flex gap-1 pt-1">
-              {product.availableColors.slice(0, 4).map((color, i) => (
+            <div className="flex gap-1 pt-1" data-testid="card-color-swatches">
+              {product.availableColors.slice(0, 4).map((color) => (
                 <span
-                  key={i}
+                  key={color.name}
                   className="h-3 w-3 rounded-full border border-stone-200"
-                  style={{ backgroundColor: color }}
+                  style={{ backgroundColor: color.hex }}
+                  title={color.name}
+                  aria-label={color.name}
+                  role="img"
                 />
               ))}
             </div>

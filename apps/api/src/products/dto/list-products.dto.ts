@@ -50,8 +50,22 @@ export class ListPublicProductsDto {
   colors?: string[];
   @IsOptional() @Type(() => Number) minPrice?: number;
   @IsOptional() @Type(() => Number) maxPrice?: number;
-  @IsEnum(['relevance', 'newest', 'price_asc', 'price_desc', 'bestselling'])
+  // Em vez de @IsEnum estrito (que rejeita valores inválidos com 400), normalizamos
+  // valores desconhecidos para 'relevance' — assim URLs adulteradas não quebram o catálogo.
   @IsOptional()
+  @IsString()
+  @Transform(({ value }) => {
+    const allowed = [
+      'relevance',
+      'newest',
+      'price_asc',
+      'price_desc',
+      'bestselling',
+    ];
+    return typeof value === 'string' && allowed.includes(value)
+      ? value
+      : 'relevance';
+  })
   sort?: 'relevance' | 'newest' | 'price_asc' | 'price_desc' | 'bestselling' =
     'relevance';
 }

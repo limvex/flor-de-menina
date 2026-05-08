@@ -1,5 +1,10 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3333';
 
+export interface PublicProductColor {
+  name: string;
+  hex: string;
+}
+
 export interface PublicProduct {
   id: string;
   slug: string;
@@ -11,7 +16,7 @@ export interface PublicProduct {
   isOutOfStock: boolean;
   isLastPiece: boolean;
   isNew: boolean;
-  availableColors: string[];
+  availableColors: PublicProductColor[];
   category: { id: string; name: string; slug: string };
   createdAt: string;
   updatedAt: string;
