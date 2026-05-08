@@ -2,33 +2,48 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
-interface MeasureTableData {
-  cols: string[];
-  rows: string[][];
+interface SizeChartData {
+  title: string;
+  columnHeader: string;
+  columns: string[];
+  rows: { label: string; values: string[] }[];
 }
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  measureTable: MeasureTableData | null;
+  measureTable: SizeChartData | null | unknown;
   categoryName: string;
 }
 
+function isValidSizeChart(data: unknown): data is SizeChartData {
+  if (!data || typeof data !== 'object') return false;
+  const d = data as Record<string, unknown>;
+  return Array.isArray(d.columns) && Array.isArray(d.rows);
+}
+
 export function MeasureTableModal({ open, onOpenChange, measureTable, categoryName }: Props) {
+  const chart = isValidSizeChart(measureTable) ? measureTable : null;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Tabela de medidas — {categoryName}</DialogTitle>
+          <DialogTitle>
+            {chart?.title ?? 'Tabela de medidas'} — {categoryName}
+          </DialogTitle>
         </DialogHeader>
-        {!measureTable ? (
+        {!chart ? (
           <p className="text-stone-600">Tabela de medidas indisponível para esta categoria.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-stone-200">
-                  {measureTable.cols.map((col, i) => (
+                  <th className="px-3 py-2 text-left font-medium text-stone-800">
+                    {chart.columnHeader}
+                  </th>
+                  {chart.columns.map((col, i) => (
                     <th key={i} className="px-3 py-2 text-left font-medium text-stone-800">
                       {col}
                     </th>
@@ -36,9 +51,10 @@ export function MeasureTableModal({ open, onOpenChange, measureTable, categoryNa
                 </tr>
               </thead>
               <tbody>
-                {measureTable.rows.map((row, i) => (
+                {chart.rows.map((row, i) => (
                   <tr key={i} className="border-b border-stone-100">
-                    {row.map((cell, j) => (
+                    <td className="px-3 py-2 font-medium text-stone-700">{row.label}</td>
+                    {row.values.map((cell, j) => (
                       <td key={j} className="px-3 py-2 text-stone-700">
                         {cell}
                       </td>

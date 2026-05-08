@@ -8,6 +8,7 @@ import { useProducts, useProductStats, useCategories } from '@/hooks/use-product
 import { ProductsFilters } from './components/products-filters';
 import { ProductsTable } from './components/products-table';
 import { type ListProductsParams } from '@/lib/api/products';
+import { AdminPageHeader } from '@/components/admin/admin-page-header';
 
 function StatCard({ label, value }: { label: string; value: number }) {
   return (
@@ -34,19 +35,19 @@ export default function ProdutosPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-serif text-2xl text-flor-800">Produtos</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Gerencie o catálogo da loja</p>
-        </div>
-        <Link
-          href="/admin/produtos/novo"
-          className="inline-flex items-center gap-2 bg-flor-600 hover:bg-flor-700 text-white text-sm font-medium px-4 py-2 rounded-md transition-colors"
-        >
-          <Plus size={16} />
-          Novo produto
-        </Link>
-      </div>
+      <AdminPageHeader
+        title="Produtos"
+        description="Gerencie o catálogo da loja"
+        actions={
+          <Link
+            href="/admin/produtos/novo"
+            className="inline-flex items-center gap-2 bg-flor-600 hover:bg-flor-700 text-white text-sm font-medium px-4 py-2 rounded-md transition-colors"
+          >
+            <Plus size={16} />
+            Novo produto
+          </Link>
+        }
+      />
 
       {stats && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

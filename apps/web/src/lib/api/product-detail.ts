@@ -26,8 +26,10 @@ export interface ProductCategory {
   name: string;
   slug: string;
   sizeChart: {
-    cols: string[];
-    rows: string[][];
+    title: string;
+    columnHeader: string;
+    columns: string[];
+    rows: { label: string; values: string[] }[];
   } | null;
 }
 

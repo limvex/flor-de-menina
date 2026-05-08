@@ -7,10 +7,13 @@ import { NavMenu } from './nav-menu';
 import { MobileDrawer } from './mobile-drawer';
 import { CartBadge } from './cart-badge';
 import { HeaderSearch } from './header-search';
+import { MiniCart } from './mini-cart';
+import { useCart } from '@/contexts/cart-context';
 
 export function Header() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const { itemCount, openCart } = useCart();
 
   return (
     <header className="sticky top-0 z-40 border-b border-flor-100 bg-background/95 backdrop-blur-sm">
@@ -69,7 +72,7 @@ export function Header() {
             <User className="h-5 w-5" />
           </Link>
 
-          <CartBadge count={0} />
+          <CartBadge count={itemCount} onClick={openCart} />
         </div>
 
         {/* Search overlay */}
@@ -78,6 +81,9 @@ export function Header() {
 
       {/* Mobile navigation drawer */}
       <MobileDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+
+      {/* Mini-cart drawer */}
+      <MiniCart />
     </header>
   );
 }
