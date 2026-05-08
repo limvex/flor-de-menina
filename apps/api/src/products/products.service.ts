@@ -124,48 +124,157 @@ export class ProductsService {
 
   async listPublic(dto: ListPublicProductsDto) {
     const page = dto.page ?? 1;
-    const limit = dto.limit ?? 20;
+    const limit = dto.limit ?? 24;
     const skip = (page - 1) * limit;
+
+    const variantWhere: Prisma.ProductVariantWhereInput = { isActive: true };
+    if (dto.sizes?.length) variantWhere.size = { in: dto.sizes };
+    if (dto.colors?.length) variantWhere.color = { in: dto.colors };
 
     const where: Prisma.ProductWhereInput = {
       isActive: true,
       deletedAt: null,
     };
 
-    if (dto.categoryId) where.categoryId = dto.categoryId;
+    if (dto.categorySlug) where.category = { slug: dto.categorySlug };
 
     if (dto.search) {
       where.OR = [
         { name: { contains: dto.search, mode: 'insensitive' } },
-        { slug: { contains: dto.search, mode: 'insensitive' } },
+        { description: { contains: dto.search, mode: 'insensitive' } },
       ];
     }
 
-    const sortField = dto.sort ?? 'createdAt';
+    if (dto.minPrice != null || dto.maxPrice != null) {
+      where.basePrice = {};
+      if (dto.minPrice != null)
+        (where.basePrice as Prisma.DecimalFilter).gte = dto.minPrice;
+      if (dto.maxPrice != null)
+        (where.basePrice as Prisma.DecimalFilter).lte = dto.maxPrice;
+    }
 
-    const [items, total] = await Promise.all([
+    // Filtro de variantes — produto deve ter ao menos uma variante com tamanho/cor informados
+    if (dto.sizes?.length || dto.colors?.length) {
+      where.variants = { some: variantWhere };
+    }
+
+    // Ordenação
+    let orderBy: Prisma.ProductOrderByWithRelationInput = { createdAt: 'desc' };
+    if (dto.sort === 'newest') orderBy = { createdAt: 'desc' };
+    else if (dto.sort === 'price_asc') orderBy = { basePrice: 'asc' };
+    else if (dto.sort === 'price_desc') orderBy = { basePrice: 'desc' };
+    // relevance e bestselling: padrão mais recente até Task #18+ trazer dados de pedido
+
+    const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+    const [products, total] = await Promise.all([
       prisma.product.findMany({
         where,
         skip,
         take: limit,
-        orderBy: { [sortField]: 'desc' },
+        orderBy,
         include: {
           category: { select: { id: true, name: true, slug: true } },
           images: {
             orderBy: { position: 'asc' },
             take: 2,
-            select: { id: true, thumbUrl: true, cardUrl: true, url: true },
+            select: { cardUrl: true, url: true },
           },
           variants: {
             where: { isActive: true },
-            select: { stock: true, price: true, size: true, color: true },
+            select: {
+              stock: true,
+              price: true,
+              size: true,
+              color: true,
+              colorHex: true,
+            },
           },
         },
       }),
       prisma.product.count({ where }),
     ]);
 
-    return { items, total, page, limit };
+    const items = products.map((p) => {
+      const totalStock = p.variants.reduce((sum, v) => sum + v.stock, 0);
+      const isOutOfStock = totalStock === 0;
+      const isLastPiece = !isOutOfStock && totalStock === 1;
+      const isNew = Date.now() - p.createdAt.getTime() < ONE_WEEK_MS;
+
+      // Hexadecimais únicos para swatches no frontend
+      const colorHexSet = new Map<string, string>();
+      p.variants.forEach((v) => {
+        if (v.color && v.colorHex) colorHexSet.set(v.color, v.colorHex);
+      });
+      const availableColors = Array.from(colorHexSet.values());
+
+      const primaryImage = p.images[0]?.cardUrl ?? p.images[0]?.url ?? null;
+      const secondaryImage = p.images[1]?.cardUrl ?? p.images[1]?.url ?? null;
+
+      return {
+        id: p.id,
+        slug: p.slug,
+        name: p.name,
+        basePrice: Number(p.basePrice),
+        compareAtPrice:
+          p.compareAtPrice != null ? Number(p.compareAtPrice) : null,
+        primaryImage,
+        secondaryImage,
+        isOutOfStock,
+        isLastPiece,
+        isNew,
+        availableColors,
+        category: p.category,
+        createdAt: p.createdAt,
+        updatedAt: p.updatedAt,
+      };
+    });
+
+    const totalPages = Math.ceil(total / limit);
+
+    return { items, total, page, limit, totalPages };
+  }
+
+  async getFacets(categorySlug?: string) {
+    const productWhere: Prisma.ProductWhereInput = {
+      isActive: true,
+      deletedAt: null,
+      ...(categorySlug && { category: { slug: categorySlug } }),
+    };
+
+    const [variants, priceAgg] = await Promise.all([
+      prisma.productVariant.findMany({
+        where: { isActive: true, product: productWhere },
+        select: { size: true, color: true, colorHex: true },
+      }),
+      prisma.product.aggregate({
+        where: productWhere,
+        _min: { basePrice: true },
+        _max: { basePrice: true },
+      }),
+    ]);
+
+    const sizeSet = new Set<string>();
+    variants.forEach((v) => {
+      if (v.size) sizeSet.add(v.size);
+    });
+    const sizes = Array.from(sizeSet).sort();
+
+    const colorsMap = new Map<string, string>();
+    variants.forEach((v) => {
+      if (v.color) colorsMap.set(v.color, v.colorHex ?? '#999999');
+    });
+    const colors = Array.from(colorsMap.entries()).map(([name, hex]) => ({
+      name,
+      hex,
+    }));
+
+    return {
+      sizes,
+      colors,
+      priceMin: Number(priceAgg._min.basePrice ?? 0),
+      priceMax: Number(priceAgg._max.basePrice ?? 1000),
+    };
   }
 
   async getById(id: string) {

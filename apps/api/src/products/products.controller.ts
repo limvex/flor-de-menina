@@ -30,6 +30,13 @@ export class ProductsController {
 
   // ── Público ──────────────────────────────────────────────────
 
+  // IMPORTANTE: /public/facets deve vir ANTES de /public/:slug para não ser capturado como param
+  @Get('public/facets')
+  @Public()
+  getFacets(@Query('categorySlug') categorySlug?: string) {
+    return this.productsService.getFacets(categorySlug);
+  }
+
   @Get('public')
   @Public()
   listPublic(@Query() dto: ListPublicProductsDto) {
