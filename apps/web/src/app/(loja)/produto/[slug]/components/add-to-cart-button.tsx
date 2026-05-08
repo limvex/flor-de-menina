@@ -1,14 +1,33 @@
 'use client';
 
-import { ShoppingBag } from 'lucide-react';
+import { useState } from 'react';
+import { Loader2, ShoppingBag } from 'lucide-react';
+import { toast } from 'sonner';
+import { useCart } from '@/contexts/cart-context';
+import type { LocalCartItemSnapshot } from '@/lib/cart-storage';
 
 interface Props {
   variantId: string | null;
   isOutOfStock: boolean;
-  onAddToCart: () => void;
+  snapshot?: LocalCartItemSnapshot;
 }
 
-export function AddToCartButton({ variantId, isOutOfStock, onAddToCart }: Props) {
+export function AddToCartButton({ variantId, isOutOfStock, snapshot }: Props) {
+  const { addItem } = useCart();
+  const [loading, setLoading] = useState(false);
+
+  async function handleAdd() {
+    if (!variantId) return;
+    setLoading(true);
+    try {
+      await addItem(variantId, 1, snapshot);
+    } catch {
+      toast.error('Ops! Esse item não está mais disponível');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   if (isOutOfStock) {
     return (
       <button
@@ -33,11 +52,21 @@ export function AddToCartButton({ variantId, isOutOfStock, onAddToCart }: Props)
 
   return (
     <button
-      onClick={onAddToCart}
-      className="w-full h-14 text-base font-semibold rounded bg-stone-900 hover:bg-stone-800 text-white uppercase tracking-wide flex items-center justify-center gap-2 transition-colors"
+      onClick={handleAdd}
+      disabled={loading}
+      className="w-full h-14 text-base font-semibold rounded bg-stone-900 hover:bg-stone-800 text-white uppercase tracking-wide flex items-center justify-center gap-2 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
     >
-      <ShoppingBag className="h-5 w-5" />
-      Adicionar ao carrinho
+      {loading ? (
+        <>
+          <Loader2 className="h-5 w-5 animate-spin" />
+          Adicionando...
+        </>
+      ) : (
+        <>
+          <ShoppingBag className="h-5 w-5" />
+          Adicionar à sacola
+        </>
+      )}
     </button>
   );
 }

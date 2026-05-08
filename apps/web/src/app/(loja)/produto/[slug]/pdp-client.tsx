@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { toast } from 'sonner';
 import { Breadcrumbs } from '@/components/loja/breadcrumbs';
 import { ProductGallery } from './components/product-gallery';
 import { VariantSelector } from './components/variant-selector';
@@ -17,6 +16,7 @@ import { ReviewsSection } from './components/reviews-section';
 import { StockIndicator } from './components/stock-indicator';
 import { StickyMobileCta } from './components/sticky-mobile-cta';
 import type { ProductDetail, ProductVariant } from '@/lib/api/product-detail';
+import type { LocalCartItemSnapshot } from '@/lib/cart-storage';
 
 interface Props {
   product: ProductDetail;
@@ -35,11 +35,17 @@ export function PdpClient({ product, isAuthenticated }: Props) {
   const currentPrice = selectedVariant?.price ?? product.basePrice ?? 0;
   const stockOfSelected = selectedVariant?.stock ?? 0;
 
-  const handleAddToCart = () => {
-    if (!selectedVariantId) return;
-    // TODO(task-#14): POST /cart com { productId, variantId, quantity: 1 }
-    toast.success('Produto adicionado ao carrinho! (em breve)');
-  };
+  const cartSnapshot: LocalCartItemSnapshot | undefined = selectedVariantId
+    ? {
+        productName: product.name,
+        productSlug: product.slug,
+        productImage: product.images?.[0]?.cardUrl ?? product.images?.[0]?.url ?? '',
+        variantPrice: currentPrice,
+        variantSize: selectedVariant?.size ?? null,
+        variantColor: selectedVariant?.color ?? null,
+        variantStock: stockOfSelected,
+      }
+    : undefined;
 
   const breadcrumbItems = [
     { label: 'Produtos', href: '/produtos' },
@@ -96,7 +102,7 @@ export function PdpClient({ product, isAuthenticated }: Props) {
             <AddToCartButton
               variantId={selectedVariantId}
               isOutOfStock={product.isOutOfStock ?? false}
-              onAddToCart={handleAddToCart}
+              snapshot={cartSnapshot}
             />
             <div className="flex gap-2">
               <div className="flex-1">
@@ -141,7 +147,7 @@ export function PdpClient({ product, isAuthenticated }: Props) {
         price={currentPrice}
         variantId={selectedVariantId}
         isOutOfStock={product.isOutOfStock ?? false}
-        onAddToCart={handleAddToCart}
+        snapshot={cartSnapshot}
       />
     </div>
   );

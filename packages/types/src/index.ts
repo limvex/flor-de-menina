@@ -24,6 +24,16 @@ export type {
   CategoryPublicDto,
 } from './category.schema';
 export { LOW_STOCK_THRESHOLD } from './stock.schema';
+export { FREE_SHIPPING_THRESHOLD, CART_RESERVATION_MINUTES } from './cart.schema';
+export type {
+  CartResponse,
+  CartItemResponse,
+  CartItemProductInfo,
+  CartItemVariantInfo,
+  MergeCartResponse,
+  MergeDiscardedItem,
+  LocalCartItem,
+} from './cart.schema';
 export type {
   StockMovementType,
   StockMovementSource,

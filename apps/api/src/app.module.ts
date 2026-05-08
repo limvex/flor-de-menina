@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { AppController } from './app.controller';
@@ -14,11 +15,13 @@ import { UploadsModule } from './uploads/uploads.module';
 import { AiModule } from './ai/ai.module';
 import { StockModule } from './modules/stock/stock.module';
 import { WishlistModule } from './wishlist/wishlist.module';
+import { CartModule } from './modules/cart/cart.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     ThrottlerModule.forRoot([{ name: 'default', ttl: 60000, limit: 60 }]),
+    ScheduleModule.forRoot(),
     AuthModule,
     UsersModule,
     CustomerAuthModule,
@@ -28,6 +31,7 @@ import { WishlistModule } from './wishlist/wishlist.module';
     AiModule,
     StockModule,
     WishlistModule,
+    CartModule,
   ],
   controllers: [AppController],
   providers: [

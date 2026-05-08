@@ -15,6 +15,9 @@ export function AdminSidebar({ className, onNavigate }: AdminSidebarProps) {
         </span>
       </div>
       <AdminSidebarNav onNavigate={onNavigate} />
+      <div className="px-6 py-3 border-t border-flor-100">
+        <p className="text-[11px] text-flor-300">Limvex © 2025</p>
+      </div>
     </aside>
   );
 }
