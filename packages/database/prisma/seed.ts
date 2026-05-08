@@ -2,7 +2,7 @@ import 'dotenv/config';
 import { PrismaClient } from '../src/generated/prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
-import { UserRole, StockMovementType } from '../src/generated/prisma';
+import { UserRole, StockMovementType, StockMovementSource } from '../src/generated/prisma';
 import { createId } from '@paralleldrive/cuid2';
 import bcrypt from 'bcrypt';
 
@@ -212,7 +212,10 @@ async function main() {
           variantId: variant.id,
           userId: admin.id,
           type: StockMovementType.IN,
+          source: StockMovementSource.MANUAL_IN,
           quantity: v.stock,
+          stockBefore: 0,
+          stockAfter: v.stock,
           reason: 'Estoque inicial (seed)',
         },
       });

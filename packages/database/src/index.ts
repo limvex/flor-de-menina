@@ -11,9 +11,11 @@ declare global {
 function createPrismaClient() {
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
   const adapter = new PrismaPg(pool);
+  // Em testes (Jest define JEST_WORKER_ID) e em prod silencia logs verbosos.
+  const isDev = process.env.NODE_ENV === 'development' && !process.env.JEST_WORKER_ID;
   return new PrismaClient({
     adapter,
-    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+    log: isDev ? ['query', 'error', 'warn'] : ['error'],
   });
 }
 
