@@ -18,10 +18,11 @@ import { WishlistModule } from './wishlist/wishlist.module';
 import { CartModule } from './modules/cart/cart.module';
 import { AddressesModule } from './modules/addresses/addresses.module';
 import { CustomerProfileModule } from './modules/customer-profile/customer-profile.module';
+import { OrdersModule } from './modules/orders/orders.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({ isGlobal: true, envFilePath: '../../.env' }),
     ThrottlerModule.forRoot([{ name: 'default', ttl: 60000, limit: 60 }]),
     ScheduleModule.forRoot(),
     AuthModule,
@@ -36,6 +37,7 @@ import { CustomerProfileModule } from './modules/customer-profile/customer-profi
     CartModule,
     AddressesModule,
     CustomerProfileModule,
+    OrdersModule,
   ],
   controllers: [AppController],
   providers: [

@@ -9,5 +9,5 @@ export interface Category {
 
 export const categoriesApi = {
   list: () => api.get<Category[]>('/categories'),
-  listAdmin: () => api.get<Category[]>('/categories/admin'),
+  listAdmin: () => api.get<Category[]>('/admin/categories'),
 };

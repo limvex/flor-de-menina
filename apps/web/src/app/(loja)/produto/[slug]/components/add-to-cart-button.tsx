@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { Loader2, ShoppingBag } from 'lucide-react';
-import { toast } from 'sonner';
 import { useCart } from '@/contexts/cart-context';
 import type { LocalCartItemSnapshot } from '@/lib/cart-storage';
 
@@ -22,7 +21,7 @@ export function AddToCartButton({ variantId, isOutOfStock, snapshot }: Props) {
     try {
       await addItem(variantId, 1, snapshot);
     } catch {
-      toast.error('Ops! Esse item não está mais disponível');
+      // erro já tratado pelo CartProvider (toast + rollback)
     } finally {
       setLoading(false);
     }

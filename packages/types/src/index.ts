@@ -68,3 +68,19 @@ export type {
   CustomerOrder,
   CustomerOrdersResponse,
 } from './customer-order.schema';
+export type {
+  PaymentMethod,
+  PaymentStatus,
+  ShippingOption,
+  CreateOrderInput,
+  OrderAddressSnapshot,
+  OrderItemResponse,
+  PaymentResponse,
+  ShippingResponse,
+  OrderResponse,
+  CheckoutStep,
+  CheckoutIdentification,
+  CheckoutAddress,
+  CheckoutPayment,
+  CheckoutState,
+} from './order.schema';

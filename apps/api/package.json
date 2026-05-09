@@ -9,7 +9,7 @@
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "node --env-file=../../.env dist/main.js",
-    "dev": "nest build && concurrently -k -n build,serve -c blue,green \"nest build --watch\" \"node --watch --env-file=../../.env dist/main.js\"",
+    "dev": "nest build && concurrently \"nest build --watch\" \"node --env-file=../../.env --watch dist/main.js\"",
     "start:dev": "nest start --watch",
     "typecheck": "tsc --noEmit",
     "start:debug": "nest start --debug --watch",
@@ -79,6 +79,7 @@
     "ts-loader": "^9.4.3",
     "ts-node": "^10.9.1",
     "tsconfig-paths": "^4.2.0",
+    "tsx": "^4.21.0",
     "typescript": "^5.1.3"
   },
   "jest": {
