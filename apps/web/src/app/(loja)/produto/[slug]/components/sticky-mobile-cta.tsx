@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { Loader2, ShoppingBag } from 'lucide-react';
-import { toast } from 'sonner';
 import { formatPrice } from '@/lib/format';
 import { useCart } from '@/contexts/cart-context';
 import type { LocalCartItemSnapshot } from '@/lib/cart-storage';
@@ -24,7 +23,7 @@ export function StickyMobileCta({ price, variantId, isOutOfStock, snapshot }: Pr
     try {
       await addItem(variantId, 1, snapshot);
     } catch {
-      toast.error('Ops! Esse item não está mais disponível');
+      // erro já tratado pelo CartProvider (toast + rollback)
     } finally {
       setLoading(false);
     }

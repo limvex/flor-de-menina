@@ -9,9 +9,9 @@ import { useProduct, useCategories } from '@/hooks/use-products';
 export default function EditarProdutoPage() {
   const params = useParams<{ id: string }>();
   const { data: product, isLoading, error } = useProduct(params.id);
-  const { data: categories = [] } = useCategories();
+  const { data: categories, isLoading: categoriesLoading } = useCategories();
 
-  if (isLoading) {
+  if (isLoading || categoriesLoading) {
     return <div className="py-12 text-center text-muted-foreground">Carregando produto...</div>;
   }
 
@@ -36,7 +36,7 @@ export default function EditarProdutoPage() {
         </div>
       </div>
 
-      <ProductForm product={product} categories={categories} />
+      <ProductForm product={product} categories={categories ?? []} />
     </div>
   );
 }

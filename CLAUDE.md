@@ -116,8 +116,8 @@ Atualize esta seção a cada task concluída. Use os emojis:
 | 12  | Catálogo, busca e filtros             | ✅ Concluída                                | `feat/12-catalogo-busca`        | #50 |
 | 13  | Página de Produto (PDP)               | ⏳ Aguardando testes (Cursor)               | `feat/13-pdp-produto`           | -   |
 | 14  | Carrinho com reserva de estoque       | ✅ Concluída                                | `feat/14-carrinho-reserva`      | -   |
-| 15  | Wishlist e Conta do Cliente           | -                                           | -                               | -   |
-| 16  | Checkout multi-step                   | -                                           | -                               | -   |
+| 15  | Wishlist e Conta do Cliente           | ✅ Concluída                                | `feat/15-wishlist-conta`        | #54 |
+| 16  | Checkout multi-step                   | ✅ Concluída                                | `feat/16-checkout-multistep`    | -   |
 | 17  | Integração Melhor Envio               | -                                           | -                               | -   |
 | 18  | Integração Mercado Pago               | -                                           | -                               | -   |
 | 19  | Webhook MP + finalização              | -                                           | -                               | -   |
@@ -145,6 +145,8 @@ Atualize esta seção a cada task concluída. Use os emojis:
 - `2026-05-07` — Task #12 (Catálogo) construída. Backend: listPublic refatorado com filtros avançados (categorySlug, sizes, colors, minPrice, maxPrice, sort 5 opções) + endpoint GET /products/public/facets. Frontend: ProductCard com hover/badges/swatches, filtros sidebar desktop + bottom sheet mobile (sem nuqs — estado local), sort, paginação "Carregar mais", quick view modal, skeleton, empty state, breadcrumbs. SEO: sitemap dinâmico, robots.txt. Bonus: header-search integrado com /buscar (removido console.log). Pendente: migration pg_trgm precisa ser aplicada quando banco subir (`docker compose up -d`).
 - `2026-05-09` — Task #12 (Catálogo) concluída e mergeada via PR #50. Backend com pg_trgm typo-tolerant + filtros + facets. Frontend com URL state via nuqs, filter chips, quick view e badges. SEO com sitemap dinâmico e JSON-LD ItemList. Validação final: 67 Vitest + 79 Playwright + 9 bugs corrigidos. TODOs não bloqueantes para Task #25: Lighthouse em produção, a11y completo e color-contrast.
 - `2026-05-09` — Task #13 (PDP) construída. Galeria com swipe mobile (Embla) + zoom desktop, variant selector com swatches de cor e chips de tamanho, sticky mobile CTA, calculadora de frete placeholder, wishlist FUNCIONAL (backend CRUD + hook React Query + botão PDP + heart card), Schema.org Product, OG/Twitter cards, "Você também pode gostar" com produtos da mesma categoria, reviews placeholder estruturado, indicador "Restam X peças", breadcrumbs, tabs Descrição/Detalhes/Trocas. Smoke test OK (200/404/401). Próximo: testes automatizados.
+- `2026-05-09` — Task #15 (Wishlist e Conta do Cliente) concluída e mergeada via PR #54. Wishlist CRUD idempotente (backend + hook React Query + botão PDP + heart no card). Área /conta com perfil, endereços, pedidos e favoritos.
+- `2026-05-09` — Task #16 (Checkout multi-step) concluída. Fluxo de 5 etapas: Identificação → Endereço → Frete → Pagamento → Revisão. CheckoutContext com sessionStorage, stepper visual, validação CPF completa (algoritmo + dígitos verificadores), $transaction atômico no createOrder (Order + StockMovement + limpeza carrinho), página de confirmação Server Component com cookie forwarding. CustomerProfileService getOrders/getOrder implementados. Bugs corrigidos: 403 cross-user, dropdown de parcelas, payload de variantes no admin, endpoint de categorias admin.
 - `2026-05-08` — Task #14 (Carrinho) concluída. Módulo cart na API com CRUD + merge + SELECT FOR UPDATE contra race condition. CartCleanupService (@Cron a cada 5min) libera reservas expiradas. Frontend: CartProvider com merge localStorage→servidor no login, mini-carrinho drawer, página /carrinho com debounce, timer de reserva colorido e barra de frete grátis. LocalCartItemSnapshot: visitante vê nome/preço/estoque real sem precisar de API. Campo de cupom fica para Task #20.
 
 ## ⚠️ Coisas que NÃO podem ser esquecidas
@@ -185,6 +187,8 @@ Atualize esta seção a cada task concluída. Use os emojis:
 - **Carrinho de visitante usa `LocalCartItemSnapshot`** — salvo no localStorage junto com variantId/qty para exibir nome, preço e estoque real sem API. Estoque no snapshot é bruto (sem reservas de outros); validação real acontece no merge/checkout.
 - **Reserva de estoque**: 15min, `CartItem.reservedUntil`. Cleanup job a cada 5min. Fórmula: `estoque disponível = variant.stock - SUM(reservas ativas de outros carrinhos)`.
 - **Merge de carrinho**: `POST /cart/merge` — chamado automaticamente quando `prevUserId.current === null → userId` no CartProvider. Itens incompatíveis geram toast de aviso.
+- **Checkout multi-step**: 5 etapas via state (não URL). CheckoutContext persiste em sessionStorage; limpa automaticamente se usuário logado divergir do email salvo (evita 403 cross-user). Dados de cartão NUNCA persistem — só `{ method }`. Página de confirmação é Server Component com cookie forwarding via `next/headers`. getOrders/getOrder implementados em CustomerProfileService. Frete e pagamento são mock (tasks #17/#18).
+- **Upsert de variantes no admin**: payload deve enviar apenas os campos do VariantInput DTO (sem productId/createdAt/updatedAt do Prisma) e converter price para Number — ValidationPipe com forbidNonWhitelisted rejeita campos extras com 400.
 
 ## 🔗 Links úteis
 

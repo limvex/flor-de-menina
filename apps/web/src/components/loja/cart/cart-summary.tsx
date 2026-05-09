@@ -19,7 +19,7 @@ export function CartSummary({ cart }: Props) {
     if (user) {
       router.push('/checkout');
     } else {
-      router.push('/entrar?redirect=/checkout');
+      router.push('/login?redirect=/checkout');
     }
   }
 

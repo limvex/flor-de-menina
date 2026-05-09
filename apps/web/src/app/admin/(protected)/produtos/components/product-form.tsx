@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Sparkles } from 'lucide-react';
+import { toast } from 'sonner';
 import { type Product, type ProductVariant } from '@/lib/api/products';
 import { type Category } from '@/lib/api/categories';
 import { ImageUploader, type UploadedImageItem } from './image-uploader';
@@ -147,11 +148,24 @@ export function ProductForm({ product, categories }: ProductFormProps) {
       }
 
       if (savedId && variants.length > 0) {
-        await upsertVariants.mutateAsync(variants.map((v) => ({ ...v, stock: v.stock ?? 0 })));
+        await upsertVariants.mutateAsync(
+          variants.map((v) => ({
+            id: v.id,
+            sku: v.sku,
+            size: v.size,
+            color: v.color,
+            colorHex: v.colorHex,
+            price: v.price !== undefined ? Number(v.price) : undefined,
+            stock: v.stock ?? 0,
+            isActive: v.isActive,
+          })),
+        );
       }
 
       router.push('/admin/produtos');
     } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erro ao salvar produto';
+      toast.error(msg);
       console.error(err);
     } finally {
       setSaving(false);
@@ -216,7 +230,11 @@ export function ProductForm({ product, categories }: ProductFormProps) {
                 render={({ field }) => (
                   <Select value={field.value} onValueChange={field.onChange}>
                     <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Selecione uma categoria" />
+                      <SelectValue placeholder="Selecione uma categoria">
+                        {field.value
+                          ? (categories.find((c) => c.id === field.value)?.name ?? field.value)
+                          : undefined}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {categories.map((c) => (

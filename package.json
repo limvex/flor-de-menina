@@ -5,6 +5,8 @@
   "packageManager": "pnpm@9.0.0",
   "scripts": {
     "dev": "turbo run dev",
+    "dev:api": "turbo run dev --filter=@flor/api",
+    "dev:web": "turbo run dev --filter=@flor/web",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",

@@ -20,6 +20,7 @@ export class CustomerProfileService {
         name: true,
         email: true,
         phone: true,
+        cpf: true,
         passwordHash: true,
         createdAt: true,
       },
@@ -108,13 +109,97 @@ export class CustomerProfileService {
   }
 
   async getOrders(userId: string) {
-    void userId;
-    return { orders: [], total: 0, page: 1, limit: 20 };
+    const [orders, total] = await Promise.all([
+      prisma.order.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+        include: {
+          items: true,
+          shipping: { select: { trackingCode: true } },
+        },
+      }),
+      prisma.order.count({ where: { userId } }),
+    ]);
+
+    return {
+      orders: orders.map((o) => this.formatCustomerOrder(o)),
+      total,
+      page: 1,
+      limit: 20,
+    };
   }
 
   async getOrder(userId: string, orderId: string) {
-    void userId;
-    void orderId;
-    throw new NotFoundException('Pedido não encontrado');
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        items: true,
+        shipping: { select: { trackingCode: true } },
+      },
+    });
+    if (!order) throw new NotFoundException('Pedido não encontrado');
+    if (order.userId !== userId)
+      throw new NotFoundException('Pedido não encontrado');
+    return this.formatCustomerOrder(order);
+  }
+
+  private formatCustomerOrder(order: {
+    id: string;
+    number: string;
+    status: string;
+    subtotal: { toNumber(): number };
+    shippingCost: { toNumber(): number };
+    discount: { toNumber(): number };
+    total: { toNumber(): number };
+    shippingAddress: unknown;
+    createdAt: Date;
+    updatedAt: Date;
+    items: Array<{
+      id: string;
+      productName: string;
+      variantSize: string | null;
+      variantColor: string | null;
+      productImageUrl: string | null;
+      unitPrice: { toNumber(): number };
+      quantity: number;
+      subtotal: { toNumber(): number };
+    }>;
+    shipping: { trackingCode: string | null } | null;
+  }) {
+    const addr = order.shippingAddress as {
+      recipientName: string;
+      street: string;
+      number: string;
+      complement: string | null;
+      neighborhood: string;
+      city: string;
+      state: string;
+      zipCode: string;
+    };
+    return {
+      id: order.id,
+      number: order.number,
+      status: order.status,
+      subtotal: order.subtotal.toNumber(),
+      shippingCost: order.shippingCost.toNumber(),
+      discount: order.discount.toNumber(),
+      total: order.total.toNumber(),
+      couponCode: null,
+      createdAt: order.createdAt.toISOString(),
+      updatedAt: order.updatedAt.toISOString(),
+      items: order.items.map((item) => ({
+        id: item.id,
+        productName: item.productName,
+        variantSize: item.variantSize,
+        variantColor: item.variantColor,
+        productImageUrl: item.productImageUrl,
+        unitPrice: item.unitPrice.toNumber(),
+        quantity: item.quantity,
+        subtotal: item.subtotal.toNumber(),
+      })),
+      trackingCode: order.shipping?.trackingCode ?? null,
+      shippingAddress: addr,
+    };
   }
 }
