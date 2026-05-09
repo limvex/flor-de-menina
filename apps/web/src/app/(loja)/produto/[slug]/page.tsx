@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getProductBySlug } from '@/lib/api/product-detail';
+import { requireCustomer } from '@/lib/auth/require-customer';
 import { PdpClient } from './pdp-client';
 
 interface PageProps {
@@ -48,8 +49,8 @@ export default async function ProdutoPage({ params }: PageProps) {
     notFound();
   }
 
-  // TODO(task-#15): verificar cookie de cliente no servidor para mostrar estado real da wishlist
-  const isAuthenticated = false;
+  const customer = await requireCustomer();
+  const isAuthenticated = !!customer;
 
   const jsonLd = {
     '@context': 'https://schema.org',
