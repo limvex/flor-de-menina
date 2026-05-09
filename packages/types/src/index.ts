@@ -43,3 +43,28 @@ export type {
   VariantStockDetail,
   StockMovementHistoryItem,
 } from './stock.schema';
+export type {
+  WishlistItem,
+  WishlistProduct,
+  WishlistProductImage,
+  WishlistItemVariant,
+  WishlistResponse,
+} from './wishlist.schema';
+export type {
+  Address,
+  CreateAddressInput,
+  UpdateAddressInput,
+  ViaCepResponse,
+} from './address.schema';
+export type {
+  CustomerProfile,
+  UpdateProfileInput,
+  ChangePasswordInput,
+  ChangeEmailInput,
+} from './customer-profile.schema';
+export type {
+  OrderStatus,
+  OrderItemSnapshot,
+  CustomerOrder,
+  CustomerOrdersResponse,
+} from './customer-order.schema';

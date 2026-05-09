@@ -16,6 +16,8 @@ import { AiModule } from './ai/ai.module';
 import { StockModule } from './modules/stock/stock.module';
 import { WishlistModule } from './wishlist/wishlist.module';
 import { CartModule } from './modules/cart/cart.module';
+import { AddressesModule } from './modules/addresses/addresses.module';
+import { CustomerProfileModule } from './modules/customer-profile/customer-profile.module';
 
 @Module({
   imports: [
@@ -32,6 +34,8 @@ import { CartModule } from './modules/cart/cart.module';
     StockModule,
     WishlistModule,
     CartModule,
+    AddressesModule,
+    CustomerProfileModule,
   ],
   controllers: [AppController],
   providers: [
