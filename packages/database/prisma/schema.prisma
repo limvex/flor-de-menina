@@ -395,6 +395,7 @@ enum PaymentMethod {
 
 enum PaymentStatus {
   PENDING
+  IN_PROCESS
   APPROVED
   REJECTED
   REFUNDED
@@ -402,27 +403,60 @@ enum PaymentStatus {
 }
 
 model Payment {
-  id            String          @id
-  orderId       String          @unique
-  provider      PaymentProvider
-  method        PaymentMethod
-  status        PaymentStatus   @default(PENDING)
-  amount        Decimal         @db.Decimal(10, 2)
-  installments  Int             @default(1)
-  transactionId String?         @unique
-  qrCode        String?         @db.Text // PIX QR code
-  qrCodeBase64  String?         @db.Text
-  pixCopyPaste  String?         @db.Text
-  paidAt        DateTime?
-  rawResponse   Json? // payload do gateway
-  webhookEvents Json? // log de webhooks recebidos
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  id              String          @id
+  orderId         String          @unique
+  provider        PaymentProvider
+  method          PaymentMethod
+  status          PaymentStatus   @default(PENDING)
+  amount          Decimal         @db.Decimal(10, 2)
+  installments    Int             @default(1)
 
-  order Order @relation(fields: [orderId], references: [id])
+  // IDs do gateway
+  externalId      String?         @unique
+  transactionId   String?
 
-  @@index([transactionId])
+  // PIX
+  pixQrCode       String?         @db.Text
+  pixQrCodeBase64 String?         @db.Text
+  pixCopyPaste    String?         @db.Text
+  pixExpiresAt    DateTime?
+
+  // Cartão (sanitizado)
+  cardLast4       String?
+  cardBrand       String?
+  cardHolderName  String?
+
+  // Auditoria
+  paidAt          DateTime?
+  failureReason   String?
+  metadata        Json?
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  order  Order          @relation(fields: [orderId], references: [id])
+  events PaymentEvent[]
+
+  @@index([externalId])
   @@index([status])
+  @@index([createdAt])
+}
+
+model PaymentEvent {
+  id              String    @id
+  paymentId       String
+  eventType       String
+  externalEventId String?   @unique
+  rawPayload      Json
+  processed       Boolean   @default(false)
+  processedAt     DateTime?
+  createdAt       DateTime  @default(now())
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@index([externalEventId])
+  @@index([paymentId])
+  @@index([createdAt])
 }
 
 // ============================================================
