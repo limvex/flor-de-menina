@@ -32,7 +32,9 @@ export function PdpClient({ product, isAuthenticated }: Props) {
 
   const selectedVariant =
     product.variants?.find((v: ProductVariant) => v.id === selectedVariantId) ?? null;
-  const currentPrice = selectedVariant?.price ?? product.basePrice ?? 0;
+  const variantPrice = selectedVariant?.price;
+  const currentPrice =
+    variantPrice != null && variantPrice > 0 ? variantPrice : (product.basePrice ?? 0);
   const stockOfSelected = selectedVariant?.stock ?? 0;
 
   const cartSnapshot: LocalCartItemSnapshot | undefined = selectedVariantId

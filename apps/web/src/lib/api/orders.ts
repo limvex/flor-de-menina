@@ -1,8 +1,13 @@
 import { api } from './client';
-import type { OrderResponse, ShippingOption, CreateOrderInput } from '@flor/types';
+import type {
+  OrderResponse,
+  CreateOrderInput,
+  QuoteShippingRequest,
+  QuoteShippingResponse,
+} from '@flor/types';
 
-export async function getShippingOptions(subtotal: number): Promise<ShippingOption[]> {
-  return api.get<ShippingOption[]>(`/orders/shipping-options?subtotal=${subtotal}`);
+export async function quoteShipping(data: QuoteShippingRequest): Promise<QuoteShippingResponse> {
+  return api.post<QuoteShippingResponse>('/shipping/quote', data);
 }
 
 export async function createOrder(data: CreateOrderInput): Promise<OrderResponse> {

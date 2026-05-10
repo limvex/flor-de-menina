@@ -4,7 +4,6 @@ import {
   Get,
   Param,
   Post,
-  Query,
   UseGuards,
   UsePipes,
   ValidationPipe,
@@ -20,12 +19,6 @@ import { CreateOrderDto } from './dto/create-order.dto';
 @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
-
-  @Get('shipping-options')
-  getShippingOptions(@Query('subtotal') subtotalStr?: string) {
-    const subtotal = subtotalStr ? parseFloat(subtotalStr) : 0;
-    return this.ordersService.getShippingOptions(subtotal);
-  }
 
   @Post()
   createOrder(@CurrentUser() user: User, @Body() dto: CreateOrderDto) {

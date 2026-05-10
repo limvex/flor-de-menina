@@ -34,7 +34,7 @@ export interface Product {
   description: string;
   shortDescription?: string;
   basePrice: number;
-  compareAtPrice?: number;
+  compareAtPrice?: number | null;
   categoryId: string;
   category?: Category;
   isActive: boolean;

@@ -101,9 +101,19 @@ export class CartService {
       },
     });
 
+    const storeSettings = await prisma.storeSettings.findFirst({
+      select: { freeShippingGlobalThreshold: true },
+    });
+    const freeShippingThreshold =
+      storeSettings?.freeShippingGlobalThreshold?.toNumber() ??
+      FREE_SHIPPING_THRESHOLD;
+
     if (!cart) {
       const newCart = await this.getOrCreateCart(userId);
-      return this.buildCartResponse({ id: newCart.id, items: [] });
+      return this.buildCartResponse(
+        { id: newCart.id, items: [] },
+        freeShippingThreshold,
+      );
     }
 
     const itemsWithStock = await Promise.all(
@@ -113,38 +123,48 @@ export class CartService {
       }),
     );
 
-    return this.buildCartResponse({ ...cart, items: itemsWithStock });
+    return this.buildCartResponse(
+      { ...cart, items: itemsWithStock },
+      freeShippingThreshold,
+    );
   }
 
-  private buildCartResponse(cart: {
-    id: string;
-    items: Array<{
+  private buildCartResponse(
+    cart: {
       id: string;
-      variantId: string;
-      quantity: number;
-      reservedUntil: Date | null;
-      availableStock?: number;
-      product: {
+      items: Array<{
         id: string;
-        name: string;
-        slug: string;
-        images: Array<{ cardUrl: string | null; url: string }>;
-      };
-      variant: {
-        id: string;
-        size: string | null;
-        color: string | null;
-        price: { toNumber(): number } | null;
+        variantId: string;
+        quantity: number;
+        reservedUntil: Date | null;
+        availableStock?: number;
         product: {
-          basePrice: { toNumber(): number };
-          compareAtPrice: { toNumber(): number } | null;
+          id: string;
+          name: string;
+          slug: string;
+          images: Array<{ cardUrl: string | null; url: string }>;
         };
-      };
-    }>;
-  }): CartResponse {
+        variant: {
+          id: string;
+          size: string | null;
+          color: string | null;
+          price: { toNumber(): number } | null;
+          product: {
+            basePrice: { toNumber(): number };
+            compareAtPrice: { toNumber(): number } | null;
+          };
+        };
+      }>;
+    },
+    freeShippingThreshold: number,
+  ): CartResponse {
     const items: CartItemResponse[] = cart.items.map((item) => {
       const basePrice = item.variant.product.basePrice.toNumber();
-      const variantPrice = item.variant.price?.toNumber() ?? basePrice;
+      const rawVariantPrice = item.variant.price?.toNumber() ?? null;
+      const variantPrice =
+        rawVariantPrice != null && rawVariantPrice > 0
+          ? rawVariantPrice
+          : basePrice;
       const compareAt = item.variant.product.compareAtPrice?.toNumber() ?? null;
 
       return {
@@ -190,8 +210,8 @@ export class CartService {
       subtotal,
       itemCount,
       nextExpiry: futureExpiries[0]?.toISOString() ?? null,
-      freeShippingThreshold: FREE_SHIPPING_THRESHOLD,
-      freeShippingRemaining: Math.max(0, FREE_SHIPPING_THRESHOLD - subtotal),
+      freeShippingThreshold,
+      freeShippingRemaining: Math.max(0, freeShippingThreshold - subtotal),
     };
   }
 

@@ -535,6 +535,50 @@ model Review {
 }
 
 // ============================================================
+// CONFIGURAÇÕES DE FRETE
+// ============================================================
+
+enum BrazilRegion {
+  N  // Norte
+  NE // Nordeste
+  CO // Centro-Oeste
+  SE // Sudeste
+  S  // Sul
+}
+
+model StoreSettings {
+  id                          String   @id @default("singleton")
+  originZipCode               String   @default("57000000")
+  originAddress               Json?
+  freeShippingGlobalThreshold Decimal? @db.Decimal(10, 2)
+  shippingProvider            String   @default("mock")
+  storeName                   String   @default("Flor de Menina")
+  storeEmail                  String?
+  storePhone                  String?
+  storeCnpj                   String?
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+}
+
+model RegionShippingRule {
+  id              String       @id @default(cuid())
+  region          BrazilRegion @unique
+  freeShippingMin Decimal?     @db.Decimal(10, 2)
+  isActive        Boolean      @default(true)
+  updatedAt       DateTime     @updatedAt
+  createdBy       String?
+}
+
+model MelhorEnvioCredentials {
+  id           String   @id @default("singleton")
+  accessToken  String
+  refreshToken String
+  expiresAt    DateTime
+  scope        String?
+  updatedAt    DateTime @updatedAt
+}
+
+// ============================================================
 // PÁGINAS INSTITUCIONAIS
 // ============================================================
 

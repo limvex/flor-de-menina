@@ -11,14 +11,8 @@ export type PaymentMethod = 'PIX' | 'CREDIT_CARD';
 
 export type PaymentStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'REFUNDED' | 'CANCELLED';
 
-export interface ShippingOption {
-  id: string;
-  carrier: string;
-  service: string;
-  cost: number;
-  estimatedDays: number;
-  label: string;
-}
+import type { ShippingOption } from './shipping.schema';
+export type { ShippingOption } from './shipping.schema';
 
 export interface CreateOrderInput {
   addressId: string;

@@ -69,9 +69,16 @@ export type {
   CustomerOrdersResponse,
 } from './customer-order.schema';
 export type {
+  BrazilRegion,
+  ShippingOption,
+  ShippingQuoteInput,
+  QuoteShippingRequest,
+  QuoteShippingResponse,
+  MelhorEnvioConnectionStatus,
+} from './shipping.schema';
+export type {
   PaymentMethod,
   PaymentStatus,
-  ShippingOption,
   CreateOrderInput,
   OrderAddressSnapshot,
   OrderItemResponse,
@@ -84,3 +91,10 @@ export type {
   CheckoutPayment,
   CheckoutState,
 } from './order.schema';
+export type {
+  StoreSettingsResponse,
+  UpdateStoreSettingsInput,
+  RegionShippingRuleResponse,
+  UpdateRegionRuleInput,
+  ShippingSettingsResponse,
+} from './store-settings.schema';

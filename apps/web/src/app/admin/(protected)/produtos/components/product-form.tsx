@@ -26,23 +26,28 @@ import { VariantsEditor } from './variants-editor';
 import { AiDescriptionModal } from './ai-description-modal';
 import { useCreateProduct, useUpdateProduct, useUpsertVariants } from '@/hooks/use-products';
 
-const schema = z.object({
-  name: z.string().min(3, 'Nome deve ter ao menos 3 caracteres'),
-  slug: z.string().optional(),
-  description: z.string().min(10, 'Descrição muito curta'),
-  shortDescription: z.string().optional(),
-  basePrice: z.number({ error: 'Preço inválido' }).min(0.01, 'Preço inválido'),
-  compareAtPrice: z.number().optional(),
-  categoryId: z.string().min(1, 'Selecione uma categoria'),
-  isActive: z.boolean().optional(),
-  isFeatured: z.boolean().optional(),
-  weight: z.number().int().optional(),
-  width: z.number().int().optional(),
-  height: z.number().int().optional(),
-  productLength: z.number().int().optional(),
-  seoTitle: z.string().max(60, 'Máximo 60 caracteres').optional(),
-  seoDescription: z.string().max(160, 'Máximo 160 caracteres').optional(),
-});
+const schema = z
+  .object({
+    name: z.string().min(3, 'Nome deve ter ao menos 3 caracteres'),
+    slug: z.string().optional(),
+    description: z.string().min(10, 'Descrição muito curta'),
+    shortDescription: z.string().optional(),
+    basePrice: z.number({ error: 'Preço inválido' }).min(0.01, 'Preço inválido'),
+    compareAtPrice: z.number().positive('Deve ser maior que zero').optional().catch(undefined),
+    categoryId: z.string().min(1, 'Selecione uma categoria'),
+    isActive: z.boolean().optional(),
+    isFeatured: z.boolean().optional(),
+    weight: z.number().int().optional(),
+    width: z.number().int().optional(),
+    height: z.number().int().optional(),
+    productLength: z.number().int().optional(),
+    seoTitle: z.string().max(60, 'Máximo 60 caracteres').optional(),
+    seoDescription: z.string().max(160, 'Máximo 160 caracteres').optional(),
+  })
+  .refine((data) => !data.compareAtPrice || data.compareAtPrice > data.basePrice, {
+    message: 'Preço comparativo deve ser maior que o preço atual',
+    path: ['compareAtPrice'],
+  });
 
 type FormData = z.infer<typeof schema>;
 
@@ -125,7 +130,7 @@ export function ProductForm({ product, categories }: ProductFormProps) {
         description: data.description,
         shortDescription: data.shortDescription,
         basePrice: data.basePrice,
-        compareAtPrice: data.compareAtPrice,
+        compareAtPrice: data.compareAtPrice ?? null,
         categoryId: data.categoryId,
         isActive: data.isActive,
         isFeatured: data.isFeatured,
@@ -219,6 +224,9 @@ export function ProductForm({ product, categories }: ProductFormProps) {
                   className="mt-1"
                   placeholder="De..."
                 />
+                {errors.compareAtPrice && (
+                  <p className="text-xs text-destructive mt-1">{errors.compareAtPrice.message}</p>
+                )}
               </div>
             </div>
 
