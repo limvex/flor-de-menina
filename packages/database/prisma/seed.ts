@@ -14,6 +14,21 @@ async function main() {
   console.log('🌱 Iniciando seed...');
 
   // =========================================================
+  // STORE SETTINGS (singleton)
+  // =========================================================
+  await prisma.storeSettings.upsert({
+    where: { id: 'singleton' },
+    update: {},
+    create: {
+      id: 'singleton',
+      originZipCode: '57000000',
+      freeShippingGlobalThreshold: 299,
+      shippingProvider: 'mock',
+    },
+  });
+  console.log('✅ StoreSettings singleton criado');
+
+  // =========================================================
   // ADMIN
   // =========================================================
   const adminPassword = await bcrypt.hash('admin123', 12);

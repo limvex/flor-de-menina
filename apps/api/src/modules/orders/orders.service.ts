@@ -17,49 +17,12 @@ import {
 import type { PrismaClient } from '@flor/database';
 import { StockService } from '../stock/stock.service';
 import { CreateOrderDto } from './dto/create-order.dto';
-import type { ShippingOptionDto } from './dto/shipping-options.dto';
 
 type Tx = Parameters<Parameters<PrismaClient['$transaction']>[0]>[0];
-
-const FREE_SHIPPING_SUBTOTAL = 299;
 
 @Injectable()
 export class OrdersService {
   constructor(private readonly stockService: StockService) {}
-
-  getShippingOptions(subtotal: number): ShippingOptionDto[] {
-    const options: ShippingOptionDto[] = [
-      {
-        id: 'pac',
-        carrier: 'Correios',
-        service: 'PAC',
-        cost: 15.9,
-        estimatedDays: 8,
-        label: 'PAC — até 8 dias úteis',
-      },
-      {
-        id: 'sedex',
-        carrier: 'Correios',
-        service: 'SEDEX',
-        cost: 28.9,
-        estimatedDays: 3,
-        label: 'SEDEX — até 3 dias úteis',
-      },
-    ];
-
-    if (subtotal >= FREE_SHIPPING_SUBTOTAL) {
-      options.push({
-        id: 'free',
-        carrier: 'Correios',
-        service: 'PAC',
-        cost: 0,
-        estimatedDays: 8,
-        label: 'Frete grátis — até 8 dias úteis',
-      });
-    }
-
-    return options;
-  }
 
   async createOrder(userId: string, dto: CreateOrderDto) {
     return prisma.$transaction(async (tx) => {

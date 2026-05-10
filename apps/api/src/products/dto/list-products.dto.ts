@@ -61,11 +61,17 @@ export class ListPublicProductsDto {
       'price_asc',
       'price_desc',
       'bestselling',
+      'featured',
     ];
     return typeof value === 'string' && allowed.includes(value)
       ? value
       : 'relevance';
   })
-  sort?: 'relevance' | 'newest' | 'price_asc' | 'price_desc' | 'bestselling' =
-    'relevance';
+  sort?:
+    | 'relevance'
+    | 'newest'
+    | 'price_asc'
+    | 'price_desc'
+    | 'bestselling'
+    | 'featured' = 'relevance';
 }

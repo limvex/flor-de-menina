@@ -137,6 +137,7 @@ export class ProductsService {
     };
 
     if (dto.categorySlug) where.category = { slug: dto.categorySlug };
+    if (dto.sort === 'featured') where.isFeatured = true;
 
     // Busca textual com pg_trgm: tolerante a typos (ex: "vestdo" → "vestido").
     // word_similarity casa termos curtos com substrings de textos maiores —
@@ -196,6 +197,7 @@ export class ProductsService {
     if (dto.sort === 'newest') orderBy = { createdAt: 'desc' };
     else if (dto.sort === 'price_asc') orderBy = { basePrice: 'asc' };
     else if (dto.sort === 'price_desc') orderBy = { basePrice: 'desc' };
+    else if (dto.sort === 'featured') orderBy = { createdAt: 'desc' };
     else if (dto.sort === 'relevance' && trigramOrderIds) {
       // Vamos ordenar manualmente em memória após o fetch
       orderBy = undefined;

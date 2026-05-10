@@ -19,6 +19,7 @@ import { CartModule } from './modules/cart/cart.module';
 import { AddressesModule } from './modules/addresses/addresses.module';
 import { CustomerProfileModule } from './modules/customer-profile/customer-profile.module';
 import { OrdersModule } from './modules/orders/orders.module';
+import { ShippingModule } from './modules/shipping/shipping.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { OrdersModule } from './modules/orders/orders.module';
     AddressesModule,
     CustomerProfileModule,
     OrdersModule,
+    ShippingModule,
   ],
   controllers: [AppController],
   providers: [

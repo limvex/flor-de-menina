@@ -6,6 +6,7 @@ import {
   IsInt,
   MinLength,
   Min,
+  ValidateIf,
 } from 'class-validator';
 
 export class CreateProductDto {
@@ -14,7 +15,10 @@ export class CreateProductDto {
   @IsString() description: string;
   @IsString() @IsOptional() shortDescription?: string;
   @IsNumber() @Min(0.01) basePrice: number;
-  @IsNumber() @IsOptional() compareAtPrice?: number;
+  @IsOptional()
+  @ValidateIf((o) => o.compareAtPrice !== null)
+  @IsNumber()
+  compareAtPrice?: number | null;
   @IsString() categoryId: string;
   @IsBoolean() @IsOptional() isActive?: boolean;
   @IsBoolean() @IsOptional() isFeatured?: boolean;
