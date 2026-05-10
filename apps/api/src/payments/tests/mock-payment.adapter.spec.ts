@@ -1,0 +1,158 @@
+import { MockPaymentAdapter } from '../adapters/mock-payment.adapter';
+
+describe('MockPaymentAdapter', () => {
+  let adapter: MockPaymentAdapter;
+
+  beforeEach(() => {
+    adapter = new MockPaymentAdapter();
+  });
+
+  describe('createPixPayment', () => {
+    it('retorna QR code, copyPaste e expiresAt', async () => {
+      const result = await adapter.createPixPayment({
+        orderId: 'order_123',
+        amount: 250.0,
+        customerEmail: 'a@b.com',
+        customerName: 'Teste',
+        customerCpf: '12345678900',
+        description: 'Pedido teste',
+      });
+
+      expect(result.externalId).toMatch(/^mock_pix_/);
+      expect(result.qrCode).toBeTruthy();
+      expect(result.qrCodeBase64).toBeTruthy();
+      expect(result.copyPaste).toBeTruthy();
+      expect(result.expiresAt.getTime()).toBeGreaterThan(Date.now());
+      expect(result.status).toBe('pending');
+    }, 10000);
+  });
+
+  describe('processCardPayment', () => {
+    it('retorna campos obrigatórios em qualquer resultado', async () => {
+      const result = await adapter.processCardPayment({
+        orderId: 'order_123',
+        amount: 100,
+        installments: 1,
+        cardToken: 'MOCK_TOKEN_VISA_4242',
+        paymentMethodId: 'visa',
+        customerEmail: 'a@b.com',
+        customerName: 'Teste',
+        customerCpf: '12345678900',
+        description: 'teste',
+      });
+
+      expect(result.externalId).toMatch(/^mock_card_/);
+      expect(['approved', 'rejected']).toContain(result.status);
+      expect(result.cardLast4).toBe('4242');
+      expect(result.cardBrand).toBe('visa');
+    }, 10000);
+
+    it('extrai brand e last4 do mock token', async () => {
+      const result = await adapter.processCardPayment({
+        orderId: 'o',
+        amount: 100,
+        installments: 1,
+        cardToken: 'MOCK_TOKEN_MASTER_5500',
+        paymentMethodId: 'master',
+        customerEmail: 'a@b.com',
+        customerName: 'João Silva',
+        customerCpf: '11111111111',
+        description: 'd',
+      });
+
+      expect(result.cardBrand).toBe('master');
+      expect(result.cardLast4).toBe('5500');
+      expect(result.cardHolderName).toBe('João Silva');
+    }, 10000);
+
+    it('rejeição retorna failureReason com prefixo cc_rejected_', async () => {
+      const results = await Promise.all(
+        Array.from({ length: 30 }, () =>
+          adapter.processCardPayment({
+            orderId: 'o',
+            amount: 100,
+            installments: 1,
+            cardToken: 'MOCK_TOKEN_VISA_4111',
+            paymentMethodId: 'visa',
+            customerEmail: 'a@b.com',
+            customerName: 'T',
+            customerCpf: '1',
+            description: 'd',
+          }),
+        ),
+      );
+
+      const rejected = results.find((r) => r.status === 'rejected');
+      if (rejected) {
+        expect(rejected.failureReason).toBeTruthy();
+        expect(rejected.failureReason).toMatch(/cc_rejected_/);
+      }
+    }, 60000);
+  });
+
+  describe('getInstallmentOptions', () => {
+    it('retorna 12 opções', async () => {
+      const result = await adapter.getInstallmentOptions(1000);
+      expect(result).toHaveLength(12);
+    }, 5000);
+
+    it('1x até 3x sem juros, 4x+ com juros', async () => {
+      const result = await adapter.getInstallmentOptions(300);
+      expect(result[0].hasInterest).toBe(false);
+      expect(result[1].hasInterest).toBe(false);
+      expect(result[2].hasInterest).toBe(false);
+      expect(result[3].hasInterest).toBe(true);
+    }, 5000);
+
+    it('totalAmount é coerente com installmentAmount', async () => {
+      const options = await adapter.getInstallmentOptions(1000);
+      for (const opt of options) {
+        const sum = Number(
+          (opt.installmentAmount * opt.installments).toFixed(2),
+        );
+        expect(Math.abs(sum - opt.totalAmount)).toBeLessThan(
+          opt.installments * 0.01,
+        );
+      }
+    }, 5000);
+  });
+
+  describe('validateWebhookSignature', () => {
+    it('aceita MOCK_VALID', () => {
+      expect(
+        adapter.validateWebhookSignature({
+          rawBody: '{}',
+          signature: 'MOCK_VALID',
+          requestId: 'r1',
+        }),
+      ).toBe(true);
+    });
+
+    it('aceita assinatura iniciada com mock_', () => {
+      expect(
+        adapter.validateWebhookSignature({
+          rawBody: '{}',
+          signature: 'mock_xyz',
+          requestId: 'r',
+        }),
+      ).toBe(true);
+    });
+
+    it('rejeita outras assinaturas', () => {
+      expect(
+        adapter.validateWebhookSignature({
+          rawBody: '{}',
+          signature: 'real_signature',
+          requestId: 'r',
+        }),
+      ).toBe(false);
+    });
+  });
+
+  describe('getPaymentStatus', () => {
+    it('PIX externalId retorna pending ou approved', async () => {
+      const result = await adapter.getPaymentStatus('mock_pix_abc123');
+      expect(['pending', 'approved']).toContain(result.status);
+    }, 5000);
+  });
+});
