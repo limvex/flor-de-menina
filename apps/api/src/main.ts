@@ -2,6 +2,8 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 import * as cookieParser from 'cookie-parser';
+import * as bodyParser from 'body-parser';
+import { Request } from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -12,6 +14,16 @@ async function bootstrap() {
   });
 
   app.use(cookieParser());
+
+  // Raw body para validação de assinatura do webhook Mercado Pago
+  app.use(
+    '/webhooks/mercado-pago',
+    bodyParser.json({
+      verify: (req: Request & { rawBody?: Buffer }, _res, buf) => {
+        req.rawBody = buf;
+      },
+    }),
+  );
 
   app.useGlobalPipes(
     new ValidationPipe({

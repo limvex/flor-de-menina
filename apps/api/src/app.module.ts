@@ -20,6 +20,7 @@ import { AddressesModule } from './modules/addresses/addresses.module';
 import { CustomerProfileModule } from './modules/customer-profile/customer-profile.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { ShippingModule } from './modules/shipping/shipping.module';
+import { PaymentsModule } from './payments/payments.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { ShippingModule } from './modules/shipping/shipping.module';
     CustomerProfileModule,
     OrdersModule,
     ShippingModule,
+    PaymentsModule,
   ],
   controllers: [AppController],
   providers: [
