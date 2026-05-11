@@ -3,6 +3,7 @@ import {
   Logger,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
@@ -24,7 +25,9 @@ type OrderWithUserAndPayment = Prisma.OrderGetPayload<{
 }>;
 
 type PaymentWithOrder = Prisma.PaymentGetPayload<{
-  include: { order: { select: { id: true; number: true; status: true } } };
+  include: {
+    order: { select: { id: true; number: true; status: true; userId: true } };
+  };
 }>;
 
 @Injectable()
@@ -51,19 +54,26 @@ export class PaymentsService {
     }
   }
 
-  async processPayment(input: {
-    orderId: string;
-    method: 'PIX' | 'CREDIT_CARD';
-    cardToken?: string;
-    paymentMethodId?: string;
-    installments?: number;
-  }) {
+  async processPayment(
+    input: {
+      orderId: string;
+      method: 'PIX' | 'CREDIT_CARD';
+      cardToken?: string;
+      paymentMethodId?: string;
+      installments?: number;
+    },
+    userId: string,
+  ) {
     const order = await prisma.order.findUnique({
       where: { id: input.orderId },
       include: { user: true, payment: true },
     });
 
     if (!order) throw new NotFoundException('Pedido não encontrado');
+
+    if (order.userId !== userId) {
+      throw new ForbiddenException('Pedido não pertence ao usuário');
+    }
 
     if (order.status !== OrderStatus.PENDING) {
       throw new BadRequestException(
@@ -129,6 +139,7 @@ export class PaymentsService {
         metadata: sanitizeForLog(result) as Prisma.InputJsonValue,
       },
       update: {
+        provider: this.providerName,
         status: PaymentStatus.PENDING,
         externalId: result.externalId,
         pixQrCode: result.qrCode,
@@ -193,6 +204,7 @@ export class PaymentsService {
         metadata: sanitizeForLog(result) as Prisma.InputJsonValue,
       },
       update: {
+        provider: this.providerName,
         status,
         externalId: result.externalId,
         transactionId: result.transactionId || null,
@@ -228,13 +240,21 @@ export class PaymentsService {
     };
   }
 
-  async getPaymentStatus(paymentId: string) {
+  async getPaymentStatus(paymentId: string, userId: string) {
     const payment = await prisma.payment.findUnique({
       where: { id: paymentId },
-      include: { order: { select: { id: true, number: true, status: true } } },
+      include: {
+        order: {
+          select: { id: true, number: true, status: true, userId: true },
+        },
+      },
     });
 
     if (!payment) throw new NotFoundException('Pagamento não encontrado');
+
+    if (payment.order.userId !== userId) {
+      throw new ForbiddenException('Pagamento não pertence ao usuário');
+    }
 
     const terminalStatuses: PaymentStatus[] = [
       PaymentStatus.APPROVED,
@@ -263,7 +283,9 @@ export class PaymentsService {
           transactionId: gatewayStatus.transactionId || payment.transactionId,
         },
         include: {
-          order: { select: { id: true, number: true, status: true } },
+          order: {
+            select: { id: true, number: true, status: true, userId: true },
+          },
         },
       });
 

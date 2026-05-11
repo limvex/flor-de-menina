@@ -7,25 +7,33 @@ import {
   Query,
   UseGuards,
   ParseFloatPipe,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
 import { ProcessPaymentDto } from './dto/process-payment.dto';
 import { CustomerJwtGuard } from '../auth/customer/customer-jwt.guard';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import type { User } from '@flor/database';
 
 @Controller('payments')
+@UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
 export class PaymentsController {
   constructor(private paymentsService: PaymentsService) {}
 
   @Post('process')
   @UseGuards(CustomerJwtGuard)
-  async process(@Body() dto: ProcessPaymentDto) {
-    return this.paymentsService.processPayment({
-      orderId: dto.orderId,
-      method: dto.method,
-      cardToken: dto.cardToken,
-      paymentMethodId: dto.paymentMethodId,
-      installments: dto.installments,
-    });
+  async process(@CurrentUser() user: User, @Body() dto: ProcessPaymentDto) {
+    return this.paymentsService.processPayment(
+      {
+        orderId: dto.orderId,
+        method: dto.method,
+        cardToken: dto.cardToken,
+        paymentMethodId: dto.paymentMethodId,
+        installments: dto.installments,
+      },
+      user.id,
+    );
   }
 
   @Get('installments')
@@ -35,7 +43,7 @@ export class PaymentsController {
 
   @Get(':id/status')
   @UseGuards(CustomerJwtGuard)
-  async getStatus(@Param('id') paymentId: string) {
-    return this.paymentsService.getPaymentStatus(paymentId);
+  async getStatus(@CurrentUser() user: User, @Param('id') paymentId: string) {
+    return this.paymentsService.getPaymentStatus(paymentId, user.id);
   }
 }

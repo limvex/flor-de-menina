@@ -1,6 +1,10 @@
 import { Test } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
-import { NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PaymentsService } from '../payments.service';
 import { MockPaymentAdapter } from '../adapters/mock-payment.adapter';
 import { MercadoPagoAdapter } from '../adapters/mercado-pago.adapter';
@@ -41,6 +45,7 @@ import { prisma } from '@flor/database';
 
 const mockOrder = {
   id: 'order_1',
+  userId: 'user_1',
   number: 'FM-001',
   status: OrderStatus.PENDING,
   total: 275.9,
@@ -70,7 +75,12 @@ const mockPayment = {
   metadata: null,
   createdAt: new Date(),
   updatedAt: new Date(),
-  order: { id: 'order_1', number: 'FM-001', status: OrderStatus.PENDING },
+  order: {
+    id: 'order_1',
+    number: 'FM-001',
+    status: OrderStatus.PENDING,
+    userId: 'user_1',
+  },
 };
 
 describe('PaymentsService', () => {
@@ -116,10 +126,13 @@ describe('PaymentsService', () => {
         status: PaymentStatus.PENDING,
       });
 
-      const result = await service.processPayment({
-        orderId: 'order_1',
-        method: 'PIX',
-      });
+      const result = await service.processPayment(
+        {
+          orderId: 'order_1',
+          method: 'PIX',
+        },
+        'user_1',
+      );
 
       expect(result.method).toBe('PIX');
       expect(result.status).toBe(PaymentStatus.PENDING);
@@ -135,7 +148,10 @@ describe('PaymentsService', () => {
       (prisma.order.findUnique as jest.Mock).mockResolvedValue(mockOrder);
 
       await expect(
-        service.processPayment({ orderId: 'order_1', method: 'CREDIT_CARD' }),
+        service.processPayment(
+          { orderId: 'order_1', method: 'CREDIT_CARD' },
+          'user_1',
+        ),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -143,7 +159,7 @@ describe('PaymentsService', () => {
       (prisma.order.findUnique as jest.Mock).mockResolvedValue(null);
 
       await expect(
-        service.processPayment({ orderId: 'order_x', method: 'PIX' }),
+        service.processPayment({ orderId: 'order_x', method: 'PIX' }, 'user_1'),
       ).rejects.toThrow(NotFoundException);
     });
 
@@ -154,7 +170,7 @@ describe('PaymentsService', () => {
       });
 
       await expect(
-        service.processPayment({ orderId: 'order_1', method: 'PIX' }),
+        service.processPayment({ orderId: 'order_1', method: 'PIX' }, 'user_1'),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -166,8 +182,19 @@ describe('PaymentsService', () => {
       });
 
       await expect(
-        service.processPayment({ orderId: 'order_1', method: 'PIX' }),
+        service.processPayment({ orderId: 'order_1', method: 'PIX' }, 'user_1'),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it('pedido de outro usuário lança Forbidden', async () => {
+      (prisma.order.findUnique as jest.Mock).mockResolvedValue({
+        ...mockOrder,
+        userId: 'outro',
+      });
+
+      await expect(
+        service.processPayment({ orderId: 'order_1', method: 'PIX' }, 'user_1'),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 
@@ -175,7 +202,7 @@ describe('PaymentsService', () => {
     it('payment não encontrado lança NotFoundException', async () => {
       (prisma.payment.findUnique as jest.Mock).mockResolvedValue(null);
 
-      await expect(service.getPaymentStatus('pay_x')).rejects.toThrow(
+      await expect(service.getPaymentStatus('pay_x', 'user_1')).rejects.toThrow(
         NotFoundException,
       );
     });
@@ -188,10 +215,21 @@ describe('PaymentsService', () => {
         paidAt: new Date(),
       });
 
-      const result = await service.getPaymentStatus('pay_1');
+      const result = await service.getPaymentStatus('pay_1', 'user_1');
 
       expect(result.status).toBe(PaymentStatus.APPROVED);
       expect(getStatusSpy).not.toHaveBeenCalled();
+    });
+
+    it('pagamento de outro usuário lança Forbidden', async () => {
+      (prisma.payment.findUnique as jest.Mock).mockResolvedValue({
+        ...mockPayment,
+        order: { ...mockPayment.order, userId: 'outro' },
+      });
+
+      await expect(service.getPaymentStatus('pay_1', 'user_1')).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
