@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { AddressForm } from '@/components/loja/conta/address-form';
 import { cn } from '@/lib/utils';
 import { getAddresses, createAddress } from '@/lib/api/addresses';
+import { getUserFacingErrorMessage } from '@/lib/errors';
 import { useCheckout } from '@/contexts/checkout-context';
 import type { Address, CreateAddressInput } from '@flor/types';
 
@@ -32,8 +33,8 @@ export function StepAddress() {
       await queryClient.invalidateQueries({ queryKey: ['addresses'] });
       setSelected(created.id);
       setFormOpen(false);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erro ao salvar endereço');
+    } catch (err: unknown) {
+      toast.error(getUserFacingErrorMessage(err));
     } finally {
       setFormLoading(false);
     }

@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuth } from '@/lib/auth/use-auth';
+import { ApiError, getUserFacingErrorMessage } from '@/lib/errors';
 
 const schema = z.object({
   email: z.string().email('E-mail inválido'),
@@ -41,21 +42,19 @@ function LoginForm() {
       await login(data.email, data.password);
       router.push(redirect);
     } catch (err: unknown) {
-      const error = err as { status?: number; message?: string };
-      if (error.status === 429) {
+      const status = ApiError.isApiError(err) ? err.status : (err as { status?: number }).status;
+      if (status === 429) {
         setError('root', { message: 'Muitas tentativas. Aguarde alguns minutos.' });
-      } else if (error.status === 403) {
+      } else if (status === 403) {
         setError('root', { message: 'Verifique seu e-mail antes de entrar.' });
-      } else if (error.status === 401) {
+      } else if (status === 401) {
         setError('root', {
-          message: error.message || 'E-mail ou senha incorretos.',
+          message: getUserFacingErrorMessage(err),
         });
-      } else if (error.status === 0) {
-        setError('root', { message: error.message || 'Erro de conexão com a API.' });
+      } else if (status === 0) {
+        setError('root', { message: getUserFacingErrorMessage(err) });
       } else {
-        setError('root', {
-          message: error.message || 'Não foi possível entrar. Tente novamente.',
-        });
+        setError('root', { message: getUserFacingErrorMessage(err) });
       }
     }
   }

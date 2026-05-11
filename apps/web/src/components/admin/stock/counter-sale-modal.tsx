@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { stockApi } from '@/lib/api/stock';
+import { getUserFacingErrorMessage } from '@/lib/errors';
 import type { VariantStockSummary } from '@flor/types';
 
 interface CounterSaleModalProps {
@@ -67,8 +68,8 @@ export function CounterSaleModal({
       toast.success(`Baixa registrada — estoque atual: ${result.stockAfter}`);
       onOpenChange(false);
       onSuccess();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erro ao registrar venda');
+    } catch (err: unknown) {
+      toast.error(getUserFacingErrorMessage(err));
     } finally {
       setLoading(false);
     }

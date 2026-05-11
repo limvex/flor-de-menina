@@ -1,3 +1,5 @@
+import { ApiError, messageForHttpStatus, readErrorFromResponse } from '@/lib/errors';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3333';
 
 interface RegisterData {
@@ -12,14 +14,6 @@ interface LoginData {
   password: string;
 }
 
-function extractApiMessage(body: unknown): string {
-  if (!body || typeof body !== 'object') return 'Erro desconhecido';
-  const m = (body as { message?: unknown }).message;
-  if (typeof m === 'string') return m;
-  if (Array.isArray(m)) return m.filter((x): x is string => typeof x === 'string').join(' ');
-  return 'Erro desconhecido';
-}
-
 async function authFetch(path: string, options?: RequestInit) {
   let res: Response;
   try {
@@ -28,16 +22,22 @@ async function authFetch(path: string, options?: RequestInit) {
       credentials: 'include',
       headers: { 'Content-Type': 'application/json', ...options?.headers },
     });
-  } catch {
-    throw {
-      status: 0,
-      message: `Não foi possível contatar a API em ${API_URL}. Verifique se o servidor Nest está rodando (pnpm dev:api).`,
-    };
+  } catch (cause) {
+    if (cause instanceof TypeError) {
+      if (process.env.NODE_ENV === 'development') {
+        throw new ApiError(
+          `Não foi possível contatar a API em ${API_URL}. Verifique se o servidor Nest está rodando (pnpm dev:api).`,
+          0,
+          { cause },
+        );
+      }
+      throw new ApiError(messageForHttpStatus(0), 0, { cause });
+    }
+    throw cause;
   }
 
   if (!res.ok) {
-    const body = (await res.json().catch(() => ({}))) as unknown;
-    throw { status: res.status, message: extractApiMessage(body) };
+    await readErrorFromResponse(res);
   }
 
   return res.json();

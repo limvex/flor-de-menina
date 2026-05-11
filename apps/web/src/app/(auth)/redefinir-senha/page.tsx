@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { customerAuthApi } from '@/lib/auth/api';
+import { ApiError, getUserFacingErrorMessage } from '@/lib/errors';
 
 const schema = z
   .object({
@@ -55,11 +56,11 @@ function RedefinirSenhaForm() {
       setSuccess(true);
       setTimeout(() => router.push('/login'), 2000);
     } catch (err: unknown) {
-      const error = err as { status?: number; message?: string };
-      if (error.status === 400) {
-        setError('root', { message: error.message || 'Token inválido ou expirado.' });
+      const status = ApiError.isApiError(err) ? err.status : (err as { status?: number }).status;
+      if (status === 400) {
+        setError('root', { message: getUserFacingErrorMessage(err) });
       } else {
-        setError('root', { message: 'Erro ao redefinir senha. Tente novamente.' });
+        setError('root', { message: getUserFacingErrorMessage(err) });
       }
     }
   }

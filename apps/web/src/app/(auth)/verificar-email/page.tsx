@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { customerAuthApi } from '@/lib/auth/api';
+import { getUserFacingErrorMessage } from '@/lib/errors';
 
 type Status = 'loading' | 'success' | 'error';
 
@@ -32,9 +33,8 @@ function VerificarEmailContent() {
       .verifyEmail(token)
       .then(() => setStatus('success'))
       .catch((err: unknown) => {
-        const error = err as { message?: string };
         setStatus('error');
-        setErrorMsg(error.message || 'Token inválido ou expirado.');
+        setErrorMsg(getUserFacingErrorMessage(err));
       });
   }, [token]);
 

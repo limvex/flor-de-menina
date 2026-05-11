@@ -13,6 +13,7 @@ import { useCart } from '@/contexts/cart-context';
 import { useCheckout } from '@/contexts/checkout-context';
 import { createOrder } from '@/lib/api/orders';
 import { processPayment } from '@/lib/api/payments';
+import { getUserFacingErrorMessage } from '@/lib/errors';
 import { mapCardFailureMessage } from '@/lib/payment-messages';
 import { formatPrice } from '@/lib/format';
 import type { CheckoutStep } from '@flor/types';
@@ -134,8 +135,8 @@ export function StepReview() {
       }
 
       toast.error(mapCardFailureMessage(res.failureReason));
-    } catch (err) {
-      const raw = err instanceof Error ? err.message : String(err);
+    } catch (err: unknown) {
+      const raw = err instanceof Error ? err.message : typeof err === 'string' ? err : String(err);
 
       try {
         const parsed = JSON.parse(raw) as {
@@ -151,7 +152,7 @@ export function StepReview() {
         // not JSON
       }
 
-      toast.error(raw || 'Erro ao finalizar pedido');
+      toast.error(getUserFacingErrorMessage(err));
     } finally {
       setLoading(false);
     }

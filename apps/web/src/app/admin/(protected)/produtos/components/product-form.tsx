@@ -19,6 +19,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
+import { getUserFacingErrorMessage } from '@/lib/errors';
 import { type Product, type ProductVariant } from '@/lib/api/products';
 import { type Category } from '@/lib/api/categories';
 import { ImageUploader, type UploadedImageItem } from './image-uploader';
@@ -168,9 +169,8 @@ export function ProductForm({ product, categories }: ProductFormProps) {
       }
 
       router.push('/admin/produtos');
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Erro ao salvar produto';
-      toast.error(msg);
+    } catch (err: unknown) {
+      toast.error(getUserFacingErrorMessage(err));
       console.error(err);
     } finally {
       setSaving(false);

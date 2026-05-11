@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { AppErrorScreen } from '@/components/errors/app-error-screen';
 import { getUserFacingErrorMessage } from '@/lib/errors';
 
-export default function AdminError({
+export default function RootError({
   error,
   reset,
 }: {
@@ -12,18 +12,15 @@ export default function AdminError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error('[Admin error]', error.digest ?? error.message, error);
+    console.error('[App error]', error.digest ?? error.message, error);
   }, [error]);
 
   return (
     <AppErrorScreen
-      title="Erro no painel"
       description={getUserFacingErrorMessage(error)}
       onReset={reset}
-      lojaHref="/admin/dashboard"
-      lojaLabel="Voltar ao painel"
-      secondaryHref="/"
-      secondaryLabel="Ir à loja"
+      lojaHref="/"
+      lojaLabel="Voltar à loja"
     />
   );
 }

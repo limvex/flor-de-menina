@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { lookupCep } from '@/lib/api/addresses';
+import { getUserFacingErrorMessage } from '@/lib/errors';
 import type { Address, CreateAddressInput } from '@flor/types';
 
 interface Props {
@@ -66,8 +67,8 @@ export function AddressForm({ open, onOpenChange, initialData, onSubmit, loading
     try {
       await onSubmit(form);
       onOpenChange(false);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao salvar endereço');
+    } catch (err: unknown) {
+      setError(getUserFacingErrorMessage(err));
     }
   };
 

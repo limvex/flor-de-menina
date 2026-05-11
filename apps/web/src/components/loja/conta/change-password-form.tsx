@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { changePassword } from '@/lib/api/customer-profile';
+import { getUserFacingErrorMessage } from '@/lib/errors';
 
 export function ChangePasswordForm() {
   const [form, setForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
@@ -27,8 +28,8 @@ export function ChangePasswordForm() {
       await changePassword(form);
       toast.success('Senha alterada com sucesso');
       setForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao alterar senha');
+    } catch (err: unknown) {
+      setError(getUserFacingErrorMessage(err));
     } finally {
       setSaving(false);
     }
