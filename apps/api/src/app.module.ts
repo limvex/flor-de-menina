@@ -22,6 +22,7 @@ import { OrdersModule } from './modules/orders/orders.module';
 import { ShippingModule } from './modules/shipping/shipping.module';
 import { PaymentsModule } from './payments/payments.module';
 import { EmailModule } from './email/email.module';
+import { CouponsModule } from './modules/coupons/coupons.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { EmailModule } from './email/email.module';
     ShippingModule,
     PaymentsModule,
     EmailModule,
+    CouponsModule,
   ],
   controllers: [AppController],
   providers: [

@@ -23,6 +23,7 @@ import { sanitizeForLog } from './utils/sanitize-logs';
 import { StockService } from '../modules/stock/stock.service';
 import { CartService } from '../modules/cart/cart.service';
 import { EmailService } from '../email/email.service';
+import { CouponsService } from '../modules/coupons/coupons.service';
 
 type OrderWithUserAndPayment = Prisma.OrderGetPayload<{
   include: { user: true; payment: true };
@@ -47,6 +48,7 @@ export class PaymentsService {
     private stockService: StockService,
     private cartService: CartService,
     private emailService: EmailService,
+    private couponsService: CouponsService,
   ) {
     const provider = this.config.get<string>('PAYMENT_PROVIDER', 'mock');
 
@@ -463,6 +465,7 @@ export class PaymentsService {
         ) {
           await this.stockService.restoreStockForOrder(payment.orderId, tx);
           await this.cartService.clearCart(payment.order.userId, tx);
+          await this.couponsService.reverseCouponUsage(tx, payment.orderId);
 
           await tx.order.update({
             where: { id: payment.orderId },
@@ -472,6 +475,7 @@ export class PaymentsService {
 
         if (newStatus === PaymentStatus.REFUNDED) {
           await this.stockService.restoreStockForOrder(payment.orderId, tx);
+          await this.couponsService.reverseCouponUsage(tx, payment.orderId);
 
           await tx.order.update({
             where: { id: payment.orderId },

@@ -26,7 +26,7 @@ import { getUserFacingErrorMessage } from '@/lib/errors';
 /** Etapa 2: entrega + resumo + PIX (gera QR na próxima página) ou cartão (cobra aqui). */
 export function StepCheckoutPayment() {
   const router = useRouter();
-  const { cart, clearCart, refreshCart } = useCart();
+  const { cart, clearCart, refreshCart, couponValidation } = useCart();
   const {
     state,
     setPayment,
@@ -39,9 +39,11 @@ export function StepCheckoutPayment() {
 
   const [cardSubmitting, setCardSubmitting] = useState(false);
   const [pixSubmitting, setPixSubmitting] = useState(false);
-
-  const shippingCost = shipping?.cost ?? 0;
-  const total = (cart?.subtotal ?? 0) + shippingCost;
+  const couponDiscount = couponValidation?.valid ? couponValidation.discount : 0;
+  const isFreeShipping =
+    couponValidation?.valid && couponValidation.coupon?.type === 'FREE_SHIPPING';
+  const shippingCost = isFreeShipping ? 0 : (shipping?.cost ?? 0);
+  const total = (cart?.subtotal ?? 0) - couponDiscount + shippingCost;
   const method: CheckoutPaymentMethod = payment?.method ?? 'PIX';
   const payerEmail = identification?.email;
   const paymentLabel = method === 'PIX' ? 'Pix' : 'Cartão de crédito';
@@ -280,7 +282,7 @@ export function StepCheckoutPayment() {
             <CheckoutPurchaseSummary
               cart={cart}
               shippingCost={shippingCost}
-              discount={0}
+              discount={couponDiscount}
               paymentLabel={paymentLabel}
               giftWrap={giftWrap ?? false}
               onGiftWrapChange={setGiftWrap}

@@ -8,9 +8,10 @@ import { MercadoPagoAdapter } from './adapters/mercado-pago.adapter';
 import { WebhookSimulatorService } from './webhooks/webhook-simulator.service';
 import { StockModule } from '../modules/stock/stock.module';
 import { CartModule } from '../modules/cart/cart.module';
+import { CouponsModule } from '../modules/coupons/coupons.module';
 
 @Module({
-  imports: [ConfigModule, StockModule, CartModule],
+  imports: [ConfigModule, StockModule, CartModule, CouponsModule],
   controllers: [PaymentsController, MercadoPagoWebhookController],
   providers: [
     PaymentsService,

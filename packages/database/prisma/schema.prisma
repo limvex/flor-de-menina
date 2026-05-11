@@ -259,12 +259,13 @@ model StockMovement {
 // ============================================================
 
 model Cart {
-  id        String    @id
-  userId    String?
-  sessionId String?   @unique // para visitantes
-  expiresAt DateTime?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id          String    @id
+  userId      String?
+  sessionId   String?   @unique // para visitantes
+  couponCode  String?
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   user  User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
   items CartItem[]
@@ -494,45 +495,60 @@ model Shipping {
 
 enum CouponType {
   PERCENTAGE
-  FIXED
+  FIXED_AMOUNT
+  FREE_SHIPPING
 }
 
 model Coupon {
-  id                String     @id
-  code              String     @unique
-  type              CouponType
-  value             Decimal    @db.Decimal(10, 2) // % ou R$
-  minCartValue      Decimal?   @db.Decimal(10, 2)
-  maxUses           Int?
-  maxUsesPerUser    Int?       @default(1)
-  uses              Int        @default(0)
-  validFrom         DateTime?
-  validUntil        DateTime?
-  firstPurchaseOnly Boolean    @default(false)
-  isActive          Boolean    @default(true)
-  createdAt         DateTime   @default(now())
-  updatedAt         DateTime   @updatedAt
+  id                 String     @id
+  code               String     @unique
+  description        String?
+  type               CouponType
+  value              Decimal    @db.Decimal(10, 2)
+  // Validade
+  validFrom          DateTime
+  validUntil         DateTime
+  isActive           Boolean    @default(true)
+  // Limites
+  maxTotalUses       Int?
+  maxUsesPerCustomer Int        @default(1)
+  // Regras de carrinho
+  minCartValue       Decimal?   @db.Decimal(10, 2)
+  firstOrderOnly     Boolean    @default(false)
+  // Categorias (vazio = todas)
+  categoryIds        String[]
+  // Teto de desconto (para PERCENTAGE)
+  maxDiscountAmount  Decimal?   @db.Decimal(10, 2)
+  // Contadores cacheados
+  totalUses          Int        @default(0)
+  totalRevenue       Decimal    @db.Decimal(10, 2) @default(0)
+  // Metadata
+  createdBy          String?
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
 
   orders       Order[]
   couponUsages CouponUsage[]
 
   @@index([code])
-  @@index([isActive])
+  @@index([isActive, validFrom, validUntil])
 }
 
 model CouponUsage {
-  id        String   @id
-  couponId  String
-  userId    String
-  orderId   String
-  createdAt DateTime @default(now())
+  id             String   @id
+  couponId       String
+  userId         String
+  orderId        String   @unique
+  discountAmount Decimal  @db.Decimal(10, 2)
+  createdAt      DateTime @default(now())
 
   coupon Coupon @relation(fields: [couponId], references: [id])
   user   User   @relation(fields: [userId], references: [id])
   order  Order  @relation(fields: [orderId], references: [id])
 
-  @@unique([couponId, orderId])
+  @@index([couponId])
   @@index([userId])
+  @@index([couponId, userId])
 }
 
 // ============================================================
