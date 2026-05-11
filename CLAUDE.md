@@ -1,5 +1,46 @@
 # CLAUDE.md — Contexto do projeto Flor de Menina
 
+## 🧠 Filosofia de trabalho (a partir de 11/05/2026)
+
+**O humano é a mente. IA executa.**
+
+Regras de execução:
+
+1. **Humano valida ANTES de confiar em qualquer relatório da IA.** Nunca aceita "tá pronto" sem rodar comando próprio (`git log`, `ls`, smoke test) e ver com os próprios olhos.
+
+2. **Cursor é o agente padrão** pra:
+   - Resolução de conflitos (rebase, merge)
+   - Tarefas mecânicas e visuais (rename, refactor, mover arquivos)
+   - Construção de UI e componentes
+   - Testes E2E e validação
+   - Qualquer task que se beneficia de ver diff em tempo real
+
+3. **Claude Code é exceção, não regra.** Usar apenas pra:
+   - Tasks arquiteturais complexas (decisão de stack, schema, segurança)
+   - Migrations grandes ou schema crítico
+   - Quando precisa de raciocínio longo sem interação humana
+
+4. **Validação obrigatória depois de cada task:**
+   - Roda smoke test manual (curl + browser)
+   - Confere `git log` e `git status` com os próprios olhos
+   - Lê o diff do PR antes de mergeiar
+   - Não confia em relatório de IA sem cruzar com comando real
+
+5. **Antes de qualquer comando destrutivo** (`rm`, `git reset --hard`, `--force`):
+   - Para
+   - Confere estado atual com `git status` + `git log`
+   - Confirma com humano
+
+6. **Quando IA reportar "pronto":**
+   - Humano roda os 3 comandos de verificação relevantes
+   - Se não bater, pede pra IA mostrar evidência (output do build, do test)
+   - Nunca aceita "deve estar funcionando" — exige output real
+
+7. **Prompts curtos > prompts mega:**
+   - Prompts de 1000+ linhas geram alucinação
+   - Quebrar tarefa em passos menores
+   - Cada passo tem validação humana
+
 > Este arquivo é o contexto persistente que **toda sessão do Claude Code DEVE LER ANTES** de começar qualquer trabalho. Atualize este arquivo ao final de cada task concluída.
 
 ## 📋 Sobre o projeto
@@ -114,7 +155,7 @@ Atualize esta seção a cada task concluída. Use os emojis:
 | 10  | Produtos com variações + IA descrição | ✅ Concluída                                | `feat/10-produtos-variacoes-ia` | #47 |
 | 11  | Gestão de Estoque com baixa manual    | ✅ Concluída                                | `feat/11-stock-management`      | -   |
 | 12  | Catálogo, busca e filtros             | ✅ Concluída                                | `feat/12-catalogo-busca`        | #50 |
-| 13  | Página de Produto (PDP)               | ⏳ Aguardando testes (Cursor)               | `feat/13-pdp-produto`           | -   |
+| 13  | Página de Produto (PDP)               | ✅ Concluída                                | `feat/13-pdp-produto`           | -   |
 | 14  | Carrinho com reserva de estoque       | ✅ Concluída                                | `feat/14-carrinho-reserva`      | -   |
 | 15  | Wishlist e Conta do Cliente           | ✅ Concluída                                | `feat/15-wishlist-conta`        | #54 |
 | 16  | Checkout multi-step                   | ✅ Concluída                                | `feat/16-checkout-multistep`    | -   |
