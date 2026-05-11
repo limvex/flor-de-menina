@@ -7,9 +7,7 @@ import type { CheckoutStep } from '@flor/types';
 
 const STEPS: { step: CheckoutStep; label: string }[] = [
   { step: 1, label: 'Identificação' },
-  { step: 2, label: 'Endereço' },
-  { step: 3, label: 'Entrega' },
-  { step: 4, label: 'Revisão' },
+  { step: 2, label: 'Pagamento' },
 ];
 
 export function CheckoutStepper() {
@@ -18,7 +16,7 @@ export function CheckoutStepper() {
 
   return (
     <nav aria-label="Etapas do checkout">
-      <ol className="hidden md:flex items-center justify-center gap-0">
+      <ol className="hidden items-center justify-center gap-0 md:flex">
         {STEPS.map(({ step, label }, idx) => {
           const isDone = step < currentStep;
           const isCurrent = step === currentStep;

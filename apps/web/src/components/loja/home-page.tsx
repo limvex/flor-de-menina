@@ -1,18 +1,12 @@
-import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ProductCard } from '@/components/loja/product-card';
 import { listPublicProducts } from '@/lib/api/products-public';
 
-export const metadata: Metadata = {
-  title: 'Flor de Menina — Moda Feminina em Maceió',
-};
-
-export default async function HomePage() {
+export async function HomePage() {
   const featured = await listPublicProducts({ limit: 8, sort: 'featured' }).catch(() => null);
 
   return (
     <>
-      {/* Hero */}
       <section className="flex flex-col items-center justify-center bg-bege-50 px-4 py-20 text-center">
         <p className="mb-4 font-sans text-[11px] font-medium tracking-[0.2em] uppercase text-flor-400">
           Moda Feminina · Maceió – AL
@@ -32,7 +26,6 @@ export default async function HomePage() {
         </Link>
       </section>
 
-      {/* Produtos em destaque */}
       {featured && featured.items.length > 0 && (
         <section className="mx-auto max-w-7xl px-4 py-16 lg:px-8">
           <div className="mb-8 flex items-end justify-between">
@@ -41,7 +34,7 @@ export default async function HomePage() {
             </h2>
             <Link
               href="/produtos"
-              className="font-sans text-xs font-medium tracking-[0.15em] uppercase text-flor-500 hover:text-flor-800 transition-colors"
+              className="font-sans text-xs font-medium tracking-[0.15em] uppercase text-flor-500 transition-colors hover:text-flor-800"
             >
               Ver todos →
             </Link>

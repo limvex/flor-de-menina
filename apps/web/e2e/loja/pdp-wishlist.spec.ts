@@ -42,18 +42,23 @@ test.describe('Wishlist — PDP integrado', () => {
   }) => {
     await loginCustomer(page.request);
     await page.goto('/produtos');
+    await page.waitForLoadState('networkidle');
     const heart = page
       .getByRole('button', { name: /Adicionar aos favoritos|Remover dos favoritos/ })
       .first();
     await heart.click();
-    await expect(page.getByRole('button', { name: /Remover dos favoritos/ }).first()).toBeVisible();
+    await page
+      .getByRole('button', { name: /Remover dos favoritos/ })
+      .first()
+      .waitFor({ state: 'visible', timeout: 15_000 });
     await page
       .getByRole('button', { name: /Remover dos favoritos/ })
       .first()
       .click();
-    await expect(
-      page.getByRole('button', { name: /Adicionar aos favoritos/ }).first(),
-    ).toBeVisible();
+    await page
+      .getByRole('button', { name: /Adicionar aos favoritos/ })
+      .first()
+      .waitFor({ state: 'visible', timeout: 15_000 });
   });
 
   test('logado: heart no ProductCard na listagem /produtos também funciona', async ({ page }) => {

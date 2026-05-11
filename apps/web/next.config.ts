@@ -6,12 +6,16 @@ import type { NextConfig } from 'next';
 const monorepoRoot = resolve(__dirname, '../..');
 loadEnvConfig(monorepoRoot, process.env.NODE_ENV !== 'production');
 
+const mpPublicKey =
+  process.env.NEXT_PUBLIC_MP_PUBLIC_KEY?.trim() || process.env.MP_PUBLIC_KEY?.trim() || '';
+
 /** Garante que variáveis públicas entrem no bundle do cliente (Turbopack/monorepo). */
 const nextConfig: NextConfig = {
   transpilePackages: ['@mercadopago/sdk-react'],
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3333',
-    NEXT_PUBLIC_MP_PUBLIC_KEY: process.env.NEXT_PUBLIC_MP_PUBLIC_KEY ?? '',
+    // Bricks no browser: aceita NEXT_PUBLIC_MP_PUBLIC_KEY ou MP_PUBLIC_KEY (mesmo .env da raiz que a API).
+    NEXT_PUBLIC_MP_PUBLIC_KEY: mpPublicKey,
     NEXT_PUBLIC_MOCK_PAYMENT: process.env.NEXT_PUBLIC_MOCK_PAYMENT ?? 'false',
   },
 };

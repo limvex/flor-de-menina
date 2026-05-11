@@ -14,6 +14,9 @@ import {
   PaymentProvider,
   PaymentMethod,
 } from '@flor/database';
+import { StockService } from '../../modules/stock/stock.service';
+import { CartService } from '../../modules/cart/cart.service';
+import { EmailService } from '../../email/email.service';
 
 // Mock do @flor/database para evitar conexão real com o banco
 jest.mock('@flor/database', () => {
@@ -86,10 +89,16 @@ const mockPayment = {
 describe('PaymentsService', () => {
   let service: PaymentsService;
   let mockAdapter: MockPaymentAdapter;
+  const configMock = {
+    get: (key: string, def: any) => def,
+  } as any;
+  const webhookSimulatorMock = {
+    simulateWebhook: jest.fn(),
+  } as any;
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    mockAdapter = new MockPaymentAdapter();
+    mockAdapter = new MockPaymentAdapter(configMock, webhookSimulatorMock);
 
     const module = await Test.createTestingModule({
       providers: [
@@ -97,7 +106,7 @@ describe('PaymentsService', () => {
         {
           provide: ConfigService,
           useValue: {
-            get: (key: string, def: string) =>
+            get: (key: string, def: any) =>
               key === 'PAYMENT_PROVIDER' ? 'mock' : def,
           },
         },
@@ -112,6 +121,9 @@ describe('PaymentsService', () => {
             getInstallmentOptions: jest.fn(),
           },
         },
+        { provide: StockService, useValue: {} },
+        { provide: CartService, useValue: {} },
+        { provide: EmailService, useValue: {} },
       ],
     }).compile();
 

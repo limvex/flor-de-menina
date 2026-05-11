@@ -1,10 +1,9 @@
 'use client';
 
-import { Suspense, useEffect, useState, useCallback, useRef } from 'react';
+import { Suspense, useEffect, useLayoutEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
 import { useAuth } from '@/lib/auth/auth-context';
 import { CheckoutHeader } from '@/components/loja/checkout/checkout-header';
 import { CheckoutFooter } from '@/components/loja/checkout/checkout-footer';
@@ -41,6 +40,14 @@ function AguardandoPixContent() {
   const [pixOverride, setPixOverride] = useState<PixBundle | null>(null);
   const [pollAttempts, setPollAttempts] = useState(0);
   const pixFilledRef = useRef(false);
+
+  const pixData = order && !loadError ? (pixOverride ?? pickPixFromOrder(order)) : null;
+
+  useLayoutEffect(() => {
+    if (pixData?.qrCodeBase64) {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }
+  }, [pixData?.qrCodeBase64]);
 
   const loadOrder = useCallback(async () => {
     if (!orderId) return;
@@ -83,8 +90,7 @@ function AguardandoPixContent() {
           return;
         }
         if (st.status === 'REJECTED' || st.status === 'CANCELLED' || st.status === 'REFUNDED') {
-          toast.error('Pagamento não concluído.');
-          router.replace(`/conta/pedidos/${orderId}`);
+          router.replace(`/checkout/falha/${orderId}`);
           return;
         }
         if (!pixFilledRef.current && st.pix?.qrCodeBase64 && st.pix.copyPaste && st.pix.expiresAt) {
@@ -122,7 +128,7 @@ function AguardandoPixContent() {
     );
   }
 
-  const pix = pixOverride ?? pickPixFromOrder(order);
+  const pix = pixData;
   const showPixTimeoutHelp = !pix && pollAttempts >= 6;
 
   if (!pix) {

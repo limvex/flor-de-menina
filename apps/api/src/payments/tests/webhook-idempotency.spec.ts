@@ -1,29 +1,36 @@
 import { Test } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
-import { BadRequestException } from '@nestjs/common';
+import { UnauthorizedException } from '@nestjs/common';
 import { PaymentsService } from '../payments.service';
 import { MockPaymentAdapter } from '../adapters/mock-payment.adapter';
 import { MercadoPagoAdapter } from '../adapters/mercado-pago.adapter';
 import { PaymentStatus, PaymentProvider, PaymentMethod } from '@flor/database';
+import { StockService } from '../../modules/stock/stock.service';
+import { CartService } from '../../modules/cart/cart.service';
+import { EmailService } from '../../email/email.service';
 
 // Mock do prisma — reutiliza o mock definido no payments.service.spec
 jest.mock('@flor/database', () => {
   const original = jest.requireActual('@flor/database');
+  const prismaMock = {
+    order: { update: jest.fn(), findUnique: jest.fn() },
+    payment: {
+      findFirst: jest.fn(),
+      update: jest.fn(),
+      upsert: jest.fn(),
+      findUnique: jest.fn(),
+    },
+    paymentEvent: {
+      findUnique: jest.fn(),
+      upsert: jest.fn(),
+      update: jest.fn(),
+    },
+  };
   return {
     ...original,
     prisma: {
-      order: { update: jest.fn() },
-      payment: {
-        findFirst: jest.fn(),
-        update: jest.fn(),
-        upsert: jest.fn(),
-        findUnique: jest.fn(),
-      },
-      paymentEvent: {
-        findUnique: jest.fn(),
-        upsert: jest.fn(),
-        update: jest.fn(),
-      },
+      ...prismaMock,
+      $transaction: (cb: any) => cb(prismaMock),
     },
   };
 });
@@ -32,6 +39,7 @@ import { prisma } from '@flor/database';
 
 describe('handleWebhook — idempotência', () => {
   let service: PaymentsService;
+  let emailService: EmailService;
 
   const basePayment = {
     id: 'pay_1',
@@ -59,7 +67,16 @@ describe('handleWebhook — idempotência', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    const mockAdapter = new MockPaymentAdapter();
+    const mockAdapter = {
+      validateWebhookSignature: jest.fn(
+        ({ signature }: { signature: string }) => signature === 'MOCK_VALID',
+      ),
+      getPaymentStatus: jest.fn().mockResolvedValue({
+        externalId: 'mock_pix_xyz',
+        status: 'pending',
+        transactionId: undefined,
+      }),
+    } as any;
 
     const module = await Test.createTestingModule({
       providers: [
@@ -82,13 +99,24 @@ describe('handleWebhook — idempotência', () => {
             getInstallmentOptions: jest.fn(),
           },
         },
+        { provide: StockService, useValue: {} },
+        { provide: CartService, useValue: { clearCart: jest.fn() } },
+        {
+          provide: EmailService,
+          useValue: {
+            sendOrderConfirmation: jest.fn(),
+            sendPaymentFailure: jest.fn(),
+            sendRefund: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
     service = module.get(PaymentsService);
+    emailService = module.get(EmailService);
   });
 
-  it('webhook com signature inválida lança BadRequest', async () => {
+  it('webhook com signature inválida lança UnauthorizedException (401)', async () => {
     await expect(
       service.handleWebhook({
         rawBody: '{}',
@@ -96,7 +124,7 @@ describe('handleWebhook — idempotência', () => {
         requestId: 'r1',
         body: { data: { id: 'mock_pix_xyz' } },
       }),
-    ).rejects.toThrow(BadRequestException);
+    ).rejects.toThrow(UnauthorizedException);
   });
 
   it('evento já processado retorna skipped:already_processed', async () => {
@@ -119,6 +147,9 @@ describe('handleWebhook — idempotência', () => {
       reason: 'already_processed',
     });
     expect(prisma.paymentEvent.upsert).not.toHaveBeenCalled();
+    expect(emailService.sendOrderConfirmation).not.toHaveBeenCalled();
+    expect(emailService.sendPaymentFailure).not.toHaveBeenCalled();
+    expect(emailService.sendRefund).not.toHaveBeenCalled();
   });
 
   it('payment não encontrado retorna skipped:payment_not_found', async () => {
@@ -151,6 +182,7 @@ describe('handleWebhook — idempotência', () => {
   it('primeira chamada processa e marca evento como processed', async () => {
     (prisma.payment.findFirst as jest.Mock).mockResolvedValue(basePayment);
     (prisma.paymentEvent.findUnique as jest.Mock).mockResolvedValue(null);
+    (prisma.order.findUnique as jest.Mock).mockResolvedValue(null);
     (prisma.paymentEvent.upsert as jest.Mock).mockResolvedValue({
       id: 'evt_new',
     });

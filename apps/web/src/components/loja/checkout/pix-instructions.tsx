@@ -16,7 +16,8 @@ export function PixInstructions() {
           <span className="mt-0.5 h-4 w-4 flex-shrink-0 rounded-full bg-flor-200 text-center text-xs leading-4 text-flor-700">
             1
           </span>
-          Confirme o pedido para receber o QR Code e o código Copia e Cola
+          Em <strong>Formas de pagamento</strong>, clique em <strong>Gerar código PIX</strong> após
+          escolher o frete
         </li>
         <li className="flex items-start gap-2">
           <span className="mt-0.5 h-4 w-4 flex-shrink-0 rounded-full bg-flor-200 text-center text-xs leading-4 text-flor-700">

@@ -168,15 +168,15 @@ test.describe('PDP — Desktop', () => {
   test.describe('CTAs', () => {
     test('com variante selecionada: botão CTA está habilitado', async ({ page }) => {
       await page.goto(`/produto/${SLUG}`);
-      const cta = page.getByRole('button', { name: 'Adicionar ao carrinho' });
+      const cta = page.getByRole('button', { name: /Adicionar à sacola/ });
       await expect(cta).toBeVisible();
       await expect(cta).toBeEnabled();
     });
 
-    test('clicar no CTA com variante selecionada mostra toast de sucesso', async ({ page }) => {
+    test('clicar no CTA com variante selecionada abre a sacola (drawer)', async ({ page }) => {
       await page.goto(`/produto/${SLUG}`);
-      await page.getByRole('button', { name: 'Adicionar ao carrinho' }).click();
-      await expect(page.getByText('Produto adicionado ao carrinho! (em breve)')).toBeVisible();
+      await page.getByRole('button', { name: /Adicionar à sacola/ }).click();
+      await expect(page.getByRole('heading', { name: 'Minha Sacola' })).toBeVisible();
     });
 
     test('sticky mobile CTA NÃO aparece em desktop (viewport 1280px)', async ({ page }) => {

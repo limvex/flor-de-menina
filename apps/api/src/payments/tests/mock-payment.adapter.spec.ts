@@ -2,9 +2,16 @@ import { MockPaymentAdapter } from '../adapters/mock-payment.adapter';
 
 describe('MockPaymentAdapter', () => {
   let adapter: MockPaymentAdapter;
+  const configMock = {
+    get: jest.fn((key: string, def: unknown) => def),
+  } as any;
+  const webhookSimulatorMock = {
+    simulateWebhook: jest.fn(),
+  } as any;
 
   beforeEach(() => {
-    adapter = new MockPaymentAdapter();
+    jest.clearAllMocks();
+    adapter = new MockPaymentAdapter(configMock, webhookSimulatorMock);
   });
 
   describe('createPixPayment', () => {
@@ -108,17 +115,18 @@ describe('MockPaymentAdapter', () => {
   });
 
   describe('getInstallmentOptions', () => {
-    it('retorna 12 opções', async () => {
+    it('retorna até 5x sem juros', async () => {
       const result = await adapter.getInstallmentOptions(1000);
-      expect(result).toHaveLength(12);
+      expect(result).toHaveLength(5);
+      expect(result.every((r) => !r.hasInterest)).toBe(true);
     }, 5000);
 
-    it('1x até 3x sem juros, 4x+ com juros', async () => {
+    it('1x até 5x sem juros', async () => {
       const result = await adapter.getInstallmentOptions(300);
-      expect(result[0].hasInterest).toBe(false);
-      expect(result[1].hasInterest).toBe(false);
-      expect(result[2].hasInterest).toBe(false);
-      expect(result[3].hasInterest).toBe(true);
+      for (let i = 0; i < 5; i++) {
+        expect(result[i].hasInterest).toBe(false);
+        expect(result[i].installments).toBe(i + 1);
+      }
     }, 5000);
 
     it('totalAmount é coerente com installmentAmount', async () => {
@@ -167,9 +175,10 @@ describe('MockPaymentAdapter', () => {
   });
 
   describe('getPaymentStatus', () => {
-    it('PIX externalId retorna pending ou approved', async () => {
+    it('getPaymentStatus é determinístico após markPaymentStatus', async () => {
+      adapter.markPaymentStatus('mock_pix_abc123', 'approved');
       const result = await adapter.getPaymentStatus('mock_pix_abc123');
-      expect(['pending', 'approved']).toContain(result.status);
+      expect(result.status).toBe('approved');
     }, 5000);
   });
 });

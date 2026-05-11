@@ -1,6 +1,7 @@
 import {
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import {
@@ -70,6 +71,7 @@ function formatMovement(m: {
 
 @Injectable()
 export class StockService {
+  private readonly logger = new Logger(StockService.name);
   async listProductsWithStock(query: ListStockQuery) {
     const page = query.page ?? 1;
     const pageSize = query.pageSize ?? 30;
@@ -350,5 +352,168 @@ export class StockService {
     });
 
     return formatMovement(movement);
+  }
+
+  /**
+   * Decrementa estoque definitivamente quando pedido é pago.
+   * Idempotente: chamado 2x não decrementar 2x (verifica movimentos EXISTENTES).
+   * Pode receber `tx` para rodar dentro de uma transação maior.
+   */
+  async decrementStockForOrder(
+    orderId: string,
+    tx?: Parameters<Parameters<PrismaClient['$transaction']>[0]>[0],
+  ): Promise<{ movements: number; skipped: boolean }> {
+    if (tx) {
+      return this.decrementStockForOrderInTx(orderId, tx);
+    }
+
+    return prisma.$transaction((t) =>
+      this.decrementStockForOrderInTx(orderId, t),
+    );
+  }
+
+  private async decrementStockForOrderInTx(
+    orderId: string,
+    t: Parameters<Parameters<PrismaClient['$transaction']>[0]>[0],
+  ): Promise<{ movements: number; skipped: boolean }> {
+    const existing = await t.stockMovement.findFirst({
+      where: {
+        orderId,
+        type: StockMovementType.OUT,
+        source: StockMovementSource.ONLINE_ORDER,
+      },
+    });
+
+    if (existing) {
+      this.logger.log(
+        `decrementStockForOrder: já processado para orderId=${orderId}, pulando`,
+      );
+      return { movements: 0, skipped: true };
+    }
+
+    const order = await t.order.findUnique({
+      where: { id: orderId },
+      include: { items: true },
+    });
+
+    if (!order) {
+      throw new NotFoundException(`Pedido ${orderId} não encontrado`);
+    }
+
+    let movementsCreated = 0;
+
+    for (const item of order.items) {
+      if (!item.variantId) continue;
+
+      await this._applyMovementInTx(
+        {
+          variantId: item.variantId,
+          type: StockMovementType.OUT,
+          source: StockMovementSource.ONLINE_ORDER,
+          quantity: item.quantity,
+          reason: 'Pedido pago',
+          orderId,
+          userId: null,
+        },
+        t,
+      );
+
+      movementsCreated++;
+    }
+
+    this.logger.log(
+      `decrementStockForOrder: ${movementsCreated} movimentos para orderId=${orderId}`,
+    );
+
+    return { movements: movementsCreated, skipped: false };
+  }
+
+  /**
+   * Restaura estoque quando pedido é reembolsado/cancelado após ter sido pago.
+   * Idempotente: chamado 2x não restaura 2x.
+   * Pode receber `tx` para rodar dentro de uma transação maior.
+   */
+  async restoreStockForOrder(
+    orderId: string,
+    tx?: Parameters<Parameters<PrismaClient['$transaction']>[0]>[0],
+  ): Promise<{ movements: number; skipped: boolean }> {
+    if (tx) {
+      return this.restoreStockForOrderInTx(orderId, tx);
+    }
+
+    return prisma.$transaction((t) =>
+      this.restoreStockForOrderInTx(orderId, t),
+    );
+  }
+
+  private async restoreStockForOrderInTx(
+    orderId: string,
+    t: Parameters<Parameters<PrismaClient['$transaction']>[0]>[0],
+  ): Promise<{ movements: number; skipped: boolean }> {
+    const alreadyRestored = await t.stockMovement.findFirst({
+      where: {
+        orderId,
+        type: StockMovementType.IN,
+        source: StockMovementSource.ORDER_REFUNDED,
+      },
+    });
+
+    if (alreadyRestored) {
+      this.logger.log(
+        `restoreStockForOrder: já processado para orderId=${orderId}, pulando`,
+      );
+      return { movements: 0, skipped: true };
+    }
+
+    const wasDecremented = await t.stockMovement.findFirst({
+      where: {
+        orderId,
+        type: StockMovementType.OUT,
+        source: StockMovementSource.ONLINE_ORDER,
+      },
+    });
+
+    if (!wasDecremented) {
+      this.logger.warn(
+        `restoreStockForOrder: pedido ${orderId} nunca teve estoque decrementado, pulando`,
+      );
+      return { movements: 0, skipped: true };
+    }
+
+    const order = await t.order.findUnique({
+      where: { id: orderId },
+      include: { items: true },
+    });
+
+    if (!order) {
+      throw new NotFoundException(`Pedido ${orderId} não encontrado`);
+    }
+
+    let movementsCreated = 0;
+
+    for (const item of order.items) {
+      if (!item.variantId) continue;
+
+      await this._applyMovementInTx(
+        {
+          variantId: item.variantId,
+          type: StockMovementType.IN,
+          source: StockMovementSource.ORDER_REFUNDED,
+          quantity: item.quantity,
+          reason: 'Pedido reembolsado',
+          orderId,
+          userId: null,
+        },
+        t,
+      );
+
+      movementsCreated++;
+    }
+
+    this.logger.log(
+      `restoreStockForOrder: ${movementsCreated} movimentos para orderId=${orderId}`,
+    );
+
+    return { movements: movementsCreated, skipped: false };
   }
 }

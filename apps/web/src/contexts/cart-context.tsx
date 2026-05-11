@@ -33,6 +33,8 @@ interface CartContextValue {
   updateItem: (variantId: string, quantity: number) => Promise<void>;
   removeItem: (variantId: string) => Promise<void>;
   clearCart: () => void;
+  /** Rebusca o carrinho no servidor (ex.: após erro de pedido com sacola já esvaziada). */
+  refreshCart: () => Promise<void>;
   itemCount: number;
 }
 
@@ -204,6 +206,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setCart(null);
   }, [user]);
 
+  const refreshCart = useCallback(async () => {
+    if (!user) return;
+    await fetchCart();
+  }, [user, fetchCart]);
+
   // Sincroniza o localStorage no estado quando o usuário faz logout
   useEffect(() => {
     if (!user && !authLoading) {
@@ -242,6 +249,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         updateItem,
         removeItem,
         clearCart,
+        refreshCart,
         itemCount,
       }}
     >

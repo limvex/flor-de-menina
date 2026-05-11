@@ -14,7 +14,7 @@ import type { ShippingOption } from '@flor/types';
 
 export function StepShipping() {
   const { cart } = useCart();
-  const { state, setShipping, goToStep } = useCheckout();
+  const { state, setShipping } = useCheckout();
   const subtotal = cart?.subtotal ?? 0;
   const [selected, setSelected] = useState<string | null>(state.shipping?.id ?? null);
 
@@ -48,11 +48,6 @@ export function StepShipping() {
 
   const options = quoteResult?.options ?? [];
   const usedFallback = quoteResult?.usedFallback ?? false;
-
-  const handleContinue = () => {
-    if (!selected) return;
-    goToStep(4);
-  };
 
   if (isLoading) {
     return (
@@ -137,15 +132,6 @@ export function StepShipping() {
           </li>
         ))}
       </ul>
-
-      <Button
-        type="button"
-        className="w-full cursor-pointer bg-flor-800 py-6 text-base text-white shadow-sm transition hover:bg-flor-700 hover:shadow focus-visible:ring-2 focus-visible:ring-flor-600 focus-visible:ring-offset-2"
-        disabled={!selected}
-        onClick={handleContinue}
-      >
-        Continuar
-      </Button>
     </div>
   );
 }

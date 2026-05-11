@@ -21,6 +21,7 @@ import { CustomerProfileModule } from './modules/customer-profile/customer-profi
 import { OrdersModule } from './modules/orders/orders.module';
 import { ShippingModule } from './modules/shipping/shipping.module';
 import { PaymentsModule } from './payments/payments.module';
+import { EmailModule } from './email/email.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { PaymentsModule } from './payments/payments.module';
     OrdersModule,
     ShippingModule,
     PaymentsModule,
+    EmailModule,
   ],
   controllers: [AppController],
   providers: [

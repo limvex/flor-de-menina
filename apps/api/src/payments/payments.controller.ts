@@ -41,6 +41,12 @@ export class PaymentsController {
     return this.paymentsService.getInstallmentOptions(amount);
   }
 
+  /** Público: chave pública MP para o SDK React no checkout (evita falha de inline do Next). */
+  @Get('sdk-config')
+  getMpSdkConfig() {
+    return this.paymentsService.getMpBricksPublicKey();
+  }
+
   @Get(':id/status')
   @UseGuards(CustomerJwtGuard)
   async getStatus(@CurrentUser() user: User, @Param('id') paymentId: string) {
