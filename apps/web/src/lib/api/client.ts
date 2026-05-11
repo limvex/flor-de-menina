@@ -1,5 +1,21 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3333';
 
+function formatApiErrorBody(body: unknown, fallback: string): string {
+  if (!body || typeof body !== 'object') return fallback;
+  const b = body as { message?: unknown; error?: unknown };
+  if (typeof b.message === 'string') return b.message;
+  if (Array.isArray(b.message)) return b.message.join('. ');
+  if (b.message && typeof b.message === 'object') {
+    try {
+      return JSON.stringify(b.message);
+    } catch {
+      return fallback;
+    }
+  }
+  if (typeof b.error === 'string') return b.error;
+  return fallback;
+}
+
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
     ...options,
@@ -11,8 +27,8 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   });
 
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error((err as { message?: string }).message ?? res.statusText);
+    const err = await res.json().catch(() => ({}));
+    throw new Error(formatApiErrorBody(err, res.statusText));
   }
 
   if (res.status === 204) return undefined as T;

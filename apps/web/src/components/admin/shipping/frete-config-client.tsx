@@ -298,7 +298,7 @@ export function FreteConfigClient({ initialSettings, meStatus, token }: Props) {
       {/* Seção 4 — Frete grátis global */}
       <FormSection
         title="Frete grátis global (fallback)"
-        description="Aplicado quando uma região não tem regra específica."
+        description="Aplicado quando uma região não tem regra específica. Com o interruptor desligado, o site não exibe a barra de progresso nem calcula frete grátis por esse valor (o backend também ignora)."
       >
         <form onSubmit={handleSaveGlobalThreshold} className="space-y-4">
           <div className="flex items-center gap-3">

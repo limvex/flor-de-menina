@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { Lock } from 'lucide-react';
 
 export function CheckoutHeader() {
   return (
@@ -23,10 +22,6 @@ export function CheckoutHeader() {
             Flor de Menina
           </span>
         </Link>
-        <div className="flex items-center gap-2 text-sm text-flor-500">
-          <Lock className="h-4 w-4" aria-hidden="true" />
-          <span>Compra segura</span>
-        </div>
       </div>
     </header>
   );

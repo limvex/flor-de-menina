@@ -5,12 +5,19 @@ import {
   Matches,
   MinLength,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
+
+function normalizeEmail(value: unknown): string {
+  if (typeof value !== 'string') return '';
+  return value.trim().toLowerCase();
+}
 
 export class RegisterDto {
   @IsString()
   @MinLength(2)
   name: string;
 
+  @Transform(({ value }) => normalizeEmail(value))
   @IsEmail()
   email: string;
 

@@ -53,8 +53,9 @@ export function CartSummary({ cart }: Props) {
       />
 
       <button
+        type="button"
         onClick={handleCheckout}
-        className="w-full h-12 rounded bg-stone-900 hover:bg-stone-800 text-white font-semibold text-sm tracking-wide transition-colors"
+        className="w-full h-12 rounded-lg bg-stone-900 hover:bg-stone-800 active:bg-stone-950 text-white font-semibold text-sm tracking-wide transition-colors cursor-pointer shadow-sm hover:shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900"
       >
         Finalizar compra
       </button>

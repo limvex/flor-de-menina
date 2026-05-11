@@ -37,7 +37,13 @@ function cookieOptions(isProd: boolean) {
 }
 
 @Controller('auth/customer')
-@UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
+@UsePipes(
+  new ValidationPipe({
+    whitelist: true,
+    forbidNonWhitelisted: true,
+    transform: true,
+  }),
+)
 export class CustomerAuthController {
   private isProd = process.env.NODE_ENV === 'production';
 

@@ -1,5 +1,46 @@
 # CLAUDE.md — Contexto do projeto Flor de Menina
 
+## 🧠 Filosofia de trabalho (a partir de 11/05/2026)
+
+**O humano é a mente. IA executa.**
+
+Regras de execução:
+
+1. **Humano valida ANTES de confiar em qualquer relatório da IA.** Nunca aceita "tá pronto" sem rodar comando próprio (`git log`, `ls`, smoke test) e ver com os próprios olhos.
+
+2. **Cursor é o agente padrão** pra:
+   - Resolução de conflitos (rebase, merge)
+   - Tarefas mecânicas e visuais (rename, refactor, mover arquivos)
+   - Construção de UI e componentes
+   - Testes E2E e validação
+   - Qualquer task que se beneficia de ver diff em tempo real
+
+3. **Claude Code é exceção, não regra.** Usar apenas pra:
+   - Tasks arquiteturais complexas (decisão de stack, schema, segurança)
+   - Migrations grandes ou schema crítico
+   - Quando precisa de raciocínio longo sem interação humana
+
+4. **Validação obrigatória depois de cada task:**
+   - Roda smoke test manual (curl + browser)
+   - Confere `git log` e `git status` com os próprios olhos
+   - Lê o diff do PR antes de mergeiar
+   - Não confia em relatório de IA sem cruzar com comando real
+
+5. **Antes de qualquer comando destrutivo** (`rm`, `git reset --hard`, `--force`):
+   - Para
+   - Confere estado atual com `git status` + `git log`
+   - Confirma com humano
+
+6. **Quando IA reportar "pronto":**
+   - Humano roda os 3 comandos de verificação relevantes
+   - Se não bater, pede pra IA mostrar evidência (output do build, do test)
+   - Nunca aceita "deve estar funcionando" — exige output real
+
+7. **Prompts curtos > prompts mega:**
+   - Prompts de 1000+ linhas geram alucinação
+   - Quebrar tarefa em passos menores
+   - Cada passo tem validação humana
+
 > Este arquivo é o contexto persistente que **toda sessão do Claude Code DEVE LER ANTES** de começar qualquer trabalho. Atualize este arquivo ao final de cada task concluída.
 
 ## 📋 Sobre o projeto
@@ -114,12 +155,12 @@ Atualize esta seção a cada task concluída. Use os emojis:
 | 10  | Produtos com variações + IA descrição | ✅ Concluída                                | `feat/10-produtos-variacoes-ia` | #47 |
 | 11  | Gestão de Estoque com baixa manual    | ✅ Concluída                                | `feat/11-stock-management`      | -   |
 | 12  | Catálogo, busca e filtros             | ✅ Concluída                                | `feat/12-catalogo-busca`        | #50 |
-| 13  | Página de Produto (PDP)               | ⏳ Aguardando testes (Cursor)               | `feat/13-pdp-produto`           | -   |
+| 13  | Página de Produto (PDP)               | ✅ Concluída                                | `feat/13-pdp-produto`           | -   |
 | 14  | Carrinho com reserva de estoque       | ✅ Concluída                                | `feat/14-carrinho-reserva`      | -   |
 | 15  | Wishlist e Conta do Cliente           | ✅ Concluída                                | `feat/15-wishlist-conta`        | #54 |
 | 16  | Checkout multi-step                   | ✅ Concluída                                | `feat/16-checkout-multistep`    | -   |
 | 17  | Integração Melhor Envio               | ✅ Concluída                                | `feat/17-melhor-envio`          | -   |
-| 18  | Integração Mercado Pago               | -                                           | -                               | -   |
+| 18  | Integração Mercado Pago               | ⏳ Em progresso                             | `feat/18-mercado-pago-backend`  | -   |
 | 19  | Webhook MP + finalização              | -                                           | -                               | -   |
 | 20  | Sistema de Cupons                     | -                                           | -                               | -   |
 | 21  | Sistema de Reviews com foto           | -                                           | -                               | -   |
@@ -143,6 +184,7 @@ Atualize esta seção a cada task concluída. Use os emojis:
 - `2026-05-07` — Task #10 concluída e mergeada via PR #47. CRUD completo de produtos com R2 (3 tamanhos WebP via Sharp), IA via OpenRouter com mock fallback, admin com filtros/bulk/drag-drop/modal IA, 37 testes Jest + 15 E2E Playwright + 8 edge cases de erro, validação visual aprovada. OBS: Category schema mudou na Task #9 (measureTable→sizeChart, position→sortOrder); products.service adaptado.
 - `2026-05-07` — Task #11 (Gestão de Estoque) implementada. Módulo stock na API com endpoints IN/OUT/ADJUST/counter-sale, SELECT FOR UPDATE contra race condition, histórico paginado com filtros. Admin: /admin/estoque (lista com filtros/alertas), modal de movimentação com Controller (Select controlado), página de histórico por variante. `pnpm dev` agora sobe a API automaticamente via concurrently (nest build + node --watch). Movimentação automática por pedidos será integrada na Task #20.
 - `2026-05-07` — Task #12 (Catálogo) construída. Backend: listPublic refatorado com filtros avançados (categorySlug, sizes, colors, minPrice, maxPrice, sort 5 opções) + endpoint GET /products/public/facets. Frontend: ProductCard com hover/badges/swatches, filtros sidebar desktop + bottom sheet mobile (sem nuqs — estado local), sort, paginação "Carregar mais", quick view modal, skeleton, empty state, breadcrumbs. SEO: sitemap dinâmico, robots.txt. Bonus: header-search integrado com /buscar (removido console.log). Pendente: migration pg_trgm precisa ser aplicada quando banco subir (`docker compose up -d`).
+- `2026-05-10` — Task #18 BACKEND construído. Adapter pattern (MockPaymentAdapter ativo + MercadoPagoAdapter esqueleto pra #25), endpoints POST /payments/process, GET /payments/:id/status, GET /payments/installments, POST /webhooks/mercado-pago. Idempotência via PaymentEvent.externalEventId UNIQUE. sanitizeForLog em todo payload persistido. PAYMENT_PROVIDER="mock" ativo. Frontend vem em prompt separado.
 - `2026-05-09` — Task #12 (Catálogo) concluída e mergeada via PR #50. Backend com pg_trgm typo-tolerant + filtros + facets. Frontend com URL state via nuqs, filter chips, quick view e badges. SEO com sitemap dinâmico e JSON-LD ItemList. Validação final: 67 Vitest + 79 Playwright + 9 bugs corrigidos. TODOs não bloqueantes para Task #25: Lighthouse em produção, a11y completo e color-contrast.
 - `2026-05-09` — Task #13 (PDP) construída. Galeria com swipe mobile (Embla) + zoom desktop, variant selector com swatches de cor e chips de tamanho, sticky mobile CTA, calculadora de frete placeholder, wishlist FUNCIONAL (backend CRUD + hook React Query + botão PDP + heart card), Schema.org Product, OG/Twitter cards, "Você também pode gostar" com produtos da mesma categoria, reviews placeholder estruturado, indicador "Restam X peças", breadcrumbs, tabs Descrição/Detalhes/Trocas. Smoke test OK (200/404/401). Próximo: testes automatizados.
 - `2026-05-09` — Task #15 (Wishlist e Conta do Cliente) concluída e mergeada via PR #54. Wishlist CRUD idempotente (backend + hook React Query + botão PDP + heart no card). Área /conta com perfil, endereços, pedidos e favoritos.
@@ -196,6 +238,12 @@ Atualize esta seção a cada task concluída. Use os emojis:
 - **Tokens ME criptografados**: formato `iv:authTag:ciphertext` em hex. Refresh automático quando `expiresAt - now < 5min`.
 - **Mapeamento CEP→Região**: faixas precisas dos Correios implementadas em `cep-to-region.ts` — TO (77000-77999) e RO (76800-76999, 78900-78999) são Norte, MS (79000-79999) é CO.
 - **GET /orders/shipping-options REMOVIDO** na task #17 — usar POST /shipping/quote.
+- **PAYMENT_PROVIDER controla qual adapter** ("mock" | "mercado_pago"). Default: mock. Trocar na Task #25.
+- **Webhook é idempotente** via PaymentEvent.externalEventId UNIQUE. Chamada 2x com mesmo eventId processa só 1x.
+- **NUNCA logar cardNumber, CVV, access_token, webhook_secret** — usar sanitizeForLog() antes de persistir/logar.
+- **MercadoPagoAdapter é esqueleto** — métodos lançam NotImplementedException. Real na Task #25.
+- **Webhook retorna 200 mesmo em erro** pra evitar retry infinito do MP. Erros vão pro log.
+- **Mock APPROVAL_RATE = 0.8** — 80% aprovam, 20% rejeitam aleatoriamente.
 
 ## 🔗 Links úteis
 

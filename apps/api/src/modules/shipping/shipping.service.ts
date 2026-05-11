@@ -5,7 +5,11 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import { prisma, createId } from '@flor/database';
-import type { BrazilRegion, QuoteShippingResponse } from '@flor/types';
+import type {
+  BrazilRegion,
+  QuoteShippingResponse,
+  ShippingOption,
+} from '@flor/types';
 import type { ShippingSettingsResponse } from '@flor/types';
 import { AdapterFactory } from './adapter.factory';
 import { MelhorEnvioAdapter } from './adapters/melhor-envio.adapter';
@@ -90,6 +94,12 @@ export class ShippingService implements OnModuleInit {
         insuranceValue: dto.subtotal,
       });
       usedFallback = true;
+    }
+
+    options = this.keepCoreShippingOptions(options);
+
+    if (options.length === 0) {
+      return { options: [], usedFallback };
     }
 
     // Aplicar regra de frete grátis
@@ -262,5 +272,27 @@ export class ShippingService implements OnModuleInit {
       return Number(settings.freeShippingGlobalThreshold);
     }
     return null;
+  }
+
+  /**
+   * Mantém no máximo 3 opções alinhadas ao que a loja exibe: Jadlog + PAC + SEDEX,
+   * quando o provedor retornar esses serviços (Melhor Envio costuma trazer dezenas).
+   */
+  private keepCoreShippingOptions(options: ShippingOption[]): ShippingOption[] {
+    if (options.length <= 3) return options;
+    const byCost = [...options].sort((a, b) => a.cost - b.cost);
+    const jadlog = byCost.find(
+      (o) => /jadlog/i.test(o.carrier) || /jadlog/i.test(o.service),
+    );
+    const pac = byCost.find(
+      (o) =>
+        /\bPAC\b/i.test(o.service) &&
+        !/\bSEDEX\b/i.test(o.service) &&
+        !/jadlog/i.test(o.carrier) &&
+        !/jadlog/i.test(o.service),
+    );
+    const sedex = byCost.find((o) => /\bSEDEX\b/i.test(o.service));
+    const out = [jadlog, pac, sedex].filter(Boolean) as ShippingOption[];
+    return out.length > 0 ? out : byCost.slice(0, 3);
   }
 }

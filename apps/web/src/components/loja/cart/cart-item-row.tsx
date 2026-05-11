@@ -4,9 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Trash2, Minus, Plus } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { formatPrice } from '@/lib/format';
-import { ReservationTimer } from './reservation-timer';
 import { useCart } from '@/contexts/cart-context';
 import type { CartItemResponse } from '@flor/types';
 
@@ -17,10 +15,8 @@ interface Props {
 export function CartItemRow({ item }: Props) {
   const { updateItem, removeItem } = useCart();
   const [qty, setQty] = useState(item.quantity);
-  const [expired, setExpired] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Mantém a quantidade sincronizada quando o carrinho atualiza externamente
   useEffect(() => {
     setQty(item.quantity);
   }, [item.quantity]);
@@ -38,13 +34,7 @@ export function CartItemRow({ item }: Props) {
   const isLastUnit = item.availableStock === 1;
 
   return (
-    <div
-      className={cn(
-        'flex gap-4 rounded-lg border p-4 transition-colors',
-        expired ? 'border-red-200 bg-red-50' : 'border-stone-100 bg-white',
-      )}
-    >
-      {/* Imagem */}
+    <div className="flex gap-4 rounded-lg border border-stone-100 bg-white p-4 transition-colors">
       <div className="relative h-24 w-20 flex-shrink-0 overflow-hidden rounded">
         {item.product.image ? (
           <Image
@@ -59,7 +49,6 @@ export function CartItemRow({ item }: Props) {
         )}
       </div>
 
-      {/* Info */}
       <div className="flex flex-1 flex-col gap-2 min-w-0">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
@@ -81,7 +70,6 @@ export function CartItemRow({ item }: Props) {
         </div>
 
         <div className="flex items-center justify-between">
-          {/* Controle de quantidade */}
           <div className="flex items-center rounded border border-stone-200">
             <button
               onClick={() => handleQtyChange(qty - 1)}
@@ -117,37 +105,11 @@ export function CartItemRow({ item }: Props) {
           <span className="text-sm font-semibold text-stone-800">{formatPrice(totalPrice)}</span>
         </div>
 
-        {/* Timer / badges */}
-        <div className="flex flex-wrap items-center gap-2">
-          {isLastUnit && !expired && (
-            <span className="rounded bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-600 border border-amber-200">
-              Última unidade!
-            </span>
-          )}
-          {item.reservedUntil && !expired && (
-            <ReservationTimer
-              reservedUntil={item.reservedUntil}
-              onExpired={() => setExpired(true)}
-            />
-          )}
-          {expired && (
-            <span className="text-xs text-red-600 font-medium">
-              Reserva expirada — disponibilidade não garantida
-            </span>
-          )}
-          {expired && (
-            <button
-              onClick={() => {
-                updateItem(item.variantId, qty)
-                  .then(() => setExpired(false))
-                  .catch(() => null);
-              }}
-              className="text-xs text-flor-600 underline hover:text-flor-800"
-            >
-              Renovar reserva
-            </button>
-          )}
-        </div>
+        {isLastUnit && (
+          <span className="w-fit rounded bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-600 border border-amber-200">
+            Última unidade!
+          </span>
+        )}
       </div>
     </div>
   );

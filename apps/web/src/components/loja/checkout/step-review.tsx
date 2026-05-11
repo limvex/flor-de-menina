@@ -12,8 +12,13 @@ import { Separator } from '@/components/ui/separator';
 import { useCart } from '@/contexts/cart-context';
 import { useCheckout } from '@/contexts/checkout-context';
 import { createOrder } from '@/lib/api/orders';
+import { processPayment } from '@/lib/api/payments';
+import { mapCardFailureMessage } from '@/lib/payment-messages';
 import { formatPrice } from '@/lib/format';
 import type { CheckoutStep } from '@flor/types';
+import { PaymentMethodSelector, type CheckoutPaymentMethod } from './payment-method-selector';
+import { PixInstructions } from './pix-instructions';
+import { CardCheckoutPanel } from './card-checkout-panel';
 
 interface InsufficientItem {
   productName: string;
@@ -44,10 +49,14 @@ function EditButton({
   );
 }
 
+function formatShippingCost(cost: number) {
+  return formatPrice(cost);
+}
+
 export function StepReview() {
   const router = useRouter();
   const { cart, clearCart } = useCart();
-  const { state, goToStep, clearCheckout } = useCheckout();
+  const { state, goToStep, clearCheckout, setPayment } = useCheckout();
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [stockErrors, setStockErrors] = useState<InsufficientItem[]>([]);
@@ -56,6 +65,15 @@ export function StepReview() {
 
   const shippingCost = shipping?.cost ?? 0;
   const total = (cart?.subtotal ?? 0) + shippingCost;
+
+  const method: CheckoutPaymentMethod = payment?.method ?? 'PIX';
+
+  const setMethod = (m: CheckoutPaymentMethod) => {
+    if (m === method) return;
+    setPayment({ method: m });
+  };
+
+  const payerEmail = identification?.email;
 
   const handleFinalize = async () => {
     if (!agreed || !identification || !address || !shipping || !payment) return;
@@ -76,13 +94,49 @@ export function StepReview() {
         notes: undefined,
       });
 
-      clearCart();
-      clearCheckout();
-      router.push(`/pedido/confirmacao/${order.id}`);
+      if (payment.method === 'PIX') {
+        const res = await processPayment({ orderId: order.id, method: 'PIX' });
+        if (res.method !== 'PIX') throw new Error('Resposta PIX inválida');
+        clearCart();
+        clearCheckout();
+        router.push(
+          `/checkout/aguardando-pix?orderId=${encodeURIComponent(order.id)}&paymentId=${encodeURIComponent(res.paymentId)}`,
+        );
+        return;
+      }
+
+      if (!payment.cardToken || !payment.paymentMethodId) {
+        toast.error(
+          'Preencha os dados do cartão abaixo e use o botão do Mercado Pago para gerar o token antes de finalizar.',
+        );
+        document.getElementById('checkout-pagamento')?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+        return;
+      }
+
+      const res = await processPayment({
+        orderId: order.id,
+        method: 'CREDIT_CARD',
+        cardToken: payment.cardToken,
+        paymentMethodId: payment.paymentMethodId,
+        installments: payment.installments ?? 1,
+      });
+
+      if (res.method !== 'CREDIT_CARD') throw new Error('Resposta de cartão inválida');
+
+      if (res.status === 'APPROVED') {
+        clearCart();
+        clearCheckout();
+        router.push(`/pedido/confirmacao/${order.id}`);
+        return;
+      }
+
+      toast.error(mapCardFailureMessage(res.failureReason));
     } catch (err) {
       const raw = err instanceof Error ? err.message : String(err);
 
-      // Try to parse INSUFFICIENT_STOCK structured error
       try {
         const parsed = JSON.parse(raw) as {
           error?: string;
@@ -94,7 +148,7 @@ export function StepReview() {
           return;
         }
       } catch {
-        // not JSON — fall through to generic error
+        // not JSON
       }
 
       toast.error(raw || 'Erro ao finalizar pedido');
@@ -109,7 +163,6 @@ export function StepReview() {
     <div className="space-y-5">
       <h2 className="font-serif text-xl font-normal text-flor-800">Revisão do pedido</h2>
 
-      {/* Identificação */}
       <section className="rounded-lg border border-flor-100 p-4 space-y-1">
         <div className="flex items-center justify-between">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-flor-500">
@@ -126,7 +179,6 @@ export function StepReview() {
         )}
       </section>
 
-      {/* Endereço */}
       <section className="rounded-lg border border-flor-100 p-4 space-y-1">
         <div className="flex items-center justify-between">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-flor-500">
@@ -149,7 +201,6 @@ export function StepReview() {
         )}
       </section>
 
-      {/* Entrega */}
       <section className="rounded-lg border border-flor-100 p-4 space-y-1">
         <div className="flex items-center justify-between">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-flor-500">Entrega</h3>
@@ -158,29 +209,11 @@ export function StepReview() {
         {shipping && (
           <div className="text-sm text-flor-700 space-y-0.5">
             <p>{shipping.label}</p>
-            <p className="font-medium">
-              {shipping.cost === 0 ? 'Grátis' : formatPrice(shipping.cost)}
-            </p>
+            <p className="font-medium text-flor-800">{formatShippingCost(shipping.cost)}</p>
           </div>
         )}
       </section>
 
-      {/* Pagamento */}
-      <section className="rounded-lg border border-flor-100 p-4 space-y-1">
-        <div className="flex items-center justify-between">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-flor-500">
-            Pagamento
-          </h3>
-          <EditButton step={4} label="pagamento" onEdit={goToStep} />
-        </div>
-        {payment && (
-          <p className="text-sm text-flor-700">
-            {payment.method === 'PIX' ? 'PIX — aprovação imediata' : 'Cartão de crédito'}
-          </p>
-        )}
-      </section>
-
-      {/* Itens */}
       <section className="rounded-lg border border-flor-100 p-4 space-y-3">
         <h3 className="text-xs font-semibold uppercase tracking-wider text-flor-500">
           Itens ({cart?.itemCount ?? 0})
@@ -229,7 +262,6 @@ export function StepReview() {
 
       <Separator />
 
-      {/* Total */}
       <div className="space-y-1 text-sm">
         <div className="flex justify-between text-flor-500">
           <span>Subtotal</span>
@@ -237,7 +269,7 @@ export function StepReview() {
         </div>
         <div className="flex justify-between text-flor-500">
           <span>Frete</span>
-          <span>{shippingCost === 0 ? 'Grátis' : formatPrice(shippingCost)}</span>
+          <span>{formatShippingCost(shippingCost)}</span>
         </div>
         <div className="flex justify-between text-base font-semibold text-flor-800">
           <span>Total</span>
@@ -245,7 +277,36 @@ export function StepReview() {
         </div>
       </div>
 
-      {/* Termos */}
+      <Separator />
+
+      <section id="checkout-pagamento" className="scroll-mt-8 space-y-4">
+        <div>
+          <h3 className="font-serif text-lg font-normal text-flor-800">Forma de pagamento</h3>
+          <p className="mt-1 text-xs text-flor-500">
+            Escolha como prefere pagar. Você pode trocar a opção antes de finalizar.
+          </p>
+        </div>
+
+        <PaymentMethodSelector value={method} onChange={setMethod} />
+
+        {method === 'PIX' && <PixInstructions />}
+
+        {method === 'CREDIT_CARD' && (
+          <CardCheckoutPanel
+            total={total}
+            payerEmail={payerEmail}
+            onCardReady={(p) =>
+              setPayment({
+                method: 'CREDIT_CARD',
+                cardToken: p.cardToken,
+                paymentMethodId: p.paymentMethodId,
+                installments: p.installments,
+              })
+            }
+          />
+        )}
+      </section>
+
       <div className="flex items-start gap-3">
         <Checkbox
           id="terms"
@@ -277,7 +338,7 @@ export function StepReview() {
 
       <Button
         type="button"
-        className="w-full bg-flor-800 hover:bg-flor-700 text-white py-6 text-base"
+        className="w-full cursor-pointer bg-flor-800 py-6 text-base text-white shadow-sm transition hover:bg-flor-700 hover:shadow focus-visible:ring-2 focus-visible:ring-flor-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed"
         disabled={!agreed || loading}
         onClick={handleFinalize}
       >

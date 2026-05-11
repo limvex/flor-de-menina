@@ -13,7 +13,6 @@ import { CheckoutSummary } from '@/components/loja/checkout/checkout-summary';
 import { StepIdentification } from '@/components/loja/checkout/step-identification';
 import { StepAddress } from '@/components/loja/checkout/step-address';
 import { StepShipping } from '@/components/loja/checkout/step-shipping';
-import { StepPayment } from '@/components/loja/checkout/step-payment';
 import { StepReview } from '@/components/loja/checkout/step-review';
 import { api } from '@/lib/api/client';
 
@@ -74,8 +73,7 @@ export default function CheckoutPage() {
               {state.step === 1 && <StepIdentification userProfile={profile ?? null} />}
               {state.step === 2 && <StepAddress />}
               {state.step === 3 && <StepShipping />}
-              {state.step === 4 && <StepPayment />}
-              {state.step === 5 && <StepReview />}
+              {state.step === 4 && <StepReview />}
             </div>
 
             <div className="order-1 lg:order-2">

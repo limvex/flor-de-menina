@@ -10,9 +10,7 @@ import {
   createId,
   StockMovementType,
   StockMovementSource,
-  PaymentProvider,
   ShippingProvider,
-  PaymentMethod,
 } from '@flor/database';
 import type { PrismaClient } from '@flor/database';
 import { StockService } from '../stock/stock.service';
@@ -170,21 +168,7 @@ export class OrdersService {
         },
       });
 
-      // 8. Criar Payment
-      await tx.payment.create({
-        data: {
-          id: createId(),
-          orderId: order.id,
-          provider: PaymentProvider.MOCK,
-          method:
-            dto.paymentMethod === 'PIX'
-              ? PaymentMethod.PIX
-              : PaymentMethod.CREDIT_CARD,
-          status: 'PENDING',
-          amount: total,
-          installments: 1,
-        },
-      });
+      // 8. Payment — criado em POST /payments/process (Task #18), não aqui
 
       // 9. Criar Shipping
       await tx.shipping.create({
@@ -293,7 +277,8 @@ export class OrdersService {
       amount: { toNumber(): number };
       installments: number;
       pixCopyPaste: string | null;
-      qrCodeBase64: string | null;
+      pixQrCodeBase64: string | null;
+      pixExpiresAt: Date | null;
       paidAt: Date | null;
     } | null;
     shipping: {
@@ -350,7 +335,8 @@ export class OrdersService {
             amount: order.payment.amount.toNumber(),
             installments: order.payment.installments,
             pixCopyPaste: order.payment.pixCopyPaste,
-            qrCodeBase64: order.payment.qrCodeBase64,
+            qrCodeBase64: order.payment.pixQrCodeBase64,
+            pixExpiresAt: order.payment.pixExpiresAt?.toISOString() ?? null,
             paidAt: order.payment.paidAt?.toISOString() ?? null,
           }
         : null,

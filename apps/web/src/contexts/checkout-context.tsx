@@ -20,11 +20,22 @@ const EMPTY_STATE: CheckoutState = {
   payment: null,
 };
 
+function mergePayment(prev: CheckoutPayment | null, incoming: CheckoutPayment): CheckoutPayment {
+  if (incoming.method === 'PIX') {
+    return { method: 'PIX' };
+  }
+  return {
+    method: 'CREDIT_CARD',
+    cardToken: incoming.cardToken ?? prev?.cardToken,
+    paymentMethodId: incoming.paymentMethodId ?? prev?.paymentMethodId,
+    installments: incoming.installments ?? prev?.installments ?? 1,
+  };
+}
+
 function isStepComplete(state: CheckoutState, step: CheckoutStep): boolean {
   if (step === 1) return state.identification !== null;
   if (step === 2) return state.address !== null;
   if (step === 3) return state.shipping !== null;
-  if (step === 4) return state.payment !== null;
   return false;
 }
 
@@ -50,7 +61,9 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
       const raw = sessionStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw) as CheckoutState;
-        setState(parsed);
+        const rawStep = parsed.step as number;
+        const step = rawStep > 4 ? 4 : (parsed.step as CheckoutStep);
+        setState({ ...parsed, step });
       }
     } catch {
       // ignore parse errors
@@ -60,7 +73,6 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
 
   const persist = useCallback((next: CheckoutState) => {
     try {
-      // Never persist payment card data — only persist method name
       const safe: CheckoutState = {
         ...next,
         payment: next.payment ? { method: next.payment.method } : null,
@@ -96,7 +108,11 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
   const goToStep = useCallback(
     (step: CheckoutStep) => {
       if (!canGoToStep(step)) return;
-      update((prev) => ({ ...prev, step }));
+      update((prev) => ({
+        ...prev,
+        step,
+        payment: step === 4 && !prev.payment ? { method: 'PIX' } : prev.payment,
+      }));
     },
     [canGoToStep, update],
   );
@@ -134,11 +150,10 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
   );
 
   const setPayment = useCallback(
-    (data: CheckoutPayment) => {
+    (incoming: CheckoutPayment) => {
       update((prev) => ({
         ...prev,
-        payment: data,
-        step: 5,
+        payment: mergePayment(prev.payment, incoming),
       }));
     },
     [update],

@@ -118,14 +118,6 @@ export function StepShipping() {
                   <div>
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-medium text-flor-800">{opt.label}</p>
-                      {opt.cost === 0 && (
-                        <span
-                          className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700"
-                          aria-label="Frete grátis"
-                        >
-                          GRÁTIS
-                        </span>
-                      )}
                     </div>
                     <p className="text-xs text-flor-500">
                       {opt.carrier} · {opt.estimatedDays} dias úteis
@@ -134,7 +126,7 @@ export function StepShipping() {
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-semibold text-flor-800">
-                    {opt.cost === 0 ? 'Grátis' : formatPrice(opt.cost)}
+                    {formatPrice(opt.cost)}
                   </span>
                   {selected === opt.id && (
                     <Check className="h-5 w-5 text-flor-800" aria-hidden="true" />
@@ -148,7 +140,7 @@ export function StepShipping() {
 
       <Button
         type="button"
-        className="w-full bg-flor-800 hover:bg-flor-700 text-white"
+        className="w-full cursor-pointer bg-flor-800 py-6 text-base text-white shadow-sm transition hover:bg-flor-700 hover:shadow focus-visible:ring-2 focus-visible:ring-flor-600 focus-visible:ring-offset-2"
         disabled={!selected}
         onClick={handleContinue}
       >

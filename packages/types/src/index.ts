@@ -90,6 +90,10 @@ export type {
   CheckoutAddress,
   CheckoutPayment,
   CheckoutState,
+  ProcessPaymentPixResponse,
+  ProcessPaymentCardResponse,
+  ProcessPaymentResponse,
+  PaymentPollStatusResponse,
 } from './order.schema';
 export type {
   StoreSettingsResponse,

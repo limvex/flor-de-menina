@@ -46,8 +46,16 @@ function LoginForm() {
         setError('root', { message: 'Muitas tentativas. Aguarde alguns minutos.' });
       } else if (error.status === 403) {
         setError('root', { message: 'Verifique seu e-mail antes de entrar.' });
+      } else if (error.status === 401) {
+        setError('root', {
+          message: error.message || 'E-mail ou senha incorretos.',
+        });
+      } else if (error.status === 0) {
+        setError('root', { message: error.message || 'Erro de conexão com a API.' });
       } else {
-        setError('root', { message: 'E-mail ou senha incorretos.' });
+        setError('root', {
+          message: error.message || 'Não foi possível entrar. Tente novamente.',
+        });
       }
     }
   }

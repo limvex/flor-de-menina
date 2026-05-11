@@ -9,8 +9,7 @@ const STEPS: { step: CheckoutStep; label: string }[] = [
   { step: 1, label: 'Identificação' },
   { step: 2, label: 'Endereço' },
   { step: 3, label: 'Entrega' },
-  { step: 4, label: 'Pagamento' },
-  { step: 5, label: 'Revisão' },
+  { step: 4, label: 'Revisão' },
 ];
 
 export function CheckoutStepper() {
@@ -19,7 +18,6 @@ export function CheckoutStepper() {
 
   return (
     <nav aria-label="Etapas do checkout">
-      {/* Desktop */}
       <ol className="hidden md:flex items-center justify-center gap-0">
         {STEPS.map(({ step, label }, idx) => {
           const isDone = step < currentStep;
@@ -75,7 +73,6 @@ export function CheckoutStepper() {
         })}
       </ol>
 
-      {/* Mobile: só etapa atual */}
       <div className="md:hidden flex items-center justify-center gap-2 py-1">
         {STEPS.map(({ step }) => (
           <div

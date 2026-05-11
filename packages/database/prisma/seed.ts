@@ -1,4 +1,8 @@
-import 'dotenv/config';
+import { config as loadRootEnv } from 'dotenv';
+import { resolve } from 'path';
+
+// Monorepo: `.env` fica na raiz (mesmo arquivo que API / Next).
+loadRootEnv({ path: resolve(__dirname, '../../../.env') });
 import { PrismaClient } from '../src/generated/prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
@@ -128,6 +132,56 @@ async function main() {
     },
   });
   console.log(`✅ Cliente sem CPF: ${cliente2.email} / cliente123`);
+
+  // =========================================================
+  // CLIENTE CHECKOUT MERCADO PAGO (Task #18 — PIX / cartão TEST)
+  // CPF exclusivo da conta de testes de checkout (válido; não reutilizar o CPF do cliente demo).
+  // =========================================================
+  const pagamentoPassword = await bcrypt.hash('pagamento123', 12);
+  const checkoutMp = await prisma.user.upsert({
+    where: { email: 'pagamento@flordemenina.site' },
+    update: {
+      passwordHash: pagamentoPassword,
+      name: 'Cliente Pagamento MP',
+      cpf: '39053344705',
+      phone: '82999990003',
+      emailVerified: true,
+      role: UserRole.CUSTOMER,
+    },
+    create: {
+      id: createId(),
+      email: 'pagamento@flordemenina.site',
+      passwordHash: pagamentoPassword,
+      name: 'Cliente Pagamento MP',
+      cpf: '39053344705',
+      phone: '82999990003',
+      role: UserRole.CUSTOMER,
+      emailVerified: true,
+    },
+  });
+  console.log(`✅ Cliente checkout MP: ${checkoutMp.email} / pagamento123`);
+
+  const endMp = await prisma.address.findFirst({ where: { userId: checkoutMp.id } });
+  if (!endMp) {
+    await prisma.address.create({
+      data: {
+        id: createId(),
+        userId: checkoutMp.id,
+        label: 'Casa',
+        recipientName: 'Cliente Pagamento MP',
+        zipCode: '57035-270',
+        street: 'Rua do Ouro',
+        number: '200',
+        complement: null,
+        neighborhood: 'Ponta Verde',
+        city: 'Maceió',
+        state: 'AL',
+        isDefaultShipping: true,
+        isDefaultBilling: true,
+      },
+    });
+    console.log(`✅ Endereço criado para ${checkoutMp.email}`);
+  }
 
   // =========================================================
   // CATEGORIAS
@@ -427,6 +481,37 @@ async function main() {
     );
   }
 
+  // Carrinho dedicado Task #18 (Mercado Pago): 1 item leve para ir direto ao pagamento
+  const cartMpExists = await prisma.cart.findFirst({ where: { userId: checkoutMp.id } });
+  if (!cartMpExists) {
+    const blusaP = variantsBySlug['blusa-cropped-camel']?.find((v) => v.size === 'P');
+    if (blusaP) {
+      const cartMp = await prisma.cart.create({
+        data: { id: createId(), userId: checkoutMp.id },
+      });
+      const prodBlusa = await prisma.product.findFirst({
+        where: { variants: { some: { id: blusaP.id } } },
+        select: { id: true },
+      });
+      if (prodBlusa) {
+        const reservedUntilMp = new Date(Date.now() + 15 * 60 * 1000);
+        await prisma.cartItem.create({
+          data: {
+            id: createId(),
+            cartId: cartMp.id,
+            productId: prodBlusa.id,
+            variantId: blusaP.id,
+            quantity: 1,
+            reservedUntil: reservedUntilMp,
+          },
+        });
+        console.log(
+          `✅ Carrinho pré-montado para ${checkoutMp.email} (Blusa Cropped P — ~R$119,90)`,
+        );
+      }
+    }
+  }
+
   // =========================================================
   // PÁGINAS INSTITUCIONAIS
   // =========================================================
@@ -479,6 +564,11 @@ async function main() {
   console.log('');
   console.log('  👑 ADMIN');
   console.log('     admin@flordemenina.site / admin123');
+  console.log('');
+  console.log('  💳 CHECKOUT MERCADO PAGO (Task #18 — PIX / cartão TEST)');
+  console.log('     pagamento@flordemenina.site / pagamento123');
+  console.log('     CPF (conta teste checkout): 390.533.447-05');
+  console.log('     Carrinho: 1× Blusa Cropped P (~R$119,90) + endereço em Maceió');
   console.log('');
   console.log(
     '  👤 CLIENTE COM CPF (CPF pré-preenchido no checkout, 2 endereços, carrinho montado)',
