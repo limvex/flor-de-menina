@@ -1,14 +1,21 @@
-import { Controller, Post, Body, Headers, Req, Logger } from '@nestjs/common';
+import {
+  Controller,
+  Headers,
+  HttpCode,
+  HttpStatus,
+  Post,
+  Req,
+  Body,
+} from '@nestjs/common';
 import { Request } from 'express';
 import { PaymentsService } from '../payments.service';
 
 @Controller('webhooks')
 export class MercadoPagoWebhookController {
-  private readonly logger = new Logger(MercadoPagoWebhookController.name);
-
   constructor(private paymentsService: PaymentsService) {}
 
   @Post('mercado-pago')
+  @HttpCode(HttpStatus.OK)
   async handle(
     @Body() body: Record<string, unknown>,
     @Headers('x-signature') signature: string,
@@ -19,20 +26,11 @@ export class MercadoPagoWebhookController {
       (req as Request & { rawBody?: Buffer }).rawBody?.toString() ||
       JSON.stringify(body);
 
-    try {
-      const result = await this.paymentsService.handleWebhook({
-        rawBody,
-        signature: signature || '',
-        requestId: requestId || 'no-request-id',
-        body,
-      });
-
-      return result;
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error(`Webhook error: ${message}`);
-      // Retorna 200 mesmo com erro para evitar retry infinito do MP
-      return { error: true, message };
-    }
+    return this.paymentsService.handleWebhook({
+      rawBody,
+      signature: signature || '',
+      requestId: requestId || 'no-request-id',
+      body,
+    });
   }
 }

@@ -14,6 +14,12 @@ export async function getInstallmentOptions(amount: number): Promise<Installment
   );
 }
 
+/** Chave pública do MP vinda da API (lê `.env` da raiz); complementa `NEXT_PUBLIC_*` no bundle. */
+export async function getMpBricksPublicKey(): Promise<string> {
+  const j = await api.get<{ publicKey?: string }>('/payments/sdk-config');
+  return String(j.publicKey ?? '').trim();
+}
+
 export async function processPayment(body: {
   orderId: string;
   method: 'PIX' | 'CREDIT_CARD';

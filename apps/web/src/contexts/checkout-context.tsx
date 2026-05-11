@@ -18,6 +18,7 @@ const EMPTY_STATE: CheckoutState = {
   address: null,
   shipping: null,
   payment: null,
+  giftWrap: false,
 };
 
 function mergePayment(prev: CheckoutPayment | null, incoming: CheckoutPayment): CheckoutPayment {
@@ -34,8 +35,7 @@ function mergePayment(prev: CheckoutPayment | null, incoming: CheckoutPayment): 
 
 function isStepComplete(state: CheckoutState, step: CheckoutStep): boolean {
   if (step === 1) return state.identification !== null;
-  if (step === 2) return state.address !== null;
-  if (step === 3) return state.shipping !== null;
+  if (step === 2) return state.address !== null && state.shipping !== null;
   return false;
 }
 
@@ -46,8 +46,16 @@ interface CheckoutContextValue {
   setAddress: (data: CheckoutAddress) => void;
   setShipping: (data: ShippingOption) => void;
   setPayment: (data: CheckoutPayment) => void;
+  setGiftWrap: (value: boolean) => void;
   clearCheckout: () => void;
   canGoToStep: (step: CheckoutStep) => boolean;
+  /**
+   * Chame antes de esvaziar o carrinho ao concluir pedido (PIX/cartão).
+   * Evita que `/checkout` faça `replace('/carrinho')` na mesma render que `router.push` da próxima tela.
+   */
+  markLeavingAfterSuccessfulOrder: () => void;
+  clearLeavingAfterSuccessfulOrder: () => void;
+  isLeavingAfterSuccessfulOrder: () => boolean;
 }
 
 const CheckoutContext = createContext<CheckoutContextValue | null>(null);
@@ -55,6 +63,7 @@ const CheckoutContext = createContext<CheckoutContextValue | null>(null);
 export function CheckoutProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<CheckoutState>(EMPTY_STATE);
   const hydrated = useRef(false);
+  const leavingAfterSuccessfulOrder = useRef(false);
 
   useEffect(() => {
     try {
@@ -62,8 +71,8 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
       if (raw) {
         const parsed = JSON.parse(raw) as CheckoutState;
         const rawStep = parsed.step as number;
-        const step = rawStep > 4 ? 4 : (parsed.step as CheckoutStep);
-        setState({ ...parsed, step });
+        const step = (rawStep > 2 ? 2 : rawStep) as CheckoutStep;
+        setState({ ...parsed, step, giftWrap: parsed.giftWrap ?? false });
       }
     } catch {
       // ignore parse errors
@@ -76,6 +85,7 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
       const safe: CheckoutState = {
         ...next,
         payment: next.payment ? { method: next.payment.method } : null,
+        giftWrap: next.giftWrap,
       };
       sessionStorage.setItem(STORAGE_KEY, JSON.stringify(safe));
     } catch {
@@ -111,7 +121,6 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
       update((prev) => ({
         ...prev,
         step,
-        payment: step === 4 && !prev.payment ? { method: 'PIX' } : prev.payment,
       }));
     },
     [canGoToStep, update],
@@ -133,7 +142,7 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
       update((prev) => ({
         ...prev,
         address: data,
-        step: 3,
+        step: Math.max(prev.step, 2) as CheckoutStep,
       }));
     },
     [update],
@@ -159,6 +168,13 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
     [update],
   );
 
+  const setGiftWrap = useCallback(
+    (value: boolean) => {
+      update((prev) => ({ ...prev, giftWrap: value }));
+    },
+    [update],
+  );
+
   const clearCheckout = useCallback(() => {
     try {
       sessionStorage.removeItem(STORAGE_KEY);
@@ -167,6 +183,16 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
     }
     setState(EMPTY_STATE);
   }, []);
+
+  const markLeavingAfterSuccessfulOrder = useCallback(() => {
+    leavingAfterSuccessfulOrder.current = true;
+  }, []);
+
+  const clearLeavingAfterSuccessfulOrder = useCallback(() => {
+    leavingAfterSuccessfulOrder.current = false;
+  }, []);
+
+  const isLeavingAfterSuccessfulOrder = useCallback(() => leavingAfterSuccessfulOrder.current, []);
 
   return (
     <CheckoutContext.Provider
@@ -177,8 +203,12 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
         setAddress,
         setShipping,
         setPayment,
+        setGiftWrap,
         clearCheckout,
         canGoToStep,
+        markLeavingAfterSuccessfulOrder,
+        clearLeavingAfterSuccessfulOrder,
+        isLeavingAfterSuccessfulOrder,
       }}
     >
       {children}

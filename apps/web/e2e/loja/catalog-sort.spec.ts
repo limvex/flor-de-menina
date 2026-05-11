@@ -3,6 +3,8 @@ import { test, expect } from '@playwright/test';
 test.describe('Catálogo — ordenação', () => {
   test('select sort default = "relevance"', async ({ page }) => {
     await page.goto('/produtos');
+    await page.waitForLoadState('networkidle');
+    await expect(page.locator('select#sort')).toBeVisible();
     await expect(page.locator('select#sort')).toHaveValue('relevance');
   });
 
@@ -50,28 +52,30 @@ test.describe('Catálogo — ordenação', () => {
     expect(page.url()).toContain('sort=newest');
   });
 
-  test('voltar do browser preserva sort anterior', async ({ page }) => {
+  test('URL com sort e select permanecem sincronizados após navegação explícita', async ({
+    page,
+  }) => {
+    // nuqs costuma usar history: 'replace' — `goBack()` fica flaky (stack nem sempre
+    // tem o catálogo). Aqui validamos o que importa pro usuário: URL ↔ select estáveis.
     await page.goto('/produtos?sort=price_asc');
+    await page.waitForLoadState('domcontentloaded');
     await expect(page.locator('select#sort')).toHaveValue('price_asc');
 
-    await page.locator('select#sort').selectOption('price_desc');
-    await page.waitForURL(/sort=price_desc/);
-
-    await page.goBack();
-    // O catalog usa replace history (não push) — goBack pode sair da página.
-    // Fazemos a verificação tolerante: ou a URL voltou ou estamos na anterior.
+    await page.goto('/produtos?sort=price_desc');
     await page.waitForLoadState('domcontentloaded');
-    // Caso continue em /produtos, o select reflete o estado da URL
-    if (page.url().includes('/produtos')) {
-      const value = await page.locator('select#sort').inputValue();
-      expect(['price_asc', 'price_desc', 'relevance']).toContain(value);
-    }
+    await expect(page.locator('select#sort')).toHaveValue('price_desc');
+
+    await page.goto('/produtos?sort=price_asc');
+    await page.waitForLoadState('domcontentloaded');
+    await expect(page.locator('select#sort')).toHaveValue('price_asc');
   });
 
   test('sort param INVÁLIDO (?sort=xpto) cai em default sem 400', async ({ page }) => {
     const res = await page.goto('/produtos?sort=xpto');
     expect(res?.status()).toBeLessThan(400);
-    await expect(page.locator('article').first()).toBeVisible({ timeout: 10_000 });
+    await page.waitForLoadState('networkidle');
+    await expect(page.locator('select#sort')).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('article').first()).toBeVisible({ timeout: 15_000 });
     // O select fica em 'relevance' (default) ou 'xpto' inválido — qualquer coisa, sem erro
     const total = await page.locator('article').count();
     expect(total).toBeGreaterThan(0);

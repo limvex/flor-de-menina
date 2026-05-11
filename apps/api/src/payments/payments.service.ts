@@ -4,6 +4,7 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
@@ -19,6 +20,9 @@ import { PaymentGatewayAdapter } from './adapters/payment-gateway.interface';
 import { MockPaymentAdapter } from './adapters/mock-payment.adapter';
 import { MercadoPagoAdapter } from './adapters/mercado-pago.adapter';
 import { sanitizeForLog } from './utils/sanitize-logs';
+import { StockService } from '../modules/stock/stock.service';
+import { CartService } from '../modules/cart/cart.service';
+import { EmailService } from '../email/email.service';
 
 type OrderWithUserAndPayment = Prisma.OrderGetPayload<{
   include: { user: true; payment: true };
@@ -40,6 +44,9 @@ export class PaymentsService {
     private config: ConfigService,
     private mockAdapter: MockPaymentAdapter,
     private mpAdapter: MercadoPagoAdapter,
+    private stockService: StockService,
+    private cartService: CartService,
+    private emailService: EmailService,
   ) {
     const provider = this.config.get<string>('PAYMENT_PROVIDER', 'mock');
 
@@ -281,6 +288,13 @@ export class PaymentsService {
           paidAt:
             newStatus === PaymentStatus.APPROVED ? new Date() : payment.paidAt,
           transactionId: gatewayStatus.transactionId || payment.transactionId,
+          ...(newStatus === PaymentStatus.REJECTED ||
+          newStatus === PaymentStatus.CANCELLED
+            ? {
+                failureReason:
+                  gatewayStatus.failureReason ?? payment.failureReason ?? null,
+              }
+            : {}),
         },
         include: {
           order: {
@@ -311,6 +325,15 @@ export class PaymentsService {
     return this.adapter.getInstallmentOptions(amount);
   }
 
+  /** Chave pública (somente) para Bricks no browser — mesmas vars do `.env` da API. */
+  getMpBricksPublicKey(): { publicKey: string } {
+    const raw =
+      this.config.get<string>('NEXT_PUBLIC_MP_PUBLIC_KEY') ||
+      this.config.get<string>('MP_PUBLIC_KEY') ||
+      '';
+    return { publicKey: raw.trim() };
+  }
+
   async handleWebhook(input: {
     rawBody: string;
     signature: string;
@@ -327,7 +350,7 @@ export class PaymentsService {
       this.logger.warn(
         `Webhook com assinatura inválida: requestId=${input.requestId}`,
       );
-      throw new BadRequestException('Invalid signature');
+      throw new UnauthorizedException('Invalid signature');
     }
 
     const eventType: string =
@@ -344,85 +367,209 @@ export class PaymentsService {
       return { skipped: true, reason: 'no_data_id' };
     }
 
-    const payment = await prisma.payment.findFirst({
-      where: { externalId: dataId },
-    });
-
-    if (!payment) {
-      this.logger.warn(`Webhook: payment não encontrado externalId=${dataId}`);
-      return { skipped: true, reason: 'payment_not_found' };
-    }
-
-    const existingEvent = await prisma.paymentEvent.findUnique({
-      where: { externalEventId },
-    });
-
-    if (existingEvent?.processed) {
-      this.logger.log(
-        `Webhook idempotente — evento já processado: ${externalEventId}`,
-      );
-      return { skipped: true, reason: 'already_processed' };
-    }
-
-    const event = await prisma.paymentEvent.upsert({
-      where: { externalEventId },
-      create: {
-        id: createId(),
-        paymentId: payment.id,
-        eventType,
-        externalEventId,
-        rawPayload: sanitizeForLog(input.body) as Prisma.InputJsonValue,
-        processed: false,
-      },
-      update: {
-        rawPayload: sanitizeForLog(input.body) as Prisma.InputJsonValue,
-      },
-    });
-
     const gatewayStatus = await this.adapter.getPaymentStatus(dataId);
     const newStatus = this.mapAdapterStatus(gatewayStatus.status);
 
-    if (newStatus !== payment.status) {
-      await prisma.payment.update({
-        where: { id: payment.id },
-        data: {
+    const txResult = await prisma.$transaction(
+      async (tx) => {
+        const payment = await tx.payment.findFirst({
+          where: { externalId: dataId },
+          include: {
+            order: {
+              select: {
+                id: true,
+                userId: true,
+                number: true,
+                status: true,
+                total: true,
+              },
+            },
+          },
+        });
+
+        if (!payment) {
+          this.logger.warn(
+            `Webhook: payment não encontrado externalId=${dataId}`,
+          );
+          return { skipped: true, reason: 'payment_not_found' as const };
+        }
+
+        const existingEvent = await tx.paymentEvent.findUnique({
+          where: { externalEventId },
+        });
+
+        if (existingEvent?.processed) {
+          this.logger.log(
+            `Webhook idempotente — evento já processado: ${externalEventId}`,
+          );
+          return {
+            skipped: true,
+            reason: 'already_processed' as const,
+            paymentId: payment.id,
+            newStatus,
+          };
+        }
+
+        const event = await tx.paymentEvent.upsert({
+          where: { externalEventId },
+          create: {
+            id: createId(),
+            paymentId: payment.id,
+            eventType,
+            externalEventId,
+            rawPayload: sanitizeForLog(input.body) as Prisma.InputJsonValue,
+            processed: false,
+          },
+          update: {
+            rawPayload: sanitizeForLog(input.body) as Prisma.InputJsonValue,
+          },
+        });
+
+        const paymentUpdateData: Record<string, unknown> = {
           status: newStatus,
           paidAt:
             newStatus === PaymentStatus.APPROVED ? new Date() : payment.paidAt,
           transactionId: gatewayStatus.transactionId || payment.transactionId,
-        },
-      });
+        };
 
-      if (newStatus === PaymentStatus.APPROVED) {
-        await prisma.order.update({
-          where: { id: payment.orderId },
-          data: { status: OrderStatus.PAID },
+        if (
+          newStatus === PaymentStatus.REJECTED ||
+          newStatus === PaymentStatus.CANCELLED
+        ) {
+          paymentUpdateData.failureReason =
+            gatewayStatus.failureReason ?? payment.failureReason ?? null;
+        }
+
+        // Atualiza Payment e Order (mesmo que status já esteja igual),
+        // garantindo que o ciclo de finalização rode 1x por evento.
+        await tx.payment.update({
+          where: { id: payment.id },
+          data: paymentUpdateData as any,
         });
-        // TODO(task-#19): triggerar StockService.decrementStockForOrder + e-mail
-      }
 
-      if (
-        newStatus === PaymentStatus.REJECTED ||
-        newStatus === PaymentStatus.CANCELLED
-      ) {
-        await prisma.order.update({
-          where: { id: payment.orderId },
-          data: { status: OrderStatus.CANCELLED },
+        if (newStatus === PaymentStatus.APPROVED) {
+          await this.stockService.decrementStockForOrder(payment.orderId, tx);
+          await this.cartService.clearCart(payment.order.userId, tx);
+
+          await tx.order.update({
+            where: { id: payment.orderId },
+            data: { status: OrderStatus.PAID },
+          });
+        }
+
+        if (
+          newStatus === PaymentStatus.REJECTED ||
+          newStatus === PaymentStatus.CANCELLED
+        ) {
+          await this.stockService.restoreStockForOrder(payment.orderId, tx);
+          await this.cartService.clearCart(payment.order.userId, tx);
+
+          await tx.order.update({
+            where: { id: payment.orderId },
+            data: { status: OrderStatus.CANCELLED },
+          });
+        }
+
+        if (newStatus === PaymentStatus.REFUNDED) {
+          await this.stockService.restoreStockForOrder(payment.orderId, tx);
+
+          await tx.order.update({
+            where: { id: payment.orderId },
+            data: { status: OrderStatus.REFUNDED },
+          });
+        }
+
+        await tx.paymentEvent.update({
+          where: { id: event.id },
+          data: { processed: true, processedAt: new Date() },
         });
-        // TODO(task-#19): StockService.restoreStockForOrder
-      }
-    }
 
-    await prisma.paymentEvent.update({
-      where: { id: event.id },
-      data: { processed: true, processedAt: new Date() },
-    });
-
-    this.logger.log(
-      `Webhook processado: paymentId=${payment.id} status=${newStatus}`,
+        return {
+          skipped: false as const,
+          paymentId: payment.id,
+          orderId: payment.orderId,
+          newStatus,
+        };
+      },
+      {
+        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+        maxWait: 5000,
+        timeout: 15000,
+      },
     );
 
-    return { ok: true, paymentId: payment.id, newStatus };
+    if (txResult.skipped) {
+      return { skipped: true, reason: txResult.reason };
+    }
+
+    const fullOrder = await prisma.order.findUnique({
+      where: { id: txResult.orderId },
+      include: {
+        user: true,
+        items: true,
+        payment: true,
+      },
+    });
+
+    if (!fullOrder) {
+      this.logger.warn(
+        `Webhook: order não encontrada após transação orderId=${txResult.orderId}`,
+      );
+      return { ok: true, paymentId: txResult.paymentId, newStatus };
+    }
+
+    const buildItemName = (i: (typeof fullOrder.items)[number]) => {
+      const parts = [i.variantSize, i.variantColor].filter(Boolean);
+      return parts.length > 0
+        ? `${i.productName} (${parts.join('/')})`
+        : i.productName;
+    };
+
+    if (txResult.newStatus === PaymentStatus.APPROVED) {
+      await this.emailService.sendOrderConfirmation({
+        orderId: fullOrder.id,
+        orderNumber: fullOrder.number,
+        customerName: fullOrder.user.name,
+        customerEmail: fullOrder.user.email,
+        total: Number(fullOrder.total),
+        items: fullOrder.items.map((i) => ({
+          name: buildItemName(i),
+          quantity: i.quantity,
+          price: Number(i.unitPrice),
+        })),
+      });
+    } else if (
+      txResult.newStatus === PaymentStatus.REJECTED ||
+      txResult.newStatus === PaymentStatus.CANCELLED
+    ) {
+      await this.emailService.sendPaymentFailure({
+        orderId: fullOrder.id,
+        orderNumber: fullOrder.number,
+        customerName: fullOrder.user.name,
+        customerEmail: fullOrder.user.email,
+        reason:
+          fullOrder.payment?.failureReason ??
+          'Pagamento não autorizado pelo banco',
+      });
+    } else if (txResult.newStatus === PaymentStatus.REFUNDED) {
+      await this.emailService.sendRefund({
+        orderId: fullOrder.id,
+        orderNumber: fullOrder.number,
+        customerName: fullOrder.user.name,
+        customerEmail: fullOrder.user.email,
+        amount: Number(fullOrder.payment?.amount ?? 0),
+      });
+    }
+
+    this.logger.log(
+      `Webhook processado: paymentId=${txResult.paymentId} status=${txResult.newStatus}`,
+    );
+
+    return {
+      ok: true,
+      paymentId: txResult.paymentId,
+      newStatus: txResult.newStatus,
+    };
   }
 
   private mapAdapterStatus(status: string): PaymentStatus {

@@ -334,13 +334,15 @@ export class CartService {
     return this.getCart(userId);
   }
 
-  async clearCart(userId: string): Promise<void> {
-    const cart = await prisma.cart.findFirst({
+  async clearCart(userId: string, tx?: Tx): Promise<void> {
+    const db = tx ?? prisma;
+
+    const cart = await db.cart.findFirst({
       where: { userId },
       select: { id: true },
     });
     if (!cart) return;
-    await prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
+    await db.cartItem.deleteMany({ where: { cartId: cart.id } });
   }
 
   async mergeCart(userId: string, dto: MergeCartDto) {

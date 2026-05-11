@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { initMercadoPago, CardPayment } from '@mercadopago/sdk-react';
 import { Label } from '@/components/ui/label';
@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { getInstallmentOptions } from '@/lib/api/payments';
+import { getInstallmentOptions, getMpBricksPublicKey } from '@/lib/api/payments';
 
 export interface CardTokenPayload {
   cardToken: string;
@@ -23,16 +23,25 @@ export interface CardTokenPayload {
 interface Props {
   total: number;
   payerEmail?: string | null;
-  onCardReady: (payload: CardTokenPayload) => void;
+  /** Quando o MP (ou mock) conclui o token — aqui roda createOrder + charge; não use só para setState. */
+  onCardSubmit: (payload: CardTokenPayload) => Promise<void>;
+  isSubmitting?: boolean;
 }
 
 /** Mock só com `NEXT_PUBLIC_MOCK_PAYMENT=true`. Caso contrário, exige chave pública do MP. */
 const useMockCardUi = process.env.NEXT_PUBLIC_MOCK_PAYMENT === 'true';
-const mpPublicKey = process.env.NEXT_PUBLIC_MP_PUBLIC_KEY?.trim() ?? '';
 
-export function CardCheckoutPanel({ total, payerEmail, onCardReady }: Props) {
+export function CardCheckoutPanel({
+  total,
+  payerEmail,
+  onCardSubmit,
+  isSubmitting = false,
+}: Props) {
   const [mockInstallments, setMockInstallments] = useState(1);
   const [mockProfile, setMockProfile] = useState<'visa_ok' | 'master_ok' | 'visa_fail'>('visa_ok');
+  /** `null` = ainda resolvendo (env ou GET /payments/sdk-config). */
+  const [mpPublicKey, setMpPublicKey] = useState<string | null>(null);
+  const brickWrapRef = useRef<HTMLDivElement>(null);
 
   const { data: installmentRows } = useQuery({
     queryKey: ['payment-installments', total],
@@ -42,25 +51,76 @@ export function CardCheckoutPanel({ total, payerEmail, onCardReady }: Props) {
   });
 
   useEffect(() => {
-    if (useMockCardUi || !mpPublicKey) return;
-    initMercadoPago(mpPublicKey, { locale: 'pt-BR' });
+    if (useMockCardUi) return;
+
+    let cancelled = false;
+
+    const fromEnv = (process.env.NEXT_PUBLIC_MP_PUBLIC_KEY || '').trim();
+    if (fromEnv) {
+      setMpPublicKey(fromEnv);
+      initMercadoPago(fromEnv, { locale: 'pt-BR' });
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    (async () => {
+      try {
+        const fromApi = await getMpBricksPublicKey();
+        if (cancelled) return;
+        if (fromApi) {
+          setMpPublicKey(fromApi);
+          initMercadoPago(fromApi, { locale: 'pt-BR' });
+        } else {
+          setMpPublicKey('');
+        }
+      } catch {
+        if (!cancelled) setMpPublicKey('');
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
+  if (!useMockCardUi && mpPublicKey === null) {
+    return (
+      <div className="flex items-center justify-center gap-2 rounded-lg border border-stone-200 bg-stone-50 py-8 text-sm text-stone-600">
+        <span className="inline-block size-4 animate-spin rounded-full border-2 border-stone-300 border-t-stone-700" />
+        Carregando formulário de pagamento…
+      </div>
+    );
+  }
 
   if (!useMockCardUi && !mpPublicKey) {
     return (
       <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-900">
         <p className="font-medium">Cartão indisponível neste ambiente</p>
         <p className="mt-2 text-xs leading-relaxed">
-          Configure a chave pública do Mercado Pago em{' '}
+          Defina a chave pública de <strong>teste</strong> do Mercado Pago no{' '}
+          <code className="rounded bg-red-100 px-1 font-mono text-[11px]">.env na raiz</code> como{' '}
+          <code className="rounded bg-red-100 px-1 py-0.5 font-mono text-[11px]">
+            MP_PUBLIC_KEY
+          </code>{' '}
+          ou{' '}
           <code className="rounded bg-red-100 px-1 py-0.5 font-mono text-[11px]">
             NEXT_PUBLIC_MP_PUBLIC_KEY
           </code>{' '}
-          no <code className="rounded bg-red-100 px-1 font-mono text-[11px]">apps/web/.env</code>{' '}
-          (use a chave de <strong>teste</strong> na sandbox). A API precisa estar com{' '}
+          (a API expõe em{' '}
+          <code className="rounded bg-red-100 px-1 font-mono text-[11px]">
+            GET /payments/sdk-config
+          </code>
+          ). Reinicie a API e o{' '}
+          <code className="rounded bg-red-100 px-1 font-mono text-[11px]">
+            pnpm --filter @flor/web dev
+          </code>
+          . Na API use{' '}
           <code className="rounded bg-red-100 px-1 font-mono text-[11px]">
             PAYMENT_PROVIDER=mercado_pago
           </code>{' '}
-          e o access token de teste.
+          e <code className="rounded bg-red-100 px-1 font-mono text-[11px]">MP_ACCESS_TOKEN</code>{' '}
+          de teste.
         </p>
       </div>
     );
@@ -68,7 +128,8 @@ export function CardCheckoutPanel({ total, payerEmail, onCardReady }: Props) {
 
   if (useMockCardUi) {
     const rows = installmentRows ?? [];
-    const maxInst = rows.length > 0 ? Math.max(...rows.map((r) => r.installments)) : 12;
+    const maxFromApi = rows.length > 0 ? Math.max(...rows.map((r) => r.installments)) : 5;
+    const maxInst = Math.min(maxFromApi, 5);
 
     const mockToken =
       mockProfile === 'master_ok'
@@ -133,15 +194,16 @@ export function CardCheckoutPanel({ total, payerEmail, onCardReady }: Props) {
           type="button"
           variant="outline"
           className="w-full border-flor-300"
+          disabled={isSubmitting}
           onClick={() =>
-            onCardReady({
+            onCardSubmit({
               cardToken: mockToken,
               paymentMethodId: mockProfile.startsWith('master') ? 'master' : 'visa',
               installments: mockInstallments,
             })
           }
         >
-          Simular token do cartão
+          {isSubmitting ? 'Processando…' : 'Simular pagamento com cartão'}
         </Button>
       </div>
     );
@@ -149,27 +211,40 @@ export function CardCheckoutPanel({ total, payerEmail, onCardReady }: Props) {
 
   return (
     <div className="space-y-3">
-      <p className="text-xs text-flor-500">
-        Preencha os dados abaixo e confirme no botão do Mercado Pago para registrar o cartão neste
-        pedido. Depois use <strong>Finalizar pedido</strong>.
+      <p className="text-xs text-stone-600">
+        Preencha os dados e use o botão <strong className="text-stone-800">Pagar</strong> do Mercado
+        Pago abaixo. O pedido é criado e cobrado nesta etapa — você será redirecionado para o
+        resultado.
       </p>
-      <CardPayment
-        locale="pt-BR"
-        initialization={{
-          amount: Number(total.toFixed(2)),
-          payer: payerEmail ? { email: payerEmail } : undefined,
-        }}
-        customization={{
-          paymentMethods: { maxInstallments: 12, minInstallments: 1 },
-        }}
-        onSubmit={async (formData) => {
-          onCardReady({
-            cardToken: formData.token,
-            paymentMethodId: formData.payment_method_id,
-            installments: formData.installments,
-          });
-        }}
-      />
+
+      <div ref={brickWrapRef} className="relative min-w-0 max-w-xl">
+        {isSubmitting && (
+          <div
+            className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-white/80 backdrop-blur-[1px]"
+            aria-busy
+            aria-label="Processando pagamento"
+          >
+            <span className="inline-block size-8 animate-spin rounded-full border-2 border-stone-300 border-t-[#5c4033]" />
+          </div>
+        )}
+        <CardPayment
+          locale="pt-BR"
+          initialization={{
+            amount: Number(total.toFixed(2)),
+            payer: payerEmail ? { email: payerEmail } : undefined,
+          }}
+          customization={{
+            paymentMethods: { maxInstallments: 5, minInstallments: 1 },
+          }}
+          onSubmit={async (formData) => {
+            await onCardSubmit({
+              cardToken: formData.token,
+              paymentMethodId: formData.payment_method_id,
+              installments: formData.installments,
+            });
+          }}
+        />
+      </div>
     </div>
   );
 }

@@ -301,10 +301,20 @@ export class MercadoPagoAdapter implements PaymentGatewayAdapter {
     signature: string;
     requestId: string;
   }): boolean {
-    const secret = this.config.get<string>('MP_WEBHOOK_SECRET');
+    const secret = this.config.get<string>('MP_WEBHOOK_SECRET')?.trim();
+    const allowInsecure =
+      this.config.get<string>('ALLOW_WEBHOOK_WITHOUT_SECRET') === 'true';
+
     if (!secret) {
+      if (allowInsecure) {
+        this.logger.warn(
+          'validateWebhookSignature: MP_WEBHOOK_SECRET vazio — ALLOW_WEBHOOK_WITHOUT_SECRET=true (somente dev); aceitando webhook sem validar assinatura.',
+        );
+        void input;
+        return true;
+      }
       this.logger.warn(
-        'validateWebhookSignature: MP_WEBHOOK_SECRET vazio — assinatura não validada',
+        'validateWebhookSignature: MP_WEBHOOK_SECRET vazio — configure o segredo do painel MP ou defina ALLOW_WEBHOOK_WITHOUT_SECRET=true em dev local.',
       );
       return false;
     }
@@ -348,14 +358,17 @@ export class MercadoPagoAdapter implements PaymentGatewayAdapter {
   }
 
   private fallbackInstallments(amount: number): InstallmentOption[] {
-    return [
-      {
-        installments: 1,
-        installmentAmount: Number(amount.toFixed(2)),
-        totalAmount: Number(amount.toFixed(2)),
+    const total = Number(amount.toFixed(2));
+    const out: InstallmentOption[] = [];
+    for (let n = 1; n <= 5; n++) {
+      out.push({
+        installments: n,
+        installmentAmount: Number((total / n).toFixed(2)),
+        totalAmount: total,
         hasInterest: false,
-      },
-    ];
+      });
+    }
+    return out;
   }
 
   private parseInstallmentsResponse(
@@ -387,7 +400,9 @@ export class MercadoPagoAdapter implements PaymentGatewayAdapter {
       });
     }
     if (!out.length) return [];
-    return out.sort((a, b) => a.installments - b.installments);
+    const capped = out.filter((o) => o.installments <= 5);
+    if (!capped.length) return this.fallbackInstallments(_amount);
+    return capped.sort((a, b) => a.installments - b.installments);
   }
 
   private logMpError(context: string, e: unknown): void {

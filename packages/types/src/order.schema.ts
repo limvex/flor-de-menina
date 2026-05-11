@@ -93,7 +93,8 @@ export interface OrderResponse {
   shipping: ShippingResponse | null;
 }
 
-export type CheckoutStep = 1 | 2 | 3 | 4;
+/** 1 Identificação → 2 Pagamento (entrega, PIX ou cartão; PIX gera QR na sequência). */
+export type CheckoutStep = 1 | 2;
 
 export interface CheckoutIdentification {
   name: string;
@@ -185,4 +186,5 @@ export interface CheckoutState {
   address: CheckoutAddress | null;
   shipping: ShippingOption | null;
   payment: CheckoutPayment | null;
+  giftWrap?: boolean;
 }

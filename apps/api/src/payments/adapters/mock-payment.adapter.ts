@@ -1,5 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { forwardRef, Inject, Injectable, Logger } from '@nestjs/common';
 import { createId } from '@flor/database';
+import {
+  MockFinalStatus,
+  WebhookSimulatorService,
+} from '../webhooks/webhook-simulator.service';
 import {
   PaymentGatewayAdapter,
   PixPaymentResult,
@@ -8,10 +13,39 @@ import {
   InstallmentOption,
 } from './payment-gateway.interface';
 
+type MockPaymentState = 'pending' | 'approved' | 'rejected';
+
 @Injectable()
 export class MockPaymentAdapter implements PaymentGatewayAdapter {
   private readonly logger = new Logger(MockPaymentAdapter.name);
-  private readonly APPROVAL_RATE = 0.8;
+  private readonly paymentStates = new Map<string, MockPaymentState>();
+  private readonly pixApprovalRate: number;
+  private readonly cardApprovalRate: number;
+  private readonly pixWebhookDelayMs: number;
+  private readonly cardWebhookDelayMs: number;
+
+  constructor(
+    private readonly config: ConfigService,
+    @Inject(forwardRef(() => WebhookSimulatorService))
+    private readonly webhookSimulator: WebhookSimulatorService,
+  ) {
+    this.pixApprovalRate = this.config.get<number>(
+      'MOCK_PIX_APPROVAL_RATE',
+      0.9,
+    );
+    this.cardApprovalRate = this.config.get<number>(
+      'MOCK_CARD_APPROVAL_RATE',
+      0.8,
+    );
+    this.pixWebhookDelayMs = this.config.get<number>(
+      'MOCK_WEBHOOK_PIX_DELAY_MS',
+      8000,
+    );
+    this.cardWebhookDelayMs = this.config.get<number>(
+      'MOCK_WEBHOOK_CARD_DELAY_MS',
+      2000,
+    );
+  }
 
   async createPixPayment(input: {
     orderId: string;
@@ -24,11 +58,22 @@ export class MockPaymentAdapter implements PaymentGatewayAdapter {
     await this.simulateDelay();
 
     const externalId = `mock_pix_${createId()}`;
+    this.paymentStates.set(externalId, 'pending');
     const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
 
     this.logger.log(
       `[MOCK] PIX criado: orderId=${input.orderId} amount=${input.amount}`,
     );
+
+    const willApprove = Math.random() < this.pixApprovalRate;
+    const finalStatus: MockFinalStatus = willApprove ? 'approved' : 'rejected';
+
+    // Agenda webhook simulado (timer em setTimeout)
+    this.webhookSimulator.simulateWebhook({
+      externalId,
+      delayMs: this.pixWebhookDelayMs,
+      finalStatus,
+    });
 
     return {
       externalId,
@@ -55,6 +100,7 @@ export class MockPaymentAdapter implements PaymentGatewayAdapter {
     await this.simulateDelay();
 
     const externalId = `mock_card_${createId()}`;
+    this.paymentStates.set(externalId, 'pending');
 
     const tokenParts = input.cardToken.split('_');
     const brand = tokenParts[2]?.toLowerCase() || 'visa';
@@ -70,12 +116,19 @@ export class MockPaymentAdapter implements PaymentGatewayAdapter {
     ) {
       approved = true;
     } else {
-      approved = Math.random() < this.APPROVAL_RATE;
+      approved = Math.random() < this.cardApprovalRate;
     }
 
     this.logger.log(
       `[MOCK] Cartão processado: orderId=${input.orderId} status=${approved ? 'approved' : 'rejected'} amount=${input.amount} installments=${input.installments}`,
     );
+
+    const finalStatus: MockFinalStatus = approved ? 'approved' : 'rejected';
+    this.webhookSimulator.simulateWebhook({
+      externalId,
+      delayMs: this.cardWebhookDelayMs,
+      finalStatus,
+    });
 
     if (approved) {
       return {
@@ -113,21 +166,32 @@ export class MockPaymentAdapter implements PaymentGatewayAdapter {
   async getPaymentStatus(externalId: string): Promise<PaymentStatusResult> {
     await this.simulateDelay(100, 300);
 
-    const isPix = externalId.startsWith('mock_pix_');
+    const state = this.paymentStates.get(externalId) ?? 'pending';
 
-    if (isPix) {
-      const isPaid = Math.random() < 0.6;
-      if (isPaid) {
-        return {
-          externalId,
-          status: 'approved',
-          paidAt: new Date(),
-          transactionId: `mock_tx_${createId()}`,
-        };
-      }
+    if (state === 'approved') {
+      return {
+        externalId,
+        status: 'approved',
+        paidAt: new Date(),
+        transactionId: `mock_tx_${createId()}`,
+      };
+    }
+
+    if (state === 'rejected') {
+      const isPix = externalId.startsWith('mock_pix_');
+      return {
+        externalId,
+        status: 'rejected',
+        failureReason: isPix ? 'cc_rejected_other_reason' : undefined,
+      };
     }
 
     return { externalId, status: 'pending' };
+  }
+
+  // Usado pelo WebhookSimulatorService antes de chamar handleWebhook
+  markPaymentStatus(externalId: string, status: MockFinalStatus) {
+    this.paymentStates.set(externalId, status);
   }
 
   validateWebhookSignature(input: {
@@ -143,19 +207,15 @@ export class MockPaymentAdapter implements PaymentGatewayAdapter {
   async getInstallmentOptions(amount: number): Promise<InstallmentOption[]> {
     await this.simulateDelay(50, 200);
 
+    const totalAmount = Number(amount.toFixed(2));
     const options: InstallmentOption[] = [];
 
-    for (let i = 1; i <= 12; i++) {
-      const hasInterest = i > 3;
-      const interestMultiplier = hasInterest ? Math.pow(1.0199, i - 3) : 1;
-      const totalAmount = Number((amount * interestMultiplier).toFixed(2));
-      const installmentAmount = Number((totalAmount / i).toFixed(2));
-
+    for (let i = 1; i <= 5; i++) {
       options.push({
         installments: i,
-        installmentAmount,
+        installmentAmount: Number((totalAmount / i).toFixed(2)),
         totalAmount,
-        hasInterest,
+        hasInterest: false,
       });
     }
 

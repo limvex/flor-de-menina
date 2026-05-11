@@ -245,6 +245,9 @@ importers:
       '@tanstack/react-table':
         specifier: ^8.21.3
         version: 8.21.3(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      canvas-confetti:
+        specifier: ^1.9.4
+        version: 1.9.4
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -306,6 +309,9 @@ importers:
       '@tailwindcss/postcss':
         specifier: ^4
         version: 4.2.4
+      '@types/canvas-confetti':
+        specifier: ^1.9.0
+        version: 1.9.0
       '@types/node':
         specifier: ^20
         version: 20.19.39
@@ -3836,6 +3842,12 @@ packages:
         integrity: sha512-HLFeCYgz89uk22N5Qg3dvGvsv46B8GLvKKo1zKG4NybA8U2DiEO3w9lqGg29t/tfLRJpJ6iQxnVw4OnB7MoM9g==,
       }
 
+  '@types/canvas-confetti@1.9.0':
+    resolution:
+      {
+        integrity: sha512-aBGj/dULrimR1XDZLtG9JwxX1b4HPRF6CX9Yfwh3NvstZEm1ZL7RBnel4keCPSqs1ANRu1u2Aoz9R+VmtjYuTg==,
+      }
+
   '@types/connect@3.4.38':
     resolution:
       {
@@ -5093,6 +5105,12 @@ packages:
     resolution:
       {
         integrity: sha512-yk0l/YSrOnFZk3UROpDLQD9+kC1l4meK/wed583AXrzoarMGJcbRi2Q4RaUYbKxYAsZ8sWmaSa/DsLmdBeI1vQ==,
+      }
+
+  canvas-confetti@1.9.4:
+    resolution:
+      {
+        integrity: sha512-yxQbJkAVrFXWNbTUjPqjF7G+g6pDotOUHGbkZq2NELZUMDpiJ85rIEazVb8GTaAptNW2miJAXbs1BtioA251Pw==,
       }
 
   chalk@4.1.2:
@@ -14072,6 +14090,8 @@ snapshots:
       '@types/connect': 3.4.38
       '@types/node': 20.19.39
 
+  '@types/canvas-confetti@1.9.0': {}
+
   '@types/connect@3.4.38':
     dependencies:
       '@types/node': 20.19.39
@@ -14944,6 +14964,8 @@ snapshots:
   camelcase@6.3.0: {}
 
   caniuse-lite@1.0.30001791: {}
+
+  canvas-confetti@1.9.4: {}
 
   chalk@4.1.2:
     dependencies:
