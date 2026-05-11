@@ -2,7 +2,23 @@ import { ApiError, messageForHttpStatus, readErrorFromResponse } from '@/lib/err
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3333';
 
-async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
+let refreshPromise: Promise<boolean> | null = null;
+
+async function tryRefreshToken(): Promise<boolean> {
+  if (refreshPromise) return refreshPromise;
+  refreshPromise = fetch(`${API_URL}/auth/customer/refresh`, {
+    method: 'POST',
+    credentials: 'include',
+  })
+    .then((r) => r.ok)
+    .catch(() => false)
+    .finally(() => {
+      refreshPromise = null;
+    });
+  return refreshPromise;
+}
+
+async function apiFetch<T>(path: string, options?: RequestInit, _retry = true): Promise<T> {
   let res: Response;
   try {
     res = await fetch(`${API_URL}${path}`, {
@@ -18,6 +34,11 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
       throw new ApiError(messageForHttpStatus(0), 0, { cause });
     }
     throw cause;
+  }
+
+  if (res.status === 401 && _retry) {
+    const refreshed = await tryRefreshToken();
+    if (refreshed) return apiFetch<T>(path, options, false);
   }
 
   if (!res.ok) {

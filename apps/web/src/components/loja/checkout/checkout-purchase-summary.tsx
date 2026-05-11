@@ -3,9 +3,12 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { ChevronDown, ChevronUp, ShoppingCart } from 'lucide-react';
+import { toast } from 'sonner';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { formatPrice } from '@/lib/format';
+import { CouponInput } from '@/components/loja/cart/coupon-input';
+import { useCart } from '@/contexts/cart-context';
 import type { CartResponse } from '@flor/types';
 
 interface InsufficientItem {
@@ -36,6 +39,29 @@ export function CheckoutPurchaseSummary({
   stockErrors = [],
 }: Props) {
   const [showProducts, setShowProducts] = useState(false);
+  const [couponLoading, setCouponLoading] = useState(false);
+  const { applyCoupon, removeCoupon, couponValidation } = useCart();
+
+  async function handleApplyCoupon(code: string) {
+    setCouponLoading(true);
+    try {
+      const result = await applyCoupon(code);
+      if (!result.success) {
+        toast.error(result.error ?? 'Cupom inválido');
+      }
+    } finally {
+      setCouponLoading(false);
+    }
+  }
+
+  async function handleRemoveCoupon() {
+    setCouponLoading(true);
+    try {
+      await removeCoupon();
+    } finally {
+      setCouponLoading(false);
+    }
+  }
 
   const subtotal = cart?.subtotal ?? 0;
   const total = subtotal + shippingCost - discount;
@@ -57,6 +83,16 @@ export function CheckoutPurchaseSummary({
         >
           Resumo da compra
         </h3>
+      </div>
+
+      <div className="mt-4">
+        <CouponInput
+          appliedCode={cart?.couponCode ?? null}
+          validation={couponValidation}
+          onApply={handleApplyCoupon}
+          onRemove={handleRemoveCoupon}
+          isLoading={couponLoading}
+        />
       </div>
 
       <dl className="mt-4 space-y-2.5 text-sm text-stone-700">

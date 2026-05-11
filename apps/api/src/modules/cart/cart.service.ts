@@ -6,10 +6,15 @@ import {
 import { prisma, createId } from '@flor/database';
 import type { PrismaClient } from '@flor/database';
 import { CART_RESERVATION_MINUTES } from '@flor/types';
-import type { CartResponse, CartItemResponse } from '@flor/types';
+import type {
+  CartResponse,
+  CartItemResponse,
+  CouponValidationResult,
+} from '@flor/types';
 import type { AddItemDto } from './dto/add-item.dto';
 import type { UpdateItemDto } from './dto/update-item.dto';
 import type { MergeCartDto } from './dto/merge-cart.dto';
+import { CouponsService } from '../coupons/coupons.service';
 
 type Tx = Parameters<Parameters<PrismaClient['$transaction']>[0]>[0];
 
@@ -24,6 +29,8 @@ function buildVariantLabel(size: string | null, color: string | null): string {
 
 @Injectable()
 export class CartService {
+  constructor(private readonly couponsService: CouponsService) {}
+
   async getAvailableStock(
     variantId: string,
     excludeCartId?: string,
@@ -69,6 +76,7 @@ export class CartService {
       where: { userId },
       select: {
         id: true,
+        couponCode: true,
         items: {
           select: {
             id: true,
@@ -80,6 +88,7 @@ export class CartService {
                 id: true,
                 name: true,
                 slug: true,
+                categoryId: true,
                 images: {
                   select: { cardUrl: true, url: true },
                   orderBy: { position: 'asc' },
@@ -112,8 +121,9 @@ export class CartService {
     if (!cart) {
       const newCart = await this.getOrCreateCart(userId);
       return this.buildCartResponse(
-        { id: newCart.id, items: [] },
+        { id: newCart.id, items: [], couponCode: null },
         freeShippingThreshold,
+        null,
       );
     }
 
@@ -124,15 +134,50 @@ export class CartService {
       }),
     );
 
+    // Validate coupon if one is stored
+    let couponValidation: CouponValidationResult | null = null;
+    if (cart.couponCode) {
+      const subtotal = itemsWithStock.reduce((sum, item) => {
+        const basePrice = item.variant.product.basePrice.toNumber();
+        const rawVariantPrice = item.variant.price?.toNumber() ?? null;
+        const price =
+          rawVariantPrice != null && rawVariantPrice > 0
+            ? rawVariantPrice
+            : basePrice;
+        return sum + price * item.quantity;
+      }, 0);
+
+      couponValidation = await this.couponsService.validate({
+        code: cart.couponCode,
+        subtotal,
+        items: itemsWithStock.map((item) => {
+          const basePrice = item.variant.product.basePrice.toNumber();
+          const rawVariantPrice = item.variant.price?.toNumber() ?? null;
+          const price =
+            rawVariantPrice != null && rawVariantPrice > 0
+              ? rawVariantPrice
+              : basePrice;
+          return {
+            variantId: item.variantId,
+            quantity: item.quantity,
+            price,
+            categoryId: item.product.categoryId ?? '',
+          };
+        }),
+      });
+    }
+
     return this.buildCartResponse(
-      { ...cart, items: itemsWithStock },
+      { ...cart, items: itemsWithStock, couponCode: cart.couponCode },
       freeShippingThreshold,
+      couponValidation,
     );
   }
 
   private buildCartResponse(
     cart: {
       id: string;
+      couponCode?: string | null;
       items: Array<{
         id: string;
         variantId: string;
@@ -158,6 +203,7 @@ export class CartService {
       }>;
     },
     freeShippingThreshold: number | null,
+    couponValidation: CouponValidationResult | null,
   ): CartResponse {
     const items: CartItemResponse[] = cart.items.map((item) => {
       const basePrice = item.variant.product.basePrice.toNumber();
@@ -216,6 +262,8 @@ export class CartService {
         freeShippingThreshold == null
           ? null
           : Math.max(0, freeShippingThreshold - subtotal),
+      couponCode: cart.couponCode ?? null,
+      couponValidation,
     };
   }
 
@@ -419,5 +467,106 @@ export class CartService {
 
     const cartResponse = await this.getCart(userId);
     return { cart: cartResponse, discarded };
+  }
+
+  async applyCouponToCart(userId: string, code: string): Promise<CartResponse> {
+    const normalizedCode = code.toUpperCase().trim();
+    const cart = await this.getOrCreateCart(userId);
+
+    const currentCart = await this.getCart(userId);
+    const validation = await this.couponsService.validate(
+      {
+        code: normalizedCode,
+        subtotal: currentCart.subtotal,
+        items: currentCart.items.map((i) => ({
+          variantId: i.variantId,
+          quantity: i.quantity,
+          price: i.variant.price,
+          categoryId: '',
+        })),
+      },
+      userId,
+    );
+
+    if (!validation.valid) {
+      const firstError = validation.errors?.[0];
+      const err: Record<string, unknown> = {
+        error: firstError?.code ?? 'INVALID_COUPON',
+        message: firstError?.message ?? 'Cupom inválido',
+      };
+      if (firstError?.details) err['details'] = firstError.details;
+      throw new ConflictException(err);
+    }
+
+    // Buscar itens com categoryId para validação completa
+    const cartWithCategories = await prisma.cart.findFirst({
+      where: { userId },
+      select: {
+        id: true,
+        items: {
+          select: {
+            variantId: true,
+            quantity: true,
+            product: { select: { categoryId: true, basePrice: true } },
+            variant: {
+              select: { price: true, product: { select: { basePrice: true } } },
+            },
+          },
+        },
+      },
+    });
+
+    const itemsForValidation = (cartWithCategories?.items ?? []).map((item) => {
+      const basePrice = item.variant.product.basePrice.toNumber();
+      const rawVariantPrice = item.variant.price?.toNumber() ?? null;
+      const price =
+        rawVariantPrice != null && rawVariantPrice > 0
+          ? rawVariantPrice
+          : basePrice;
+      return {
+        variantId: item.variantId,
+        quantity: item.quantity,
+        price,
+        categoryId: item.product.categoryId ?? '',
+      };
+    });
+
+    const subtotal = itemsForValidation.reduce(
+      (s, i) => s + i.price * i.quantity,
+      0,
+    );
+    const fullValidation = await this.couponsService.validate(
+      { code: normalizedCode, subtotal, items: itemsForValidation },
+      userId,
+    );
+
+    if (!fullValidation.valid) {
+      const firstError = fullValidation.errors?.[0];
+      throw new ConflictException({
+        error: firstError?.code ?? 'INVALID_COUPON',
+        message: firstError?.message ?? 'Cupom inválido',
+      });
+    }
+
+    await prisma.cart.update({
+      where: { id: cart.id },
+      data: { couponCode: normalizedCode },
+    });
+
+    return this.getCart(userId);
+  }
+
+  async removeCouponFromCart(userId: string): Promise<CartResponse> {
+    const cart = await prisma.cart.findFirst({
+      where: { userId },
+      select: { id: true },
+    });
+    if (cart) {
+      await prisma.cart.update({
+        where: { id: cart.id },
+        data: { couponCode: null },
+      });
+    }
+    return this.getCart(userId);
   }
 }

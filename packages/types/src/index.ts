@@ -102,3 +102,16 @@ export type {
   UpdateRegionRuleInput,
   ShippingSettingsResponse,
 } from './store-settings.schema';
+export type {
+  CouponType,
+  CouponValidationResult,
+  CouponValidationError,
+  CouponValidateItem,
+  ValidateCouponRequest,
+  CouponSummary,
+  CouponUsageSummary,
+  CouponStats,
+  CreateCouponInput,
+  UpdateCouponInput,
+} from './coupon.schema';
+export { MAX_COUPON_CODE_LENGTH } from './coupon.schema';

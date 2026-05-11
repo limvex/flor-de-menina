@@ -27,6 +27,8 @@ export interface CartItemResponse {
   availableStock: number;
 }
 
+import type { CouponValidationResult } from './coupon.schema';
+
 export interface CartResponse {
   id: string;
   items: CartItemResponse[];
@@ -37,6 +39,8 @@ export interface CartResponse {
   freeShippingThreshold: number | null;
   /** Quanto falta para o frete grátis; `null` se a meta estiver desativada. */
   freeShippingRemaining: number | null;
+  couponCode: string | null;
+  couponValidation: CouponValidationResult | null;
 }
 
 export interface MergeDiscardedItem {

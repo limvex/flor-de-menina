@@ -14,13 +14,17 @@ import {
 } from '@flor/database';
 import type { PrismaClient } from '@flor/database';
 import { StockService } from '../stock/stock.service';
+import { CouponsService } from '../coupons/coupons.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 
 type Tx = Parameters<Parameters<PrismaClient['$transaction']>[0]>[0];
 
 @Injectable()
 export class OrdersService {
-  constructor(private readonly stockService: StockService) {}
+  constructor(
+    private readonly stockService: StockService,
+    private readonly couponsService: CouponsService,
+  ) {}
 
   async createOrder(userId: string, dto: CreateOrderDto) {
     return prisma.$transaction(async (tx) => {
@@ -29,6 +33,7 @@ export class OrdersService {
         where: { userId },
         select: {
           id: true,
+          couponCode: true,
           items: {
             select: {
               id: true,
@@ -38,6 +43,7 @@ export class OrdersService {
               product: {
                 select: {
                   name: true,
+                  categoryId: true,
                   images: {
                     select: { cardUrl: true, url: true },
                     orderBy: { position: 'asc' },
@@ -99,14 +105,54 @@ export class OrdersService {
 
       // 4. Calcular valores
       const subtotal = cart.items.reduce((sum, item) => {
+        const raw = item.variant.price?.toNumber();
         const price =
-          item.variant.price?.toNumber() ??
-          item.variant.product.basePrice.toNumber();
+          raw != null && raw > 0
+            ? raw
+            : item.variant.product.basePrice.toNumber();
         return sum + price * item.quantity;
       }, 0);
 
       const shippingCost = dto.shippingOption.cost;
-      const total = subtotal + shippingCost;
+
+      // 4.5. Validar e calcular cupom
+      let discount = 0;
+      let finalShippingCost = shippingCost;
+      const couponCode = cart.couponCode ?? null;
+
+      if (couponCode) {
+        const couponItems = cart.items.map((item) => {
+          const raw = item.variant.price?.toNumber();
+          const price =
+            raw != null && raw > 0
+              ? raw
+              : item.variant.product.basePrice.toNumber();
+          return {
+            variantId: item.variantId,
+            quantity: item.quantity,
+            price,
+            categoryId: item.product.categoryId ?? '',
+          };
+        });
+
+        const couponResult = await this.couponsService.validate(
+          { code: couponCode, items: couponItems, subtotal, shippingCost },
+          userId,
+        );
+
+        if (!couponResult.valid) {
+          const firstError = couponResult.errors?.[0];
+          throw new ConflictException({
+            error: 'COUPON_INVALID',
+            message: firstError?.message ?? 'Cupom inválido ou expirado',
+          });
+        }
+
+        discount = couponResult.discount;
+        finalShippingCost = couponResult.finalShipping;
+      }
+
+      const total = subtotal - discount + finalShippingCost;
 
       // 5. Gerar número do pedido sequencial
       const orderNumber = await this.generateOrderNumber(tx);
@@ -138,16 +184,19 @@ export class OrdersService {
           number: orderNumber,
           cpf: dto.cpf,
           subtotal,
-          shippingCost,
-          discount: 0,
+          shippingCost: finalShippingCost,
+          discount,
           total,
+          couponCode: couponCode ?? undefined,
           shippingAddress,
           notes: dto.notes,
           items: {
             create: cart.items.map((item) => {
-              const price =
-                item.variant.price?.toNumber() ??
-                item.variant.product.basePrice.toNumber();
+              const rawItemPrice = item.variant.price?.toNumber();
+              const itemPrice =
+                rawItemPrice != null && rawItemPrice > 0
+                  ? rawItemPrice
+                  : item.variant.product.basePrice.toNumber();
               return {
                 id: createId(),
                 productId: item.productId,
@@ -159,9 +208,9 @@ export class OrdersService {
                   item.product.images[0]?.cardUrl ??
                   item.product.images[0]?.url ??
                   null,
-                unitPrice: price,
+                unitPrice: itemPrice,
                 quantity: item.quantity,
-                subtotal: price * item.quantity,
+                subtotal: itemPrice * item.quantity,
               };
             }),
           },
@@ -178,9 +227,20 @@ export class OrdersService {
           provider: ShippingProvider.MOCK,
           serviceName: `${dto.shippingOption.carrier} ${dto.shippingOption.service}`,
           estimatedDays: dto.shippingOption.estimatedDays,
-          cost: shippingCost,
+          cost: finalShippingCost,
         },
       });
+
+      // 9.5. Registrar uso do cupom (dentro da transação — idempotência)
+      if (couponCode && discount > 0) {
+        await this.couponsService.applyCoupon(
+          tx,
+          order.id,
+          couponCode,
+          userId,
+          discount,
+        );
+      }
 
       // 10. Baixa de estoque para cada item
       for (const item of cart.items) {
@@ -197,8 +257,12 @@ export class OrdersService {
         );
       }
 
-      // 11. Limpar carrinho
+      // 11. Limpar carrinho (itens + cupom)
       await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
+      await tx.cart.update({
+        where: { id: cart.id },
+        data: { couponCode: null },
+      });
 
       // 12. Salvar CPF no perfil se ainda não tiver
       const userCpf = await tx.user.findUnique({

@@ -11,7 +11,10 @@ import {
   removeCartItem,
   clearCartApi,
   mergeCart,
+  applyCouponApi,
+  removeCouponApi,
 } from '@/lib/api/cart';
+import type { CouponValidationResult } from '@flor/types';
 import {
   getLocalCart,
   addToLocalCart,
@@ -35,6 +38,9 @@ interface CartContextValue {
   clearCart: () => void;
   /** Rebusca o carrinho no servidor (ex.: após erro de pedido com sacola já esvaziada). */
   refreshCart: () => Promise<void>;
+  applyCoupon: (code: string) => Promise<{ success: boolean; error?: string }>;
+  removeCoupon: () => Promise<void>;
+  couponValidation: CouponValidationResult | null;
   itemCount: number;
 }
 
@@ -42,6 +48,8 @@ const CartContext = createContext<CartContextValue | null>(null);
 
 function buildLocalCart(
   items: { variantId: string; quantity: number; snapshot?: LocalCartItemSnapshot }[],
+  couponCode?: string | null,
+  couponValidation?: CouponValidationResult | null,
 ): CartResponse {
   const subtotal = items.reduce((sum, i) => sum + (i.snapshot?.variantPrice ?? 0) * i.quantity, 0);
   return {
@@ -78,6 +86,8 @@ function buildLocalCart(
     nextExpiry: null,
     freeShippingThreshold: null,
     freeShippingRemaining: null,
+    couponCode: couponCode ?? null,
+    couponValidation: couponValidation ?? null,
   };
 }
 
@@ -211,6 +221,34 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     await fetchCart();
   }, [user, fetchCart]);
 
+  const applyCoupon = useCallback(
+    async (code: string): Promise<{ success: boolean; error?: string }> => {
+      if (!user) {
+        return { success: false, error: 'LOGIN_REQUIRED' };
+      }
+      try {
+        const updated = await applyCouponApi(code);
+        setCart(updated);
+        return { success: true };
+      } catch (err: unknown) {
+        const msg =
+          err instanceof Error ? err.message : typeof err === 'string' ? err : 'Cupom inválido';
+        return { success: false, error: msg };
+      }
+    },
+    [user],
+  );
+
+  const removeCoupon = useCallback(async (): Promise<void> => {
+    if (!user) return;
+    try {
+      const updated = await removeCouponApi();
+      setCart(updated);
+    } catch {
+      toast.error('Não foi possível remover o cupom');
+    }
+  }, [user]);
+
   // Sincroniza o localStorage no estado quando o usuário faz logout
   useEffect(() => {
     if (!user && !authLoading) {
@@ -236,6 +274,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [user, cart]);
 
   const itemCount = cart?.itemCount ?? 0;
+  const couponValidation = cart?.couponValidation ?? null;
 
   return (
     <CartContext.Provider
@@ -250,6 +289,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         removeItem,
         clearCart,
         refreshCart,
+        applyCoupon,
+        removeCoupon,
+        couponValidation,
         itemCount,
       }}
     >
