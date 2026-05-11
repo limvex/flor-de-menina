@@ -2,9 +2,10 @@ import Link from 'next/link';
 import { SearchX } from 'lucide-react';
 import { EmptyState } from '@/components/shared/empty-state';
 
-export default function LojaNotFound() {
+/** 404 global: URLs fora dos route groups (ex.: /pagina-inexistente). */
+export default function GlobalNotFound() {
   return (
-    <div className="mx-auto max-w-7xl px-4 py-24 lg:px-8">
+    <div className="mx-auto flex min-h-[70vh] max-w-7xl flex-col items-center justify-center px-4 py-24 lg:px-8">
       <EmptyState
         icon={SearchX}
         title="Página não encontrada"

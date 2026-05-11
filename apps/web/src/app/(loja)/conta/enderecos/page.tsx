@@ -12,6 +12,7 @@ import {
   setDefaultShipping,
   setDefaultBilling,
 } from '@/lib/api/addresses';
+import { getUserFacingErrorMessage } from '@/lib/errors';
 import { AddressCard } from '@/components/loja/conta/address-card';
 import { AddressForm } from '@/components/loja/conta/address-form';
 import { EmptyState } from '@/components/shared/empty-state';
@@ -72,8 +73,8 @@ export default function EnderecosPage() {
       await deleteAddress(removeId);
       await refetch();
       toast.success('Endereço removido');
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erro ao remover endereço');
+    } catch (err: unknown) {
+      toast.error(getUserFacingErrorMessage(err));
     } finally {
       setRemoveId(null);
     }
@@ -84,8 +85,8 @@ export default function EnderecosPage() {
       await setDefaultShipping(id);
       await refetch();
       toast.success('Endereço padrão de entrega atualizado');
-    } catch {
-      toast.error('Erro ao atualizar');
+    } catch (err: unknown) {
+      toast.error(getUserFacingErrorMessage(err));
     }
   };
 
@@ -94,8 +95,8 @@ export default function EnderecosPage() {
       await setDefaultBilling(id);
       await refetch();
       toast.success('Endereço padrão de cobrança atualizado');
-    } catch {
-      toast.error('Erro ao atualizar');
+    } catch (err: unknown) {
+      toast.error(getUserFacingErrorMessage(err));
     }
   };
 

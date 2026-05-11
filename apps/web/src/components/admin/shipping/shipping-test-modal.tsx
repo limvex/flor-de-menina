@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatPrice } from '@/lib/format';
+import { getUserFacingErrorMessage, readErrorFromResponse } from '@/lib/errors';
 import type { QuoteShippingResponse, ShippingOption } from '@flor/types';
 
 interface Props {
@@ -45,15 +46,14 @@ export function ShippingTestModal({ open, onOpenChange, token }: Props) {
       });
 
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ message: res.statusText }));
-        throw new Error((err as { message?: string }).message ?? res.statusText);
+        await readErrorFromResponse(res);
       }
 
       const data = (await res.json()) as QuoteShippingResponse;
       setResult(data);
       setElapsed(Date.now() - start);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro desconhecido');
+    } catch (err: unknown) {
+      setError(getUserFacingErrorMessage(err));
     } finally {
       setLoading(false);
     }

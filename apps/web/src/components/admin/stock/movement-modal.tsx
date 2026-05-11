@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { stockApi, type MovementType, type MovementSource } from '@/lib/api/stock';
+import { getUserFacingErrorMessage } from '@/lib/errors';
 import type { VariantStockSummary } from '@flor/types';
 
 interface MovementModalProps {
@@ -104,8 +105,8 @@ export function MovementModal({ open, onOpenChange, variant, onSuccess }: Moveme
       reset();
       onOpenChange(false);
       onSuccess();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erro ao registrar movimentação');
+    } catch (err: unknown) {
+      toast.error(getUserFacingErrorMessage(err));
     } finally {
       setLoading(false);
     }

@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { getUserFacingErrorMessage } from '@/lib/errors';
 import type { CartResponse } from '@flor/types';
 import {
   getCart,
@@ -143,9 +144,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           setIsOpen(true);
         } catch (err: unknown) {
           setCart(prev);
-          const msg =
-            err instanceof Error ? err.message : 'Ops! Esse item não está mais disponível';
-          toast.error(msg);
+          toast.error(getUserFacingErrorMessage(err));
           throw err;
         }
       } else {
@@ -166,8 +165,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           setCart(updated);
         } catch (err: unknown) {
           setCart(prev);
-          const msg = err instanceof Error ? err.message : 'Não foi possível atualizar o item';
-          toast.error(msg);
+          toast.error(getUserFacingErrorMessage(err));
           throw err;
         }
       } else {

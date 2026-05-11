@@ -7,23 +7,32 @@ import type {
   QuoteShippingResponse,
 } from '@flor/types';
 
+import { ApiError, messageForHttpStatus, readErrorFromResponse } from '@/lib/errors';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3333';
 
 async function adminFetch<T>(path: string, token: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      Cookie: `access_token=${token}`,
-      ...options?.headers,
-    },
-    credentials: 'include',
-    cache: 'no-store',
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}${path}`, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        Cookie: `access_token=${token}`,
+        ...options?.headers,
+      },
+      credentials: 'include',
+      cache: 'no-store',
+    });
+  } catch (cause) {
+    if (cause instanceof TypeError) {
+      throw new ApiError(messageForHttpStatus(0), 0, { cause });
+    }
+    throw cause;
+  }
 
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error((err as { message?: string }).message ?? res.statusText);
+    await readErrorFromResponse(res);
   }
 
   if (res.status === 204) return undefined as T;

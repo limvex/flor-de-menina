@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { updateCustomerProfile } from '@/lib/api/customer-profile';
+import { getUserFacingErrorMessage } from '@/lib/errors';
 import { useAccount } from '@/contexts/account-context';
 import type { CustomerProfile } from '@flor/types';
 
@@ -35,8 +36,8 @@ export function ProfileForm({ profile }: { profile: CustomerProfile }) {
       await updateCustomerProfile({ name, phone: phone || undefined });
       await refetchProfile();
       toast.success('Perfil atualizado');
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erro ao atualizar perfil');
+    } catch (err: unknown) {
+      toast.error(getUserFacingErrorMessage(err));
     } finally {
       setSaving(false);
     }
