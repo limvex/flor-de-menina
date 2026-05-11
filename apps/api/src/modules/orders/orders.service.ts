@@ -192,9 +192,6 @@ export class OrdersService {
           notes: dto.notes,
           items: {
             create: cart.items.map((item) => {
-              const price =
-                item.variant.price?.toNumber() ??
-                item.variant.product.basePrice.toNumber();
               const rawItemPrice = item.variant.price?.toNumber();
               const itemPrice =
                 rawItemPrice != null && rawItemPrice > 0
