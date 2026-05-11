@@ -10,9 +10,14 @@ export default function AdminNotFound() {
       title="Página não encontrada"
       description="A página que você tentou acessar não existe ou foi removida."
       action={
-        <Button variant="outline" render={<Link href="/admin/dashboard" />}>
-          Voltar para o Dashboard
-        </Button>
+        <div className="flex flex-wrap justify-center gap-3">
+          <Button variant="outline" render={<Link href="/admin/dashboard" />} nativeButton={false}>
+            Voltar ao painel
+          </Button>
+          <Button render={<Link href="/" />} nativeButton={false}>
+            Voltar à loja
+          </Button>
+        </div>
       }
     />
   );
