@@ -51,8 +51,12 @@ function CadastroForm() {
         setError('email', { message: 'Este e-mail já está cadastrado.' });
       } else if (error.status === 429) {
         setError('root', { message: 'Muitas tentativas. Aguarde alguns minutos.' });
+      } else if (error.status === 0) {
+        setError('root', { message: error.message || 'Erro de conexão com a API.' });
       } else {
-        setError('root', { message: 'Erro ao criar conta. Tente novamente.' });
+        setError('root', {
+          message: error.message || 'Erro ao criar conta. Tente novamente.',
+        });
       }
     }
   }

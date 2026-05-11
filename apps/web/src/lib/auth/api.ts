@@ -12,16 +12,32 @@ interface LoginData {
   password: string;
 }
 
+function extractApiMessage(body: unknown): string {
+  if (!body || typeof body !== 'object') return 'Erro desconhecido';
+  const m = (body as { message?: unknown }).message;
+  if (typeof m === 'string') return m;
+  if (Array.isArray(m)) return m.filter((x): x is string => typeof x === 'string').join(' ');
+  return 'Erro desconhecido';
+}
+
 async function authFetch(path: string, options?: RequestInit) {
-  const res = await fetch(`${API_URL}${path}`, {
-    ...options,
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}${path}`, {
+      ...options,
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+    });
+  } catch {
+    throw {
+      status: 0,
+      message: `Não foi possível contatar a API em ${API_URL}. Verifique se o servidor Nest está rodando (pnpm dev:api).`,
+    };
+  }
 
   if (!res.ok) {
-    const body = (await res.json().catch(() => ({}))) as { message?: string };
-    throw { status: res.status, message: body.message ?? 'Erro desconhecido' };
+    const body = (await res.json().catch(() => ({}))) as unknown;
+    throw { status: res.status, message: extractApiMessage(body) };
   }
 
   return res.json();

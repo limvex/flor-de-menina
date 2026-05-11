@@ -93,7 +93,7 @@ export interface OrderResponse {
   shipping: ShippingResponse | null;
 }
 
-export type CheckoutStep = 1 | 2 | 3 | 4 | 5;
+export type CheckoutStep = 1 | 2 | 3 | 4;
 
 export interface CheckoutIdentification {
   name: string;

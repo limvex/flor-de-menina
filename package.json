@@ -16,6 +16,7 @@
     "db:migrate": "pnpm --filter @flor/database db:migrate",
     "db:studio": "pnpm --filter @flor/database db:studio",
     "db:seed": "pnpm --filter @flor/database db:seed",
+    "db:prepare": "pnpm db:generate && pnpm --filter @flor/database db:migrate:deploy && pnpm db:seed",
     "db:reset": "pnpm --filter @flor/database db:reset",
     "prepare": "husky"
   },

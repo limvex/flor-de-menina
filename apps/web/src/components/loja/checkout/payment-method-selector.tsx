@@ -29,7 +29,7 @@ export function PaymentMethodSelector({ value, onChange }: Props) {
             {m === 'PIX' ? 'PIX' : 'Cartão de crédito'}
           </p>
           <p className="text-xs text-flor-500">
-            {m === 'PIX' ? 'Aprovação após confirmação' : 'Token seguro (Mercado Pago)'}
+            {m === 'PIX' ? 'Confirmação no app do banco' : 'Parcelamento no checkout'}
           </p>
         </button>
       ))}

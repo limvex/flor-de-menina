@@ -33,8 +33,10 @@ export interface CartResponse {
   subtotal: number;
   itemCount: number;
   nextExpiry: string | null;
-  freeShippingThreshold: number;
-  freeShippingRemaining: number;
+  /** Valor mínimo do pedido para frete grátis (global). `null` = desativado no admin. */
+  freeShippingThreshold: number | null;
+  /** Quanto falta para o frete grátis; `null` se a meta estiver desativada. */
+  freeShippingRemaining: number | null;
 }
 
 export interface MergeDiscardedItem {

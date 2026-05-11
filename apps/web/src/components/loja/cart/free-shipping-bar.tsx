@@ -6,12 +6,14 @@ import { cn } from '@/lib/utils';
 
 interface Props {
   subtotal: number;
-  threshold: number;
-  remaining: number;
+  threshold: number | null;
+  remaining: number | null;
   className?: string;
 }
 
 export function FreeShippingBar({ subtotal, threshold, remaining, className }: Props) {
+  if (threshold == null || remaining == null) return null;
+
   const progress = Math.min(100, Math.round((subtotal / threshold) * 100));
   const unlocked = remaining === 0;
 

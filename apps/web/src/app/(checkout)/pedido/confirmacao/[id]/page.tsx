@@ -120,7 +120,7 @@ export default async function ConfirmacaoPage({ params }: PageProps) {
               </div>
               <div className="flex justify-between text-flor-500">
                 <span>Frete</span>
-                <span>{order.shippingCost === 0 ? 'Grátis' : formatPrice(order.shippingCost)}</span>
+                <span>{formatPrice(order.shippingCost)}</span>
               </div>
               <div className="flex justify-between font-semibold text-flor-800">
                 <span>Total</span>

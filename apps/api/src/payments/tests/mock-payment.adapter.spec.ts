@@ -65,6 +65,23 @@ describe('MockPaymentAdapter', () => {
       expect(result.cardHolderName).toBe('João Silva');
     }, 10000);
 
+    it('mock_tok_visa_0001 rejeita sempre com failureReason', async () => {
+      const result = await adapter.processCardPayment({
+        orderId: 'o',
+        amount: 100,
+        installments: 1,
+        cardToken: 'mock_tok_visa_0001',
+        paymentMethodId: 'visa',
+        customerEmail: 'a@b.com',
+        customerName: 'T',
+        customerCpf: '1',
+        description: 'd',
+      });
+
+      expect(result.status).toBe('rejected');
+      expect(result.failureReason).toBe('cc_rejected_insufficient_amount');
+    }, 10000);
+
     it('rejeição retorna failureReason com prefixo cc_rejected_', async () => {
       const results = await Promise.all(
         Array.from({ length: 30 }, () =>

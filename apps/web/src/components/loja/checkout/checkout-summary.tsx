@@ -1,10 +1,8 @@
 'use client';
 
 import Image from 'next/image';
-import { Shield } from 'lucide-react';
 import { useCart } from '@/contexts/cart-context';
 import { useCheckout } from '@/contexts/checkout-context';
-import { ReservationTimer } from '@/components/loja/cart/reservation-timer';
 import { formatPrice } from '@/lib/format';
 import { Separator } from '@/components/ui/separator';
 
@@ -13,11 +11,6 @@ export function CheckoutSummary() {
   const { state } = useCheckout();
 
   if (!cart || cart.items.length === 0) return null;
-
-  const earliestExpiry = cart.items
-    .map((i) => i.reservedUntil)
-    .filter((r): r is string => r !== null)
-    .sort()[0];
 
   const shippingCost = state.shipping?.cost ?? null;
   const total = shippingCost !== null ? cart.subtotal + shippingCost : cart.subtotal;
@@ -66,11 +59,7 @@ export function CheckoutSummary() {
         <div className="flex justify-between">
           <span className="text-flor-500">Frete</span>
           <span className="text-flor-800">
-            {shippingCost === null
-              ? '—'
-              : shippingCost === 0
-                ? 'Grátis'
-                : formatPrice(shippingCost)}
+            {shippingCost === null ? '—' : formatPrice(shippingCost)}
           </span>
         </div>
         <Separator />
@@ -78,15 +67,6 @@ export function CheckoutSummary() {
           <span className="text-flor-800">Total</span>
           <span className="text-flor-800">{formatPrice(total)}</span>
         </div>
-      </div>
-
-      {earliestExpiry && (
-        <ReservationTimer reservedUntil={earliestExpiry} className="justify-center" />
-      )}
-
-      <div className="flex items-center justify-center gap-1.5 text-xs text-flor-400">
-        <Shield className="h-3.5 w-3.5" aria-hidden="true" />
-        <span>Compra 100% segura</span>
       </div>
     </aside>
   );

@@ -73,8 +73,8 @@ function buildLocalCart(
     subtotal,
     itemCount: items.reduce((s, i) => s + i.quantity, 0),
     nextExpiry: null,
-    freeShippingThreshold: 299,
-    freeShippingRemaining: Math.max(0, 299 - subtotal),
+    freeShippingThreshold: null,
+    freeShippingRemaining: null,
   };
 }
 

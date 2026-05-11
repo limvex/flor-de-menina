@@ -55,11 +55,23 @@ export class MockPaymentAdapter implements PaymentGatewayAdapter {
     await this.simulateDelay();
 
     const externalId = `mock_card_${createId()}`;
-    const approved = Math.random() < this.APPROVAL_RATE;
 
     const tokenParts = input.cardToken.split('_');
     const brand = tokenParts[2]?.toLowerCase() || 'visa';
     const last4 = tokenParts[3] || '4242';
+
+    // Perfis: mock_tok_visa_4242 / mock_tok_mastercard_5454 = aprova; mock_tok_visa_0001 = recusa.
+    let approved: boolean;
+    if (input.cardToken.includes('_0001')) {
+      approved = false;
+    } else if (
+      input.cardToken.includes('_4242') ||
+      input.cardToken.includes('_5454')
+    ) {
+      approved = true;
+    } else {
+      approved = Math.random() < this.APPROVAL_RATE;
+    }
 
     this.logger.log(
       `[MOCK] Cartão processado: orderId=${input.orderId} status=${approved ? 'approved' : 'rejected'} amount=${input.amount} installments=${input.installments}`,
@@ -83,6 +95,10 @@ export class MockPaymentAdapter implements PaymentGatewayAdapter {
       'cc_rejected_bad_filled_security_code',
     ];
 
+    const failureReason = input.cardToken.includes('_0001')
+      ? 'cc_rejected_insufficient_amount'
+      : rejectionReasons[Math.floor(Math.random() * rejectionReasons.length)];
+
     return {
       externalId,
       transactionId: '',
@@ -90,8 +106,7 @@ export class MockPaymentAdapter implements PaymentGatewayAdapter {
       cardLast4: last4,
       cardBrand: brand,
       cardHolderName: input.customerName,
-      failureReason:
-        rejectionReasons[Math.floor(Math.random() * rejectionReasons.length)],
+      failureReason,
     };
   }
 

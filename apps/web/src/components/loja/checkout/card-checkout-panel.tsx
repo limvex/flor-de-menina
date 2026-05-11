@@ -26,8 +26,9 @@ interface Props {
   onCardReady: (payload: CardTokenPayload) => void;
 }
 
-const isMockMode =
-  process.env.NEXT_PUBLIC_MOCK_PAYMENT === 'true' || !process.env.NEXT_PUBLIC_MP_PUBLIC_KEY;
+/** Mock só com `NEXT_PUBLIC_MOCK_PAYMENT=true`. Caso contrário, exige chave pública do MP. */
+const useMockCardUi = process.env.NEXT_PUBLIC_MOCK_PAYMENT === 'true';
+const mpPublicKey = process.env.NEXT_PUBLIC_MP_PUBLIC_KEY?.trim() ?? '';
 
 export function CardCheckoutPanel({ total, payerEmail, onCardReady }: Props) {
   const [mockInstallments, setMockInstallments] = useState(1);
@@ -36,18 +37,36 @@ export function CardCheckoutPanel({ total, payerEmail, onCardReady }: Props) {
   const { data: installmentRows } = useQuery({
     queryKey: ['payment-installments', total],
     queryFn: () => getInstallmentOptions(total),
-    enabled: isMockMode && total > 0,
+    enabled: useMockCardUi && total > 0,
     staleTime: 60_000,
   });
 
   useEffect(() => {
-    if (isMockMode) return;
-    const pk = process.env.NEXT_PUBLIC_MP_PUBLIC_KEY;
-    if (!pk) return;
-    initMercadoPago(pk, { locale: 'pt-BR' });
+    if (useMockCardUi || !mpPublicKey) return;
+    initMercadoPago(mpPublicKey, { locale: 'pt-BR' });
   }, []);
 
-  if (isMockMode) {
+  if (!useMockCardUi && !mpPublicKey) {
+    return (
+      <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-900">
+        <p className="font-medium">Cartão indisponível neste ambiente</p>
+        <p className="mt-2 text-xs leading-relaxed">
+          Configure a chave pública do Mercado Pago em{' '}
+          <code className="rounded bg-red-100 px-1 py-0.5 font-mono text-[11px]">
+            NEXT_PUBLIC_MP_PUBLIC_KEY
+          </code>{' '}
+          no <code className="rounded bg-red-100 px-1 font-mono text-[11px]">apps/web/.env</code>{' '}
+          (use a chave de <strong>teste</strong> na sandbox). A API precisa estar com{' '}
+          <code className="rounded bg-red-100 px-1 font-mono text-[11px]">
+            PAYMENT_PROVIDER=mercado_pago
+          </code>{' '}
+          e o access token de teste.
+        </p>
+      </div>
+    );
+  }
+
+  if (useMockCardUi) {
     const rows = installmentRows ?? [];
     const maxInst = rows.length > 0 ? Math.max(...rows.map((r) => r.installments)) : 12;
 
@@ -60,10 +79,11 @@ export function CardCheckoutPanel({ total, payerEmail, onCardReady }: Props) {
 
     return (
       <div className="space-y-4">
-        <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-          Modo de desenvolvimento: nenhum dado de cartão real é enviado. O backend usa o mock do
-          Mercado Pago. Em produção, use chave pública TEST/PROD e{' '}
-          <code className="rounded bg-amber-100 px-1">NEXT_PUBLIC_MOCK_PAYMENT=false</code>.
+        <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
+          Modo cartão simulado (
+          <code className="rounded bg-amber-100 px-1">NEXT_PUBLIC_MOCK_PAYMENT=true</code>
+          ). Para usar o formulário real do Mercado Pago, remova essa variável e configure a chave
+          pública de teste.
         </p>
 
         <div className="space-y-1.5">
@@ -76,9 +96,9 @@ export function CardCheckoutPanel({ total, payerEmail, onCardReady }: Props) {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="visa_ok">Visa 4242 (costuma aprovar ~80%)</SelectItem>
-              <SelectItem value="master_ok">Mastercard 5454 (costuma aprovar ~80%)</SelectItem>
-              <SelectItem value="visa_fail">Visa 0001 (costuma recusar)</SelectItem>
+              <SelectItem value="visa_ok">Visa 4242 — mock aprova sempre</SelectItem>
+              <SelectItem value="master_ok">Mastercard 5454 — mock aprova sempre</SelectItem>
+              <SelectItem value="visa_fail">Visa 0001 — mock recusa sempre</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -121,7 +141,7 @@ export function CardCheckoutPanel({ total, payerEmail, onCardReady }: Props) {
             })
           }
         >
-          Simular token e continuar
+          Simular token do cartão
         </Button>
       </div>
     );
@@ -129,6 +149,10 @@ export function CardCheckoutPanel({ total, payerEmail, onCardReady }: Props) {
 
   return (
     <div className="space-y-3">
+      <p className="text-xs text-flor-500">
+        Preencha os dados abaixo e confirme no botão do Mercado Pago para registrar o cartão neste
+        pedido. Depois use <strong>Finalizar pedido</strong>.
+      </p>
       <CardPayment
         locale="pt-BR"
         initialization={{

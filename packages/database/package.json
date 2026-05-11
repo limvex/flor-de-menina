@@ -9,11 +9,11 @@
     "build": "tsc -p tsconfig.build.json",
     "postbuild": "node scripts/link-generated.js",
     "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev",
-    "db:migrate:deploy": "prisma migrate deploy",
+    "db:migrate": "node scripts/run-with-root-env.cjs migrate dev",
+    "db:migrate:deploy": "node scripts/run-with-root-env.cjs migrate deploy",
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
-    "db:reset": "prisma migrate reset --force && pnpm db:seed",
+    "db:reset": "node scripts/run-with-root-env.cjs migrate reset --force && pnpm db:seed",
     "typecheck": "prisma generate && tsc --noEmit"
   },
   "prisma": {

@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -29,6 +30,8 @@ const RESET_EXPIRY_HOURS = 1;
 
 @Injectable()
 export class CustomerAuthService {
+  private readonly logger = new Logger(CustomerAuthService.name);
+
   constructor(
     private jwtService: JwtService,
     private mailService: MailService,
@@ -74,7 +77,21 @@ export class CustomerAuthService {
       },
     });
 
-    await this.mailService.sendVerification(user.email, user.name, token);
+    try {
+      await this.mailService.sendVerification(user.email, user.name, token);
+    } catch (err) {
+      const isProd = this.config.get<string>('NODE_ENV') === 'production';
+      if (isProd) {
+        throw err;
+      }
+      this.logger.warn(
+        `E-mail de verificação não enviado (dev). Ativando conta sem confirmação. Suba o Maildev (docker compose) ou use RESEND. Motivo: ${err instanceof Error ? err.message : String(err)}`,
+      );
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { emailVerified: true },
+      });
+    }
 
     return { id: user.id, email: user.email, name: user.name };
   }

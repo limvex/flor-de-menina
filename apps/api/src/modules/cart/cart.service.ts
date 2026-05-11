@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { prisma, createId } from '@flor/database';
 import type { PrismaClient } from '@flor/database';
-import { FREE_SHIPPING_THRESHOLD, CART_RESERVATION_MINUTES } from '@flor/types';
+import { CART_RESERVATION_MINUTES } from '@flor/types';
 import type { CartResponse, CartItemResponse } from '@flor/types';
 import type { AddItemDto } from './dto/add-item.dto';
 import type { UpdateItemDto } from './dto/update-item.dto';
@@ -105,8 +105,9 @@ export class CartService {
       select: { freeShippingGlobalThreshold: true },
     });
     const freeShippingThreshold =
-      storeSettings?.freeShippingGlobalThreshold?.toNumber() ??
-      FREE_SHIPPING_THRESHOLD;
+      storeSettings?.freeShippingGlobalThreshold != null
+        ? storeSettings.freeShippingGlobalThreshold.toNumber()
+        : null;
 
     if (!cart) {
       const newCart = await this.getOrCreateCart(userId);
@@ -156,7 +157,7 @@ export class CartService {
         };
       }>;
     },
-    freeShippingThreshold: number,
+    freeShippingThreshold: number | null,
   ): CartResponse {
     const items: CartItemResponse[] = cart.items.map((item) => {
       const basePrice = item.variant.product.basePrice.toNumber();
@@ -211,7 +212,10 @@ export class CartService {
       itemCount,
       nextExpiry: futureExpiries[0]?.toISOString() ?? null,
       freeShippingThreshold,
-      freeShippingRemaining: Math.max(0, freeShippingThreshold - subtotal),
+      freeShippingRemaining:
+        freeShippingThreshold == null
+          ? null
+          : Math.max(0, freeShippingThreshold - subtotal),
     };
   }
 

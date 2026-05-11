@@ -10,7 +10,6 @@ import { useCart } from '@/contexts/cart-context';
 import { useAuth } from '@/lib/auth/auth-context';
 import { formatPrice } from '@/lib/format';
 import { FreeShippingBar } from './cart/free-shipping-bar';
-import { ReservationTimer } from './cart/reservation-timer';
 import { EmptyCart } from './cart/empty-cart';
 
 export function MiniCart() {
@@ -113,7 +112,6 @@ export function MiniCart() {
                         {formatPrice(item.variant.price * item.quantity)}
                       </span>
                     </div>
-                    {item.reservedUntil && <ReservationTimer reservedUntil={item.reservedUntil} />}
                   </div>
                 </li>
               ))}
@@ -124,13 +122,6 @@ export function MiniCart() {
         {/* Footer */}
         {cart && cart.items.length > 0 && (
           <div className="border-t border-stone-100 px-6 py-4 space-y-4">
-            {/* Timer global (próxima expiração) */}
-            {cart.nextExpiry && (
-              <div className="text-center">
-                <ReservationTimer reservedUntil={cart.nextExpiry} />
-              </div>
-            )}
-
             <FreeShippingBar
               subtotal={cart.subtotal}
               threshold={cart.freeShippingThreshold}
@@ -146,13 +137,14 @@ export function MiniCart() {
               <Link
                 href="/carrinho"
                 onClick={closeCart}
-                className="flex h-11 items-center justify-center rounded border border-stone-200 text-xs font-medium text-stone-700 hover:bg-stone-50 transition-colors"
+                className="flex h-11 items-center justify-center rounded-lg border border-stone-200 text-xs font-medium text-stone-700 hover:bg-stone-50 transition-colors cursor-pointer"
               >
                 Ver sacola
               </Link>
               <button
+                type="button"
                 onClick={handleCheckout}
-                className="h-11 rounded bg-stone-900 hover:bg-stone-800 text-white text-xs font-semibold transition-colors"
+                className="h-11 rounded-lg bg-stone-900 hover:bg-stone-800 active:bg-stone-950 text-white text-xs font-semibold transition-colors cursor-pointer shadow-sm hover:shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900"
               >
                 Finalizar compra
               </button>

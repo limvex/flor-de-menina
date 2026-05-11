@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { MapPin } from 'lucide-react';
+import { Clock, MapPin, MessageCircle } from 'lucide-react';
+import { EloIcon, MastercardIcon, PixIcon, VisaIcon } from '@/components/loja/payment-brand-icons';
 
 function InstagramIcon({ className }: { className?: string }) {
   return (
@@ -42,11 +43,11 @@ function ColumnLink({ href, children }: { href: string; children: React.ReactNod
   );
 }
 
-function PaymentPill({ label }: { label: string }) {
+function Subheading({ children }: { children: React.ReactNode }) {
   return (
-    <span className="inline-flex items-center rounded border border-flor-200 px-2 py-1 font-sans text-[10px] font-medium text-flor-600">
-      {label}
-    </span>
+    <p className="mb-2 mt-4 first:mt-0 font-sans text-[10px] font-semibold uppercase tracking-[0.12em] text-flor-700">
+      {children}
+    </p>
   );
 }
 
@@ -66,43 +67,92 @@ export function FooterColumns() {
             </ul>
           </div>
 
-          {/* Siga-nos */}
+          {/* Siga-nos — apenas ícone */}
           <div>
             <ColumnTitle>Siga-nos</ColumnTitle>
             <a
-              href="https://instagram.com/lojaflordemenina"
+              href="https://www.instagram.com/lojaflordemenina"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 font-sans text-sm text-flor-500 transition-colors hover:text-flor-800"
-              aria-label="Instagram da Flor de Menina"
+              className="inline-flex rounded-md p-1 text-flor-500 transition-colors hover:bg-flor-100 hover:text-flor-800"
+              aria-label="Instagram @lojaflordemenina"
             >
-              <InstagramIcon className="h-5 w-5" />
-              @lojaflordemenina
+              <InstagramIcon className="h-7 w-7" />
             </a>
           </div>
 
           {/* Formas de pagamento */}
           <div>
             <ColumnTitle>Formas de pagamento</ColumnTitle>
-            <div className="flex flex-wrap gap-2">
-              <PaymentPill label="Visa" />
-              <PaymentPill label="Mastercard" />
-              <PaymentPill label="Elo" />
-              <PaymentPill label="PIX" />
+            <div className="flex flex-wrap items-center gap-3">
+              <span
+                className="inline-flex h-7 w-[2.75rem] items-center justify-center"
+                title="Visa"
+                aria-label="Visa"
+              >
+                <VisaIcon className="h-5 w-full max-w-[2.75rem]" />
+              </span>
+              <span
+                className="inline-flex h-7 w-9 items-center justify-center"
+                title="Mastercard"
+                aria-label="Mastercard"
+              >
+                <MastercardIcon className="h-6 w-9" />
+              </span>
+              <span
+                className="inline-flex h-7 w-[2.75rem] items-center justify-center"
+                title="Elo"
+                aria-label="Elo"
+              >
+                <EloIcon className="h-5 w-full max-w-[2.75rem]" />
+              </span>
+              <span
+                className="inline-flex h-7 w-7 items-center justify-center"
+                title="PIX"
+                aria-label="PIX"
+              >
+                <PixIcon className="h-6 w-6" />
+              </span>
             </div>
           </div>
 
-          {/* Endereço */}
+          {/* Loja: texto, endereço, horário, WhatsApp */}
           <div>
-            <ColumnTitle>Visite nossa loja</ColumnTitle>
-            <div className="flex items-start gap-2 text-flor-500">
-              <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-flor-400" aria-hidden="true" />
+            <ColumnTitle>Flor de Menina Store</ColumnTitle>
+            <p className="font-sans text-sm leading-relaxed text-flor-600">
+              Loja de moda feminina em Maceió — roupas, fitness e pijamas. Atendimento humanizado,
+              entregas e retirada na loja.
+            </p>
+
+            <Subheading>Endereço</Subheading>
+            <div className="flex items-start gap-2 text-flor-600">
+              <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-flor-400" aria-hidden />
               <p className="font-sans text-sm leading-relaxed">
-                Maceió – AL
+                R. Eng. Mario de Gusmão, 513 — Ponta Verde
                 <br />
-                <span className="text-flor-400">Endereço completo em breve</span>
+                Maceió – AL, CEP 57035-000, Brasil
               </p>
             </div>
+
+            <Subheading>Horário</Subheading>
+            <div className="flex items-start gap-2 text-flor-600">
+              <Clock className="mt-0.5 h-4 w-4 shrink-0 text-flor-400" aria-hidden />
+              <ul className="font-sans text-sm leading-relaxed">
+                <li>Segunda a sexta: 09:00 às 19:00</li>
+                <li>Sábado: 09:00 às 17:00</li>
+              </ul>
+            </div>
+
+            <Subheading>WhatsApp</Subheading>
+            <a
+              href="https://wa.me/5582991955562"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 font-sans text-sm font-medium text-flor-700 underline-offset-2 transition-colors hover:text-flor-900 hover:underline"
+            >
+              <MessageCircle className="h-4 w-4 shrink-0 text-flor-500" aria-hidden />
+              +55 82 99195-5562
+            </a>
           </div>
         </div>
       </div>
