@@ -12,6 +12,8 @@ import { Separator } from '@/components/ui/separator';
 import { useCart } from '@/contexts/cart-context';
 import { useCheckout } from '@/contexts/checkout-context';
 import { createOrder } from '@/lib/api/orders';
+import { processPayment } from '@/lib/api/payments';
+import { mapCardFailureMessage } from '@/lib/payment-messages';
 import { formatPrice } from '@/lib/format';
 import type { CheckoutStep } from '@flor/types';
 
@@ -76,9 +78,40 @@ export function StepReview() {
         notes: undefined,
       });
 
-      clearCart();
-      clearCheckout();
-      router.push(`/pedido/confirmacao/${order.id}`);
+      if (payment.method === 'PIX') {
+        const res = await processPayment({ orderId: order.id, method: 'PIX' });
+        if (res.method !== 'PIX') throw new Error('Resposta PIX inválida');
+        clearCart();
+        clearCheckout();
+        router.push(
+          `/checkout/aguardando-pix?orderId=${encodeURIComponent(order.id)}&paymentId=${encodeURIComponent(res.paymentId)}`,
+        );
+        return;
+      }
+
+      if (!payment.cardToken) {
+        toast.error('Dados do cartão incompletos. Volte ao passo de pagamento.');
+        return;
+      }
+
+      const res = await processPayment({
+        orderId: order.id,
+        method: 'CREDIT_CARD',
+        cardToken: payment.cardToken,
+        paymentMethodId: payment.paymentMethodId,
+        installments: payment.installments ?? 1,
+      });
+
+      if (res.method !== 'CREDIT_CARD') throw new Error('Resposta de cartão inválida');
+
+      if (res.status === 'APPROVED') {
+        clearCart();
+        clearCheckout();
+        router.push(`/pedido/confirmacao/${order.id}`);
+        return;
+      }
+
+      toast.error(mapCardFailureMessage(res.failureReason));
     } catch (err) {
       const raw = err instanceof Error ? err.message : String(err);
 

@@ -34,7 +34,7 @@ interface CheckoutContextValue {
   setIdentification: (data: CheckoutIdentification) => void;
   setAddress: (data: CheckoutAddress) => void;
   setShipping: (data: ShippingOption) => void;
-  setPayment: (data: CheckoutPayment) => void;
+  setPayment: (data: CheckoutPayment, options?: { advance?: boolean }) => void;
   clearCheckout: () => void;
   canGoToStep: (step: CheckoutStep) => boolean;
 }
@@ -134,11 +134,12 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
   );
 
   const setPayment = useCallback(
-    (data: CheckoutPayment) => {
+    (data: CheckoutPayment, options?: { advance?: boolean }) => {
+      const advance = options?.advance !== false;
       update((prev) => ({
         ...prev,
         payment: data,
-        step: 5,
+        step: advance ? 5 : prev.step,
       }));
     },
     [update],

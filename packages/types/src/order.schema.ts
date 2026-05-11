@@ -60,6 +60,7 @@ export interface PaymentResponse {
   installments: number;
   pixCopyPaste: string | null;
   qrCodeBase64: string | null;
+  pixExpiresAt: string | null;
   paidAt: string | null;
 }
 
@@ -122,6 +123,60 @@ export interface CheckoutAddress {
 
 export interface CheckoutPayment {
   method: PaymentMethod;
+  /** Só em memória no checkout — nunca persistir (token MP ou mock). */
+  cardToken?: string;
+  paymentMethodId?: string;
+  installments?: number;
+}
+
+/** Resposta de POST /payments/process (PIX). */
+export interface ProcessPaymentPixResponse {
+  paymentId: string;
+  method: 'PIX';
+  status: PaymentStatus;
+  pix: {
+    qrCode: string;
+    qrCodeBase64: string;
+    copyPaste: string;
+    expiresAt: string;
+  };
+}
+
+/** Resposta de POST /payments/process (cartão). */
+export interface ProcessPaymentCardResponse {
+  paymentId: string;
+  method: 'CREDIT_CARD';
+  status: PaymentStatus;
+  card?: {
+    last4: string | null;
+    brand: string | null;
+    installments: number;
+  };
+  failureReason?: string | null;
+}
+
+export type ProcessPaymentResponse = ProcessPaymentPixResponse | ProcessPaymentCardResponse;
+
+/** Resposta de GET /payments/:id/status (polling). */
+export interface PaymentPollStatusResponse {
+  paymentId: string;
+  orderId: string;
+  orderNumber: string;
+  method: PaymentMethod;
+  status: PaymentStatus;
+  paidAt: string | null;
+  pix?: {
+    qrCode: string | null;
+    qrCodeBase64: string | null;
+    copyPaste: string | null;
+    expiresAt: string | null;
+  };
+  card?: {
+    last4: string | null;
+    brand: string | null;
+    installments: number;
+  };
+  failureReason?: string | null;
 }
 
 export interface CheckoutState {

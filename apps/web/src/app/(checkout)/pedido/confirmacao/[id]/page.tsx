@@ -7,50 +7,13 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { CheckoutHeader } from '@/components/loja/checkout/checkout-header';
 import { CheckoutFooter } from '@/components/loja/checkout/checkout-footer';
-import { CopyButton } from '@/components/loja/checkout/copy-button';
+import { ConfirmacaoPixSection } from '@/components/loja/checkout/confirmacao-pix-section';
 import { formatPrice } from '@/lib/format';
+import type { OrderResponse } from '@flor/types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3333';
 
-interface OrderItem {
-  id: string;
-  productName: string;
-  variantSize: string | null;
-  variantColor: string | null;
-  productImageUrl: string | null;
-  quantity: number;
-  unitPrice: number;
-  subtotal: number;
-}
-
-interface OrderData {
-  id: string;
-  number: string;
-  subtotal: number;
-  shippingCost: number;
-  total: number;
-  shippingAddress: {
-    recipientName: string;
-    street: string;
-    number: string;
-    complement: string | null;
-    neighborhood: string;
-    city: string;
-    state: string;
-    zipCode: string;
-  };
-  items: OrderItem[];
-  payment: {
-    method: string;
-    pixCopyPaste: string | null;
-    qrCodeBase64: string | null;
-  } | null;
-  shipping: {
-    estimatedDays: number | null;
-  } | null;
-}
-
-async function fetchOrder(id: string): Promise<OrderData | null> {
+async function fetchOrder(id: string): Promise<OrderResponse | null> {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get('flor_customer_token')?.value;
@@ -59,7 +22,7 @@ async function fetchOrder(id: string): Promise<OrderData | null> {
       headers: token ? { Cookie: `flor_customer_token=${token}` } : {},
     });
     if (!res.ok) return null;
-    return res.json() as Promise<OrderData>;
+    return res.json() as Promise<OrderResponse>;
   } catch {
     return null;
   }
@@ -92,50 +55,22 @@ export default async function ConfirmacaoPage({ params }: PageProps) {
             </p>
           </div>
 
-          {isPix && (
-            <section className="rounded-xl border border-flor-200 p-6 space-y-4">
-              <h2 className="font-semibold text-flor-800">Pague com PIX</h2>
-
-              <div className="flex justify-center">
-                <div className="flex h-48 w-48 items-center justify-center rounded-lg border-2 border-dashed border-flor-200 bg-flor-50 text-center p-4">
-                  <div className="space-y-1">
-                    <p className="text-xs font-medium text-flor-500">QR Code PIX</p>
-                    <p className="text-[10px] text-flor-300">
-                      Disponível após integração Mercado Pago (task #18)
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <p className="text-sm text-flor-600">Código Copia e Cola:</p>
-                <div className="flex items-center gap-2 rounded-lg border border-flor-200 bg-flor-50 p-3">
-                  <code className="flex-1 truncate text-xs text-flor-500">
-                    {order.payment?.pixCopyPaste ??
-                      'Código gerado após integração Mercado Pago (task #18)'}
-                  </code>
-                  <CopyButton
-                    text={order.payment?.pixCopyPaste ?? ''}
-                    disabled={!order.payment?.pixCopyPaste}
-                  />
-                </div>
-              </div>
-
-              <p className="text-sm text-amber-600">
-                ⏱ O PIX expira em 30 minutos após a confirmação
-              </p>
-              <p className="text-sm text-flor-500">
-                Após o pagamento confirmado, você receberá um e-mail com os detalhes do pedido.
-              </p>
-            </section>
+          {isPix && order.payment && (
+            <ConfirmacaoPixSection
+              number={order.number}
+              pixCopyPaste={order.payment.pixCopyPaste}
+              qrCodeBase64={order.payment.qrCodeBase64}
+              pixExpiresAt={order.payment.pixExpiresAt}
+            />
           )}
 
           {!isPix && (
             <section className="rounded-xl border border-flor-200 p-6 space-y-2">
               <h2 className="font-semibold text-flor-800">Pagamento com cartão</h2>
               <p className="text-sm text-flor-600">
-                Seu pagamento está sendo processado. Você receberá uma confirmação por e-mail em
-                breve.
+                {order.status === 'PAID'
+                  ? 'Pagamento aprovado. Você receberá um e-mail com a confirmação.'
+                  : 'Seu pagamento está sendo processado. Você receberá uma confirmação por e-mail em breve.'}
               </p>
             </section>
           )}
@@ -204,7 +139,7 @@ export default async function ConfirmacaoPage({ params }: PageProps) {
             <p className="text-sm text-flor-600">
               {addr.city}/{addr.state} — CEP {addr.zipCode}
             </p>
-            {order.shipping?.estimatedDays && (
+            {order.shipping?.estimatedDays != null && (
               <p className="text-sm text-flor-500">
                 Entrega estimada: {order.shipping.estimatedDays} dias úteis
               </p>

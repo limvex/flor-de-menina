@@ -278,6 +278,7 @@ export class OrdersService {
       installments: number;
       pixCopyPaste: string | null;
       pixQrCodeBase64: string | null;
+      pixExpiresAt: Date | null;
       paidAt: Date | null;
     } | null;
     shipping: {
@@ -335,6 +336,7 @@ export class OrdersService {
             installments: order.payment.installments,
             pixCopyPaste: order.payment.pixCopyPaste,
             qrCodeBase64: order.payment.pixQrCodeBase64,
+            pixExpiresAt: order.payment.pixExpiresAt?.toISOString() ?? null,
             paidAt: order.payment.paidAt?.toISOString() ?? null,
           }
         : null,
