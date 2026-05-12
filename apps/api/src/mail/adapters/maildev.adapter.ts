@@ -1,6 +1,6 @@
 import * as nodemailer from 'nodemailer';
 import { ConfigService } from '@nestjs/config';
-import { MailAdapter } from './mail.adapter';
+import type { MailAdapter } from './mail.adapter';
 
 export class MaildevAdapter implements MailAdapter {
   private transporter: nodemailer.Transporter;
@@ -20,11 +20,16 @@ export class MaildevAdapter implements MailAdapter {
   }
 
   async send(to: string, subject: string, html: string): Promise<void> {
-    await this.transporter.sendMail({
-      from: `"Flor de Menina" <${process.env.MAIL_FROM_EMAIL || 'contato@flordemenina.site'}>`,
+    await this.sendWithId(to, subject, html);
+  }
+
+  async sendWithId(to: string, subject: string, html: string): Promise<string> {
+    const info = await this.transporter.sendMail({
+      from: `"Flor de Menina" <${process.env.MAIL_FROM_EMAIL || 'contato@flordemenina.store'}>`,
       to,
       subject,
       html,
     });
+    return (info.messageId as string) ?? `maildev-${Date.now()}`;
   }
 }

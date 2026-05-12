@@ -77,5 +77,5 @@ pnpm db:studio
 pnpm db:reset
 
 Credenciais de dev (seed)
-- Admin: admin@flordemenina.site / admin123
+- Admin: admin@flordemenina.store / admin123
 ```

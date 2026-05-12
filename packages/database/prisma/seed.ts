@@ -37,11 +37,11 @@ async function main() {
   // =========================================================
   const adminPassword = await bcrypt.hash('admin123', 12);
   const admin = await prisma.user.upsert({
-    where: { email: 'admin@flordemenina.site' },
+    where: { email: 'admin@flordemenina.store' },
     update: {},
     create: {
       id: createId(),
-      email: 'admin@flordemenina.site',
+      email: 'admin@flordemenina.store',
       passwordHash: adminPassword,
       name: 'Daniela Costa',
       role: UserRole.ADMIN,
@@ -57,11 +57,11 @@ async function main() {
   // =========================================================
   const clientePassword = await bcrypt.hash('cliente123', 12);
   const cliente1 = await prisma.user.upsert({
-    where: { email: 'cliente@flordemenina.site' },
+    where: { email: 'cliente@flordemenina.store' },
     update: {},
     create: {
       id: createId(),
-      email: 'cliente@flordemenina.site',
+      email: 'cliente@flordemenina.store',
       passwordHash: clientePassword,
       name: 'Ana Lima',
       cpf: '52998224725', // CPF válido (dígitos apenas — formato salvo no banco)
@@ -120,11 +120,11 @@ async function main() {
   //            + fluxo de cadastrar endereço no checkout
   // =========================================================
   const cliente2 = await prisma.user.upsert({
-    where: { email: 'novo@flordemenina.site' },
+    where: { email: 'novo@flordemenina.store' },
     update: {},
     create: {
       id: createId(),
-      email: 'novo@flordemenina.site',
+      email: 'novo@flordemenina.store',
       passwordHash: clientePassword,
       name: 'Bruna Souza',
       role: UserRole.CUSTOMER,
@@ -139,7 +139,7 @@ async function main() {
   // =========================================================
   const pagamentoPassword = await bcrypt.hash('pagamento123', 12);
   const checkoutMp = await prisma.user.upsert({
-    where: { email: 'pagamento@flordemenina.site' },
+    where: { email: 'pagamento@flordemenina.store' },
     update: {
       passwordHash: pagamentoPassword,
       name: 'Cliente Pagamento MP',
@@ -150,7 +150,7 @@ async function main() {
     },
     create: {
       id: createId(),
-      email: 'pagamento@flordemenina.site',
+      email: 'pagamento@flordemenina.store',
       passwordHash: pagamentoPassword,
       name: 'Cliente Pagamento MP',
       cpf: '39053344705',
@@ -563,24 +563,24 @@ async function main() {
   console.log('\n🎉 Seed concluído! Contas para teste:');
   console.log('');
   console.log('  👑 ADMIN');
-  console.log('     admin@flordemenina.site / admin123');
+  console.log('     admin@flordemenina.store / admin123');
   console.log('');
   console.log('  💳 CHECKOUT MERCADO PAGO (Task #18 — PIX / cartão TEST)');
-  console.log('     pagamento@flordemenina.site / pagamento123');
+  console.log('     pagamento@flordemenina.store / pagamento123');
   console.log('     CPF (conta teste checkout): 390.533.447-05');
   console.log('     Carrinho: 1× Blusa Cropped P (~R$119,90) + endereço em Maceió');
   console.log('');
   console.log(
     '  👤 CLIENTE COM CPF (CPF pré-preenchido no checkout, 2 endereços, carrinho montado)',
   );
-  console.log('     cliente@flordemenina.site / cliente123');
+  console.log('     cliente@flordemenina.store / cliente123');
   console.log('     CPF salvo: 529.982.247-25');
   console.log(
     '     Carrinho: Blusa Cropped P + Vestido Midi M (subtotal ~R$409,80 → frete grátis)',
   );
   console.log('');
   console.log('  👤 CLIENTE SEM CPF (CPF obrigatório no checkout, sem endereço)');
-  console.log('     novo@flordemenina.site / cliente123');
+  console.log('     novo@flordemenina.store / cliente123');
   console.log('');
   console.log('  🧪 PRODUTO COM ESTOQUE 1: "Blusa de Renda Marfim" tamanho P');
   console.log('     → Adicione 2 ao carrinho para forçar erro 409 no checkout');

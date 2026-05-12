@@ -58,7 +58,7 @@ export class MelhorEnvioAdapter implements ShippingAdapter {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
         Accept: 'application/json',
-        'User-Agent': 'Flor de Menina E-commerce (contato@flordemenina.site)',
+        'User-Agent': 'Flor de Menina E-commerce (contato@flordemenina.store)',
       },
       body: JSON.stringify(body),
     });

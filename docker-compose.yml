@@ -23,5 +23,18 @@ services:
       - '1025:1025'
     restart: unless-stopped
 
+  # Se a porta 6379 já estiver ocupada (Redis nativo no Windows), ignore o erro —
+  # postgres e maildev sobem normalmente e a API usa o Redis nativo.
+  redis:
+    image: redis:7-alpine
+    ports:
+      - '6379:6379'
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
 volumes:
   postgres_data:

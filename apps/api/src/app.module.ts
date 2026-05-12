@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { BullModule } from '@nestjs/bullmq';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
 import { APP_GUARD } from '@nestjs/core';
@@ -27,6 +28,17 @@ import { CouponsModule } from './modules/coupons/coupons.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: '../../.env' }),
+    BullModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        connection: {
+          host: config.get<string>('REDIS_HOST', 'localhost'),
+          port: Number(config.get<string>('REDIS_PORT', '6379')),
+          password: config.get<string>('REDIS_PASSWORD') || undefined,
+        },
+      }),
+    }),
     ThrottlerModule.forRoot([{ name: 'default', ttl: 60000, limit: 60 }]),
     ScheduleModule.forRoot(),
     AuthModule,

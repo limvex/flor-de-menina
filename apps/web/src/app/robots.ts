@@ -9,6 +9,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ['/admin', '/api', '/buscar', '/conta'],
       },
     ],
-    sitemap: 'https://flordemenina.site/sitemap.xml',
+    sitemap: 'https://flordemenina.store/sitemap.xml',
   };
 }

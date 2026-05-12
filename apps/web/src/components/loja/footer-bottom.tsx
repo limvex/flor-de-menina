@@ -10,7 +10,7 @@ export function FooterBottom() {
             <FooterCnpjCopy />
             <span className="mx-2 hidden sm:inline">·</span>
             <br className="sm:hidden" />
-            contato@flordemenina.site
+            contato@flordemenina.store
             <span className="mx-2 hidden sm:inline">·</span>
             <br className="sm:hidden" />
             <span className="text-flor-400">Desenvolvido por Limvex</span>
