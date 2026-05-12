@@ -24,6 +24,7 @@ import { ShippingModule } from './modules/shipping/shipping.module';
 import { PaymentsModule } from './payments/payments.module';
 import { EmailModule } from './email/email.module';
 import { CouponsModule } from './modules/coupons/coupons.module';
+import { PagesModule } from './modules/pages/pages.module';
 
 @Module({
   imports: [
@@ -58,6 +59,7 @@ import { CouponsModule } from './modules/coupons/coupons.module';
     PaymentsModule,
     EmailModule,
     CouponsModule,
+    PagesModule,
   ],
   controllers: [AppController],
   providers: [

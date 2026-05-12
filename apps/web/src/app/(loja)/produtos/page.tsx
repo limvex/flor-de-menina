@@ -8,7 +8,7 @@ import { listPublicProducts } from '@/lib/api/products-public';
 const SITE = 'https://flordemenina.store';
 
 export const metadata: Metadata = {
-  title: 'Todos os produtos | Flor de Menina',
+  title: 'Todos os produtos',
   description:
     'Vestidos, blusas, calças, bolsas e acessórios de moda feminina. Descubra peças clássicas, chic e cool da Flor de Menina.',
   openGraph: {

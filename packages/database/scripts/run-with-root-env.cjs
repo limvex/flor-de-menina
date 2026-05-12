@@ -9,9 +9,16 @@ require('dotenv').config({
   path: path.resolve(__dirname, '../../../.env'),
 });
 
-const prismaBin = path.join(__dirname, '../node_modules/.bin/prisma');
+/** No Windows, `node_modules/.bin/prisma` costuma ser um shell script — `spawnSync` direto falha (exit 1 sem log). */
+let prismaCli;
+try {
+  prismaCli = path.join(path.dirname(require.resolve('prisma/package.json')), 'build/index.js');
+} catch {
+  prismaCli = path.join(__dirname, '../node_modules/prisma/build/index.js');
+}
+
 const args = process.argv.slice(2);
-const r = spawnSync(prismaBin, args, {
+const r = spawnSync(process.execPath, [prismaCli, ...args], {
   stdio: 'inherit',
   cwd: path.join(__dirname, '..'),
   env: process.env,

@@ -1,8 +1,17 @@
-import { Metadata } from 'next';
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getProductBySlug } from '@/lib/api/product-detail';
 import { requireCustomer } from '@/lib/auth/require-customer';
 import { PdpClient } from './pdp-client';
+
+function plainTextFromHtml(html: string | null | undefined, maxLen: number): string {
+  if (!html) return '';
+  return html
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, maxLen);
+}
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -15,27 +24,27 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     const image = product.images?.[0]?.url;
 
     return {
-      title: `${product.seoTitle ?? product.name} | Flor de Menina`,
+      title: product.seoTitle?.trim() || product.name,
       description:
-        product.seoDescription ??
+        product.seoDescription?.trim() ??
         product.shortDescription ??
-        String(product.description ?? '').slice(0, 160),
+        plainTextFromHtml(product.description, 160),
       openGraph: {
         title: product.name,
-        description: product.shortDescription ?? String(product.description ?? '').slice(0, 200),
+        description: product.shortDescription ?? plainTextFromHtml(product.description, 200),
         type: 'website',
         images: image ? [{ url: image, width: 1200, height: 1600, alt: product.name }] : [],
       },
       twitter: {
         card: 'summary_large_image',
         title: product.name,
-        description: product.shortDescription ?? String(product.description ?? '').slice(0, 200),
+        description: product.shortDescription ?? plainTextFromHtml(product.description, 200),
         images: image ? [image] : [],
       },
       alternates: { canonical: `/produto/${slug}` },
     };
   } catch {
-    return { title: 'Produto não encontrado | Flor de Menina' };
+    return { title: { absolute: 'Produto não encontrado | Flor de Menina' } };
   }
 }
 
@@ -52,19 +61,23 @@ export default async function ProdutoPage({ params }: PageProps) {
   const customer = await requireCustomer();
   const isAuthenticated = !!customer;
 
+  const offerPrices = product.variants.filter((v) => v.isActive && v.price > 0).map((v) => v.price);
+  const offerPrice =
+    offerPrices.length > 0 ? Math.min(...offerPrices) : Number(product.basePrice ?? 0);
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Product',
     name: product.name,
-    description: product.description,
-    image: product.images?.map((img) => img.url) ?? [],
+    description: plainTextFromHtml(product.shortDescription ?? product.description, 8000),
+    image: (product.images?.map((img) => img.url) ?? []).filter(Boolean),
     sku: product.variants?.[0]?.sku,
     brand: { '@type': 'Brand', name: 'Flor de Menina' },
     offers: {
       '@type': 'Offer',
       url: `https://flordemenina.store/produto/${product.slug}`,
       priceCurrency: 'BRL',
-      price: product.basePrice,
+      price: Number(offerPrice.toFixed(2)),
       availability: product.isOutOfStock
         ? 'https://schema.org/OutOfStock'
         : 'https://schema.org/InStock',

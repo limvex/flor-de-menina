@@ -638,17 +638,20 @@ model MelhorEnvioCredentials {
 // ============================================================
 
 model InstitutionalPage {
-  id             String   @id
-  slug           String   @unique
-  title          String
-  content        String   @db.Text
-  isActive       Boolean  @default(true)
-  seoTitle       String?
-  seoDescription String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  title           String
+  content         String   @db.Text
+  metaTitle       String?  @map("seoTitle")
+  metaDescription String?  @map("seoDescription")
+  ogImage         String?
+  isActive        Boolean  @default(true)
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@index([slug])
+  @@index([isActive])
 }
 
 // ============================================================

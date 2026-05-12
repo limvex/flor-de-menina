@@ -34,9 +34,9 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const category = await fetchCategory(slug);
-  if (!category) return { title: 'Categoria não encontrada | Flor de Menina' };
+  if (!category) return { title: { absolute: 'Categoria não encontrada | Flor de Menina' } };
   return {
-    title: `${category.seoTitle ?? category.name} | Flor de Menina`,
+    title: category.seoTitle?.trim() || category.name,
     description:
       category.seoDescription ??
       `Compre ${category.name.toLowerCase()} da Flor de Menina. Moda feminina atemporal.`,

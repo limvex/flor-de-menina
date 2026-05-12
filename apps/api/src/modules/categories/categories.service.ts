@@ -84,6 +84,7 @@ function formatCategoryPublic(
     sizeChart: parseSizeChart(category.sizeChart),
     isActive: category.isActive,
     sortOrder: category.sortOrder,
+    updatedAt: category.updatedAt.toISOString(),
     children: [],
   };
 }
