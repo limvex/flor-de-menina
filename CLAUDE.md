@@ -165,7 +165,7 @@ Atualize esta seção a cada task concluída. Use os emojis:
 | 20  | Sistema de Cupons                     | ✅ Concluída                                | `feat/20-cupons`                | #62 |
 | 21  | Sistema de Reviews com foto           | -                                           | -                               | -   |
 | 22  | E-mails transacionais (Resend)        | ✅ Concluída (local)                        | `feat/22-emails-transacionais`  | -   |
-| 23  | Dashboard admin                       | -                                           | -                               | -   |
+| 23  | Dashboard admin                       | ⏳ Em progresso                             | `feat/23-dashboard-admin`       | -   |
 | 24  | Páginas institucionais e SEO          | ✅ Concluída (local)                        | `feat/24-institucionais-seo`    | -   |
 | 25  | Provisionamento de produção + Go-live | -                                           | -                               | -   |
 
@@ -194,6 +194,8 @@ Atualize esta seção a cada task concluída. Use os emojis:
 - `2026-05-11` — Task #19 implementada. WebhookSimulatorService + MockPaymentAdapter determinístico via Map (getPaymentStatus sem Math.random). handleWebhook finaliza pedido com `$transaction` **Serializable** (Payment/PaymentEvent/Order + StockService e CartService) e dispara EmailService (skeleton, logs `[EMAIL_TRIGGER]`). Assinatura inválida: **401** `UnauthorizedException`. Frontend: rota dedicada `/checkout/falha/[id]`, redirects em falha e melhorias na confirmação. Validação: Jest API + smoke PIX/cartão + E2E ajustados (PDP “Adicionar à sacola” / Minha Sacola).
 - `2026-05-09` — Task #16 (Checkout multi-step) concluída. Fluxo de 5 etapas: Identificação → Endereço → Frete → Pagamento → Revisão. CheckoutContext com sessionStorage, stepper visual, validação CPF completa (algoritmo + dígitos verificadores), $transaction atômico no createOrder (Order + StockMovement + limpeza carrinho), página de confirmação Server Component com cookie forwarding. CustomerProfileService getOrders/getOrder implementados. Bugs corrigidos: 403 cross-user, dropdown de parcelas, payload de variantes no admin, endpoint de categorias admin.
 - `2026-05-08` — Task #14 (Carrinho) concluída. Módulo cart na API com CRUD + merge + SELECT FOR UPDATE contra race condition. CartCleanupService (@Cron a cada 5min) libera reservas expiradas. Frontend: CartProvider com merge localStorage→servidor no login, mini-carrinho drawer, página /carrinho com debounce, timer de reserva colorido e barra de frete grátis. LocalCartItemSnapshot: visitante vê nome/preço/estoque real sem precisar de API. Campo de cupom fica para Task #20.
+
+- `2026-05-12` — **#23 em andamento** na branch `feat/23-dashboard-admin`: spec `docs/specs/23-dashboard-admin.md`, API (`/admin/dashboard/summary`, `/admin/orders`, `/admin/reviews`), web (dashboard Recharts, pedidos, reviews, estoque `?status=`), testes Jest + Playwright. Card conversão omitido (spec). Aguardando validação e PR (`Closes #23`).
 
 - `2026-05-12` — Task #24 concluída (local). API `pages` (CRUD admin + público). Prisma `InstitutionalPage` (`metaTitle`/`metaDescription` @map seo\*, `ogImage`, `sortOrder`, índice `isActive`). Seed HTML + `pnpm db:seed:institutional`. Admin `/admin/paginas` (TipTap, SEO). Loja `/p/[slug]` com **`dynamic = 'force-dynamic'`** e **`fetch` `cache: 'no-store'`** (edição e ativo/inativo no próximo acesso — sem ISR 60s que cacheava página desativada). Sitemap/robots, metadataBase, JSON-LD Organization, GTM/Pixel opcionais. Footer → `/p/...`; `/quem-somos` → `/p/sobre`. PDP: Product schema (preço mín. variante, descrição texto). Migration `20260512130000_institutional_page_og_sort_index`. `run-with-root-env.cjs`: Prisma via `node …/prisma/build/index.js` (Windows). Seed: libera CPF demo duplicado antes do upsert.
 
@@ -239,7 +241,7 @@ Atualize esta seção a cada task concluída. Use os emojis:
 - **Wishlist funcional na PDP e no card** — backend CRUD completo (idempotente). Página /conta/favoritos fica pra Task #15.
 - **Carrinho funcional** — CartProvider + API /cart CRUD + merge. Campo de cupom fica para Task #20.
 - **Cálculo de frete é PLACEHOLDER** — retorna mock fixo (TODO task-#17)
-- **Reviews é placeholder** — seção visível mas vazia (TODO task-#21)
+- **Reviews é placeholder** — seção visível mas vazia na loja; issue de moderação/PDP (#21) foi descartada — evolução só com nova issue
 - **Compre junto** — 4 produtos da mesma categoria, orderBy isFeatured desc + createdAt desc
 - **Schema.org Product** — InStock/OutOfStock conforme totalStock
 - **Sticky mobile CTA** — fixo no rodapé só em mobile (md:hidden)
