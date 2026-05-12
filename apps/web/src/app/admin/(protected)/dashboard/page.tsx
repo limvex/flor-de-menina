@@ -1,16 +1,11 @@
-import { LayoutDashboard } from 'lucide-react';
-import { EmptyState } from '@/components/admin/empty-state';
 import { AdminPageHeader } from '@/components/admin/admin-page-header';
+import { DashboardClient } from './dashboard-client';
 
 export default function DashboardPage() {
   return (
-    <>
+    <div className="space-y-4">
       <AdminPageHeader title="Dashboard" description="Visão geral do seu e-commerce." />
-      <EmptyState
-        icon={LayoutDashboard}
-        title="Em construção"
-        description="O dashboard com métricas estará disponível em breve."
-      />
-    </>
+      <DashboardClient />
+    </div>
   );
 }

@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { Suspense, useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { AdminPageHeader } from '@/components/admin/admin-page-header';
 import { StockFilters } from '@/components/admin/stock/stock-filters';
 import { StockListTable } from '@/components/admin/stock/stock-list-table';
 import { Button } from '@/components/ui/button';
-import { stockApi, type ListStockParams } from '@/lib/api/stock';
+import { stockApi, type ListStockParams, type StockStatusFilter } from '@/lib/api/stock';
 import { api } from '@/lib/api/client';
 import type { ProductWithStockSummary } from '@flor/types';
 
@@ -14,12 +15,24 @@ interface CategoriesResult {
   name: string;
 }
 
-export default function EstoquePage() {
+function EstoquePageInner() {
+  const searchParams = useSearchParams();
   const [params, setParams] = useState<ListStockParams>({ page: 1, pageSize: 30 });
   const [products, setProducts] = useState<ProductWithStockSummary[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState<CategoriesResult[]>([]);
+
+  useEffect(() => {
+    const s = searchParams.get('status');
+    if (s === 'low' || s === 'ok' || s === 'out') {
+      setParams((p) =>
+        p.status === (s as StockStatusFilter)
+          ? p
+          : { ...p, status: s as StockStatusFilter, page: 1 },
+      );
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     api
@@ -88,5 +101,19 @@ export default function EstoquePage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function EstoquePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="rounded-xl border border-flor-100 py-16 text-center text-flor-400 text-sm">
+          Carregando...
+        </div>
+      }
+    >
+      <EstoquePageInner />
+    </Suspense>
   );
 }
