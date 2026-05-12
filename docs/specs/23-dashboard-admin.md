@@ -6,8 +6,8 @@ Fonte de verdade para implementação, testes e aceite. Issue: Dashboard inicial
 
 1. Como dona (admin), ao abrir o painel em `/admin` → `/admin/dashboard`, quero ver em poucos segundos receita, quantidade de pedidos pagos, ticket médio e tendência de receita no período escolhido.
 2. Como admin, quero filtrar por hoje, últimos 7 dias, últimos 30 dias ou intervalo customizado para entender o desempenho.
-3. Como admin, quero ver os 5 produtos mais vendidos (por quantidade) no período e os 10 pedidos mais recentes com link para o detalhe.
-4. Como admin, quero alertas visíveis só quando houver estoque baixo, reviews pendentes ou pedidos pós-pagamento aguardando operação, com atalhos para agir.
+3. Como admin, quero ver os 5 produtos mais vendidos (por quantidade) no período e os **10 pedidos mais recentes criados dentro do mesmo período** (qualquer status), com link para o detalhe.
+4. Como admin, quero alertas visíveis só quando houver estoque baixo ou pedidos pós-pagamento aguardando operação, com atalhos para agir. **Reviews fora do escopo** (issue #21 descartada; catálogo com peças em pouca unidade não usa moderação de avaliações no admin).
 5. Como admin, quero atalhos para novo produto, lista de pedidos e configuração de frete.
 
 ## Glossário
@@ -29,11 +29,10 @@ Fonte de verdade para implementação, testes e aceite. Issue: Dashboard inicial
 
 ## Alertas (somente quando aplicável)
 
-| Alerta                | Regra                                                                                                                                                                                                                                                                                       | Link                                                                                 |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| Estoque baixo         | Mesmo critério conceitual da lista admin de estoque com filtro `status=low`: produto não deletado, com variante ativa, não todas as variantes ativas com `stock <= 0`, e existe variante ativa com `0 < stock < LOW_STOCK_THRESHOLD` (5). Contagem = número de **produtos** nessa situação. | `/admin/estoque` com filtro de status baixo na UI (query `status=low` se suportado). |
-| Reviews pendentes     | `COUNT(Review WHERE status = PENDING) > 0`.                                                                                                                                                                                                                                                 | `/admin/reviews`                                                                     |
-| Pedidos não atendidos | Pedidos com `status IN (PAID, PROCESSING)` (pago ou em separação, ainda não enviados).                                                                                                                                                                                                      | `/admin/pedidos?status=PAID` ou lista filtrável — mínimo: `/admin/pedidos`.          |
+| Alerta                | Regra                                                                                                                                                                                                                                                                                       | Link                                                                        |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Estoque baixo         | Mesmo critério conceitual da lista admin de estoque com filtro `status=low`: produto não deletado, com variante ativa, não todas as variantes ativas com `stock <= 0`, e existe variante ativa com `0 < stock < LOW_STOCK_THRESHOLD` (5). Contagem = número de **produtos** nessa situação. | `/admin/estoque` com filtro de status baixo na UI (query `status=low`).     |
+| Pedidos não atendidos | Pedidos com `status IN (PAID, PROCESSING)` (pago ou em separação, ainda não enviados), **contagem global** (fora do filtro de período do dashboard).                                                                                                                                        | Link mínimo: **`/admin/pedidos`** (lista completa; dona filtra por status). |
 
 UI: cada alerta só é renderizado se o contador correspondente for `> 0`.
 
@@ -73,12 +72,13 @@ UI: cada alerta só é renderizado se o contador correspondente for `> 0`.
       "customerName": "…"
     }
   ],
-  "alerts": { "lowStockCount": 0, "pendingReviewsCount": 0, "unattendedOrdersCount": 0 }
+  "alerts": { "lowStockCount": 0, "unattendedOrdersCount": 0 }
 }
 ```
 
 - `revenue`, `averageTicket`, valores monetários em **número** (reais, não centavos).
 - `revenueByDay`: um ponto por dia civil no intervalo (inclusive); dias sem receita com `revenue: 0`.
+- `recentOrders`: até 10 pedidos com `createdAt` no mesmo intervalo `[from, to)` do período (qualquer `status`), mais recentes primeiro.
 
 **400**: intervalo inválido ou `preset` desconhecido.  
 **401/403**: não autenticado ou sem papel.
@@ -95,14 +95,6 @@ Detalhe read-only: pedido + itens + payment + shipping + usuário.
 
 **404**: não encontrado.
 
-### `GET /admin/reviews`
-
-Query: `status` (default `PENDING`), `page`, `pageSize`.
-
-### `PATCH /admin/reviews/:id`
-
-Body: `{ "status": "APPROVED" \| "REJECTED", "rejectionReason"?: string }`. Requer `ADMIN` ou `OPERATOR`; grava `moderatedById`, `moderatedAt`.
-
 ## Contrato UI (web)
 
 - **Dashboard**: client component com React Query; estados loading / erro / vazio (KPIs zerados ainda mostram 0).
@@ -112,16 +104,15 @@ Body: `{ "status": "APPROVED" \| "REJECTED", "rejectionReason"?: string }`. Requ
 
 ## Matriz de testes
 
-| Área                                | Automatizado                                         | Manual                              |
-| ----------------------------------- | ---------------------------------------------------- | ----------------------------------- |
-| Agregação KPI / ticket zero divisão | Jest `AdminDashboardService` (mock Prisma)           | —                                   |
-| Intervalo custom inválido           | Jest controller ou service                           | —                                   |
-| Lista pedidos admin                 | Jest `AdminOrdersService`                            | Smoke lista + detalhe               |
-| Moderar review                      | Jest opcional                                        | Fluxo approve/reject                |
-| Dashboard E2E                       | Playwright login + `/admin/dashboard` + troca preset | Visual mobile 375px                 |
-| Alertas condicionais                | API retorna zeros; UI não mostra banners             | Seed com low stock / pending review |
+| Área                                | Automatizado                                         | Manual                            |
+| ----------------------------------- | ---------------------------------------------------- | --------------------------------- |
+| Agregação KPI / ticket zero divisão | Jest `AdminDashboardService` (mock Prisma)           | —                                 |
+| Intervalo custom inválido           | Jest controller ou service                           | —                                 |
+| Lista pedidos admin                 | Jest `AdminOrdersService`                            | Smoke lista + detalhe             |
+| Dashboard E2E                       | Playwright login + `/admin/dashboard` + troca preset | Visual mobile 375px               |
+| Alertas condicionais                | API retorna zeros; UI não mostra banners             | Seed com low stock / pedidos PAID |
 
 ## Implementação técnica (referência)
 
 - Agregações diárias e top produtos: podem ser feitas em memória a partir de `findMany` filtrado no Nest, desde que documentado; volume esperado inicial baixo.
-- Tabelas Prisma: `"Product"`, `"ProductVariant"`, `"Order"`, `"OrderItem"`, `"Review"`, `"User"`.
+- Tabelas Prisma usadas nas agregações: `"Product"`, `"ProductVariant"`, `"Order"`, `"OrderItem"`, `"User"`. **Reviews não entram no dashboard admin** nesta entrega.

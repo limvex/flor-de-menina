@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import Script from 'next/script';
 import { Inter, Cormorant_Garamond, Geist_Mono } from 'next/font/google';
 import './globals.css';
@@ -42,6 +42,12 @@ const organizationJsonLd = {
     addressCountry: 'BR',
   },
   sameAs: ['https://www.instagram.com/lojaflordemenina'],
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
 };
 
 export const metadata: Metadata = {

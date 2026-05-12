@@ -18,7 +18,6 @@ export interface DashboardSummary {
   }[];
   alerts: {
     lowStockCount: number;
-    pendingReviewsCount: number;
     unattendedOrdersCount: number;
   };
 }

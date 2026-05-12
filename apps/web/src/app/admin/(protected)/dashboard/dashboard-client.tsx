@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import type { LucideIcon } from 'lucide-react';
-import { Package, ShoppingBag, Truck, AlertTriangle, Star, ChevronRight } from 'lucide-react';
+import { Package, ShoppingBag, Truck, AlertTriangle, ChevronRight } from 'lucide-react';
 import {
   Area,
   AreaChart,
@@ -17,6 +17,7 @@ import {
 import { toast } from 'sonner';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { ApiError } from '@/lib/errors';
 import { dashboardApi, type DashboardPreset, type DashboardSummary } from '@/lib/api/dashboard';
 
 const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -42,6 +43,12 @@ function formatDayLabel(ymd: string) {
   return `${d}/${m}`;
 }
 
+function messageFromDashboardError(err: unknown): string {
+  if (ApiError.isApiError(err)) return err.message;
+  if (err instanceof Error && err.message.trim()) return err.message;
+  return 'Não foi possível carregar o dashboard.';
+}
+
 export function DashboardClient() {
   const [preset, setPreset] = useState<DashboardPreset>('7d');
   const [customFrom, setCustomFrom] = useState('');
@@ -55,7 +62,7 @@ export function DashboardClient() {
     [preset, customFrom, customTo],
   );
 
-  const { data, isLoading, isError, error, refetch } = useQuery({
+  const { data, isLoading, isError, isFetching, error, refetch } = useQuery({
     queryKey,
     queryFn: () => {
       if (preset === 'custom') {
@@ -84,10 +91,12 @@ export function DashboardClient() {
     void refetch();
   };
 
+  const chartFont = 'var(--font-inter, ui-sans-serif, system-ui, sans-serif)' as const;
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-        <div className="flex flex-wrap gap-2">
+        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden">
           {(
             [
               ['today', 'Hoje'],
@@ -101,7 +110,7 @@ export function DashboardClient() {
               type="button"
               variant={preset === key ? 'default' : 'outline'}
               size="sm"
-              className="rounded-full"
+              className="shrink-0 touch-manipulation rounded-full"
               onClick={() => setPreset(key)}
             >
               {label}
@@ -136,34 +145,66 @@ export function DashboardClient() {
       </div>
 
       {isError && (
-        <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
-          {error instanceof Error ? error.message : 'Não foi possível carregar o dashboard.'}
+        <div
+          role="alert"
+          className="rounded-xl border border-destructive/35 bg-destructive/10 px-4 py-4 text-sm text-destructive"
+        >
+          <p className="font-medium text-destructive">Erro ao carregar o dashboard</p>
+          <p className="mt-1 text-destructive/95">{messageFromDashboardError(error)}</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="touch-manipulation border-destructive/40 bg-white text-destructive hover:bg-destructive/5"
+              disabled={isFetching}
+              onClick={() => void refetch()}
+            >
+              {isFetching ? 'Tentando…' : 'Tentar novamente'}
+            </Button>
+            {ApiError.isApiError(error) && error.status === 401 ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                nativeButton={false}
+                render={<Link href="/admin/login" />}
+              >
+                Ir para login
+              </Button>
+            ) : null}
+          </div>
         </div>
       )}
 
-      {isLoading && (
+      {isLoading && !isError && (
         <div className="rounded-xl border border-flor-100 py-16 text-center text-flor-400 text-sm">
           Carregando métricas…
         </div>
       )}
 
-      {data && !isLoading && (
+      {data && !isLoading && !isError && (
         <>
           <DashboardAlerts summary={data} />
 
-          <div className="grid gap-4 sm:grid-cols-3" data-testid="dashboard-kpis">
+          <div
+            className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4"
+            data-testid="dashboard-kpis"
+          >
             <KpiCard title="Receita" value={brl.format(data.kpis.revenue)} />
             <KpiCard title="Pedidos (pagos / faturados)" value={String(data.kpis.ordersCount)} />
             <KpiCard title="Ticket médio" value={brl.format(data.kpis.averageTicket)} />
           </div>
 
-          <div className="rounded-xl border border-flor-100 bg-white p-4 shadow-sm">
-            <h2 className="font-serif text-lg text-flor-900 mb-4">Receita por dia</h2>
-            <div className="h-[min(320px,50vh)] w-full min-h-[240px]">
+          <div className="rounded-xl border border-flor-100 bg-white p-3 shadow-sm sm:p-4">
+            <h2 className="mb-3 font-serif text-base text-flor-900 sm:mb-4 sm:text-lg">
+              Receita por dia
+            </h2>
+            <div className="h-[min(280px,45svh)] w-full min-h-[220px] sm:h-[min(320px,50vh)] sm:min-h-[240px]">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart
                   data={data.revenueByDay}
-                  margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+                  margin={{ top: 8, right: 4, left: -4, bottom: 4 }}
                 >
                   <defs>
                     <linearGradient id="fillRev" x1="0" y1="0" x2="0" y2="1">
@@ -174,13 +215,21 @@ export function DashboardClient() {
                   <CartesianGrid strokeDasharray="3 3" className="stroke-flor-100" />
                   <XAxis
                     dataKey="date"
-                    tick={{ fontSize: 11, fill: 'hsl(28 12% 45%)' }}
+                    tick={{
+                      fontSize: 11,
+                      fill: 'hsl(28 12% 45%)',
+                      fontFamily: chartFont,
+                    }}
                     tickFormatter={formatDayLabel}
                   />
                   <YAxis
-                    tick={{ fontSize: 11, fill: 'hsl(28 12% 45%)' }}
+                    tick={{
+                      fontSize: 11,
+                      fill: 'hsl(28 12% 45%)',
+                      fontFamily: chartFont,
+                    }}
                     tickFormatter={(v) => brlCompact.format(Number(v))}
-                    width={56}
+                    width={52}
                   />
                   <Tooltip
                     formatter={(value) => [
@@ -190,7 +239,11 @@ export function DashboardClient() {
                     labelFormatter={(l) =>
                       typeof l === 'string' ? l.split('-').reverse().join('/') : String(l)
                     }
-                    contentStyle={{ borderRadius: 8, borderColor: 'hsl(35 25% 88%)' }}
+                    contentStyle={{
+                      borderRadius: 8,
+                      borderColor: 'hsl(35 25% 88%)',
+                      fontFamily: chartFont,
+                    }}
                   />
                   <Area
                     type="monotone"
@@ -205,9 +258,9 @@ export function DashboardClient() {
             </div>
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-2">
-            <div className="rounded-xl border border-flor-100 bg-white p-4 shadow-sm">
-              <h2 className="font-serif text-lg text-flor-900 mb-3">Top 5 produtos</h2>
+          <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
+            <div className="rounded-xl border border-flor-100 bg-white p-3 shadow-sm sm:p-4">
+              <h2 className="mb-3 font-serif text-base text-flor-900 sm:text-lg">Top 5 produtos</h2>
               {data.topProducts.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Nenhuma venda no período.</p>
               ) : (
@@ -224,8 +277,12 @@ export function DashboardClient() {
                       {data.topProducts.map((p) => (
                         <tr key={p.productId} className="border-b border-flor-50 last:border-0">
                           <td className="py-2 pr-2 font-medium text-flor-900">{p.name}</td>
-                          <td className="py-2 pr-2 text-right tabular-nums">{p.unitsSold}</td>
-                          <td className="py-2 text-right tabular-nums">{brl.format(p.revenue)}</td>
+                          <td className="py-2 pr-2 text-right font-sans text-sm font-semibold tabular-nums tracking-tight text-flor-800">
+                            {p.unitsSold}
+                          </td>
+                          <td className="py-2 text-right font-sans text-sm font-semibold tabular-nums tracking-tight text-flor-800">
+                            {brl.format(p.revenue)}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -234,9 +291,14 @@ export function DashboardClient() {
               )}
             </div>
 
-            <div className="rounded-xl border border-flor-100 bg-white p-4 shadow-sm">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="font-serif text-lg text-flor-900">Pedidos recentes</h2>
+            <div className="rounded-xl border border-flor-100 bg-white p-3 shadow-sm sm:p-4">
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <h2 className="font-serif text-base text-flor-900 sm:text-lg">
+                    Pedidos recentes
+                  </h2>
+                  <p className="mt-0.5 text-xs text-flor-500">Criados no período selecionado.</p>
+                </div>
                 <Link
                   href="/admin/pedidos"
                   className="text-xs font-medium text-flor-700 hover:underline inline-flex items-center gap-0.5"
@@ -246,23 +308,23 @@ export function DashboardClient() {
                 </Link>
               </div>
               {data.recentOrders.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Nenhum pedido ainda.</p>
+                <p className="text-sm text-muted-foreground">Nenhum pedido criado neste período.</p>
               ) : (
                 <ul className="divide-y divide-flor-50">
                   {data.recentOrders.map((o) => (
                     <li key={o.id}>
                       <Link
                         href={`/admin/pedidos/${o.id}`}
-                        className="flex flex-wrap items-center justify-between gap-2 py-2.5 text-sm hover:bg-flor-50/60 -mx-2 px-2 rounded-lg transition-colors"
+                        className="flex min-h-12 items-center justify-between gap-3 rounded-lg py-2 text-sm transition-colors hover:bg-flor-50/60 -mx-2 px-2 touch-manipulation"
                       >
-                        <div>
-                          <p className="font-medium text-flor-900">{o.number}</p>
-                          <p className="text-xs text-muted-foreground">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium leading-snug text-flor-900">{o.number}</p>
+                          <p className="mt-0.5 line-clamp-2 text-xs leading-snug text-flor-600">
                             {orderStatusLabel[o.status] ?? o.status}
                             {o.customerName ? ` · ${o.customerName}` : ''}
                           </p>
                         </div>
-                        <span className="tabular-nums font-medium text-flor-800">
+                        <span className="shrink-0 text-right font-sans text-sm font-semibold tabular-nums tracking-tight text-flor-800">
                           {brl.format(o.total)}
                         </span>
                       </Link>
@@ -274,8 +336,8 @@ export function DashboardClient() {
           </div>
 
           <div>
-            <h2 className="font-serif text-lg text-flor-900 mb-3">Atalhos</h2>
-            <div className="grid gap-3 sm:grid-cols-3">
+            <h2 className="mb-3 font-serif text-base text-flor-900 sm:text-lg">Atalhos</h2>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <ShortcutCard
                 href="/admin/produtos/novo"
                 icon={Package}
@@ -306,7 +368,9 @@ function KpiCard({ title, value }: { title: string; value: string }) {
   return (
     <div className="rounded-xl border border-flor-100 bg-white p-4 shadow-sm">
       <p className="text-xs font-medium uppercase tracking-wide text-flor-500">{title}</p>
-      <p className="mt-2 font-serif text-2xl text-flor-900 tabular-nums">{value}</p>
+      <p className="mt-2 font-sans text-xl font-semibold tabular-nums tracking-tight text-flor-900 sm:text-2xl">
+        {value}
+      </p>
     </div>
   );
 }
@@ -325,7 +389,7 @@ function ShortcutCard({
   return (
     <Link
       href={href}
-      className="flex gap-3 rounded-xl border border-flor-100 bg-white p-4 shadow-sm transition-colors hover:border-flor-200 hover:bg-flor-50/40"
+      className="flex min-h-12 touch-manipulation items-center gap-3 rounded-xl border border-flor-100 bg-white p-4 shadow-sm transition-colors hover:border-flor-200 hover:bg-flor-50/40 sm:min-h-0"
     >
       <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-flor-100 text-flor-800">
         <Icon className="size-5" />
@@ -342,8 +406,19 @@ function DashboardAlerts({ summary }: { summary: DashboardSummary }) {
   const { alerts } = summary;
   return (
     <div className="space-y-2">
+      {alerts.unattendedOrdersCount > 0 && (
+        <AlertBanner
+          severity="critical"
+          icon={ShoppingBag}
+          title="Pedidos a tratar"
+          description={`${alerts.unattendedOrdersCount} pedido(s) pago(s) ou em separação aguardando envio.`}
+          href="/admin/pedidos"
+          actionLabel="Ver pedidos"
+        />
+      )}
       {alerts.lowStockCount > 0 && (
         <AlertBanner
+          severity="warning"
           icon={AlertTriangle}
           title="Estoque baixo"
           description={`${alerts.lowStockCount} produto(s) com estoque baixo.`}
@@ -351,55 +426,63 @@ function DashboardAlerts({ summary }: { summary: DashboardSummary }) {
           actionLabel="Ver estoque"
         />
       )}
-      {alerts.pendingReviewsCount > 0 && (
-        <AlertBanner
-          icon={Star}
-          title="Reviews pendentes"
-          description={`${alerts.pendingReviewsCount} avaliação(ões) aguardando moderação.`}
-          href="/admin/reviews"
-          actionLabel="Moderar"
-        />
-      )}
-      {alerts.unattendedOrdersCount > 0 && (
-        <AlertBanner
-          icon={ShoppingBag}
-          title="Pedidos a tratar"
-          description={`${alerts.unattendedOrdersCount} pedido(s) pago(s) ou em separação.`}
-          href="/admin/pedidos?status=PAID"
-          actionLabel="Ver pedidos"
-        />
-      )}
     </div>
   );
 }
 
 function AlertBanner({
+  severity,
   title,
   description,
   href,
   actionLabel,
   icon: Icon,
 }: {
+  severity: 'warning' | 'critical';
   title: string;
   description: string;
   href: string;
   actionLabel: string;
   icon: LucideIcon;
 }) {
+  const styles =
+    severity === 'critical'
+      ? {
+          box: 'border-red-300/90 bg-red-50/95',
+          icon: 'text-red-700',
+          title: 'text-red-950',
+          desc: 'text-red-900/85',
+          btn: 'border-red-300 bg-white text-red-900 hover:bg-red-50',
+        }
+      : {
+          box: 'border-amber-200/80 bg-amber-50/90',
+          icon: 'text-amber-800',
+          title: 'text-amber-950',
+          desc: 'text-amber-900/80',
+          btn: 'border-amber-300 bg-white text-amber-950 hover:bg-amber-50/80',
+        };
+
   return (
-    <div className="flex flex-col gap-2 rounded-xl border border-amber-200/80 bg-amber-50/90 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+    <div
+      role={severity === 'critical' ? 'alert' : 'status'}
+      className={cn(
+        'flex min-h-12 flex-col gap-3 rounded-xl border px-4 py-3 touch-manipulation sm:min-h-0 sm:flex-row sm:items-center sm:justify-between',
+        styles.box,
+      )}
+    >
       <div className="flex gap-3">
-        <Icon className="size-5 shrink-0 text-amber-800 mt-0.5" />
+        <Icon className={cn('mt-0.5 size-5 shrink-0', styles.icon)} aria-hidden />
         <div>
-          <p className="font-medium text-amber-950">{title}</p>
-          <p className="text-sm text-amber-900/80">{description}</p>
+          <p className={cn('font-medium', styles.title)}>{title}</p>
+          <p className={cn('text-sm', styles.desc)}>{description}</p>
         </div>
       </div>
       <Link
         href={href}
         className={cn(
           buttonVariants({ variant: 'outline', size: 'sm' }),
-          'shrink-0 border-amber-300 bg-white',
+          'min-h-10 shrink-0 touch-manipulation sm:min-h-8',
+          styles.btn,
         )}
       >
         {actionLabel}

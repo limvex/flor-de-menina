@@ -1,5 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
-import { OrderStatus, ReviewStatus } from '@flor/database';
+import { OrderStatus } from '@flor/database';
 import { AdminDashboardService } from '../admin-dashboard.service';
 import { DashboardPreset } from '../dto/dashboard-summary.query';
 
@@ -12,7 +12,6 @@ jest.mock('@flor/database', () => {
         findMany: jest.fn(),
         count: jest.fn(),
       },
-      review: { count: jest.fn() },
       orderItem: { findMany: jest.fn() },
       $queryRaw: jest.fn(),
     },
@@ -45,7 +44,6 @@ describe('AdminDashboardService', () => {
     (prisma.order.findMany as jest.Mock)
       .mockResolvedValueOnce([]) // business
       .mockResolvedValueOnce([]); // recent
-    (prisma.review.count as jest.Mock).mockResolvedValue(0);
     (prisma.order.count as jest.Mock).mockResolvedValue(0);
     (prisma.$queryRaw as jest.Mock).mockResolvedValue([{ c: 0 }]);
 
@@ -56,8 +54,16 @@ describe('AdminDashboardService', () => {
     expect(r.kpis.revenue).toBe(0);
     expect(r.topProducts).toEqual([]);
     expect(r.alerts.lowStockCount).toBe(0);
-    expect(r.alerts.pendingReviewsCount).toBe(0);
     expect(r.alerts.unattendedOrdersCount).toBe(0);
+    const recentCall = (prisma.order.findMany as jest.Mock).mock.calls[1][0];
+    expect(recentCall.where).toEqual(
+      expect.objectContaining({
+        createdAt: expect.objectContaining({
+          gte: expect.any(Date),
+          lt: expect.any(Date),
+        }),
+      }),
+    );
   });
 
   it('getSummary: agrega receita e top produtos', async () => {
@@ -77,7 +83,6 @@ describe('AdminDashboardService', () => {
           user: { name: 'Ana', email: 'a@b.com' },
         },
       ]);
-    (prisma.review.count as jest.Mock).mockResolvedValue(2);
     (prisma.order.count as jest.Mock).mockResolvedValue(3);
     (prisma.$queryRaw as jest.Mock).mockResolvedValue([{ c: 1 }]);
     (prisma.orderItem.findMany as jest.Mock).mockResolvedValue([
@@ -112,8 +117,17 @@ describe('AdminDashboardService', () => {
     expect(r.kpis.averageTicket).toBe(75);
     expect(r.topProducts[0].productId).toBe('p1');
     expect(r.topProducts[0].unitsSold).toBe(3);
-    expect(r.alerts.pendingReviewsCount).toBe(2);
     expect(r.alerts.unattendedOrdersCount).toBe(3);
     expect(r.alerts.lowStockCount).toBe(1);
+    expect(prisma.order.findMany).toHaveBeenCalledTimes(2);
+    const recentCall = (prisma.order.findMany as jest.Mock).mock.calls[1][0];
+    expect(recentCall.where).toEqual(
+      expect.objectContaining({
+        createdAt: expect.objectContaining({
+          gte: expect.any(Date),
+          lt: expect.any(Date),
+        }),
+      }),
+    );
   });
 });

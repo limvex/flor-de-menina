@@ -1,9 +1,8 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { prisma, OrderStatus, Prisma, ReviewStatus } from '@flor/database';
+import { prisma, OrderStatus, Prisma } from '@flor/database';
 import { LOW_STOCK_THRESHOLD } from '@flor/types';
 import { DashboardPreset } from './dto/dashboard-summary.query';
 import {
-  addOneDayYmd,
   countInclusiveDays,
   eachYmdInclusive,
   subtractCalendarDaysFromYmd,
@@ -44,7 +43,6 @@ export type DashboardSummaryResult = {
   }[];
   alerts: {
     lowStockCount: number;
-    pendingReviewsCount: number;
     unattendedOrdersCount: number;
   };
 };
@@ -126,34 +124,31 @@ export class AdminDashboardService {
       createdAt: { gte: start, lt: endExclusive },
     };
 
-    const [
-      businessOrders,
-      recentOrders,
-      pendingReviewsCount,
-      unattendedOrdersCount,
-      lowRow,
-    ] = await Promise.all([
-      prisma.order.findMany({
-        where: orderWhere,
-        select: { id: true, total: true, createdAt: true },
-      }),
-      prisma.order.findMany({
-        orderBy: { createdAt: 'desc' },
-        take: 10,
-        select: {
-          id: true,
-          number: true,
-          status: true,
-          total: true,
-          createdAt: true,
-          user: { select: { name: true, email: true } },
-        },
-      }),
-      prisma.review.count({ where: { status: ReviewStatus.PENDING } }),
-      prisma.order.count({
-        where: { status: { in: [OrderStatus.PAID, OrderStatus.PROCESSING] } },
-      }),
-      prisma.$queryRaw<{ c: number }[]>(Prisma.sql`
+    const [businessOrders, recentOrders, unattendedOrdersCount, lowRow] =
+      await Promise.all([
+        prisma.order.findMany({
+          where: orderWhere,
+          select: { id: true, total: true, createdAt: true },
+        }),
+        prisma.order.findMany({
+          where: {
+            createdAt: { gte: start, lt: endExclusive },
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+          select: {
+            id: true,
+            number: true,
+            status: true,
+            total: true,
+            createdAt: true,
+            user: { select: { name: true, email: true } },
+          },
+        }),
+        prisma.order.count({
+          where: { status: { in: [OrderStatus.PAID, OrderStatus.PROCESSING] } },
+        }),
+        prisma.$queryRaw<{ c: number }[]>(Prisma.sql`
           SELECT COUNT(*)::int AS c FROM (
             SELECT p.id
             FROM "Product" p
@@ -164,7 +159,7 @@ export class AdminDashboardService {
             AND BOOL_OR(v.stock > 0 AND v.stock < ${LOW_STOCK_THRESHOLD})
           ) sub
         `),
-    ]);
+      ]);
 
     let revenue = 0;
     for (const o of businessOrders) {
@@ -220,7 +215,6 @@ export class AdminDashboardService {
       })),
       alerts: {
         lowStockCount,
-        pendingReviewsCount,
         unattendedOrdersCount,
       },
     };

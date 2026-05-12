@@ -10,7 +10,7 @@ interface AdminPageHeaderProps {
 
 export function AdminPageHeader({ title, description, actions, backHref }: AdminPageHeaderProps) {
   return (
-    <div className="flex items-start justify-between gap-4 mb-6">
+    <div className="mb-4 flex flex-col items-start justify-between gap-3 sm:mb-6 sm:flex-row sm:items-start sm:gap-4">
       <div>
         {backHref && (
           <Link

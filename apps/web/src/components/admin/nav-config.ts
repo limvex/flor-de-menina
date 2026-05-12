@@ -6,7 +6,6 @@ import {
   ShoppingBag,
   Users,
   Ticket,
-  Star,
   FileText,
   Settings,
 } from 'lucide-react';
@@ -26,7 +25,6 @@ export const navItems: NavItem[] = [
   { label: 'Pedidos', href: '/admin/pedidos', icon: ShoppingBag },
   { label: 'Clientes', href: '/admin/clientes', icon: Users },
   { label: 'Cupons', href: '/admin/cupons', icon: Ticket },
-  { label: 'Reviews', href: '/admin/reviews', icon: Star },
   { label: 'Páginas', href: '/admin/paginas', icon: FileText },
   { label: 'Configurações', href: '/admin/configuracoes', icon: Settings },
 ];
@@ -40,7 +38,6 @@ export const segmentLabels: Record<string, string> = {
   pedidos: 'Pedidos',
   clientes: 'Clientes',
   cupons: 'Cupons',
-  reviews: 'Reviews',
   paginas: 'Páginas',
   configuracoes: 'Configurações',
   frete: 'Frete',
