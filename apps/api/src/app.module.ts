@@ -25,6 +25,9 @@ import { PaymentsModule } from './payments/payments.module';
 import { EmailModule } from './email/email.module';
 import { CouponsModule } from './modules/coupons/coupons.module';
 import { PagesModule } from './modules/pages/pages.module';
+import { AdminDashboardModule } from './modules/admin-dashboard/admin-dashboard.module';
+import { AdminOrdersModule } from './modules/admin-orders/admin-orders.module';
+import { AdminReviewsModule } from './modules/admin-reviews/admin-reviews.module';
 
 @Module({
   imports: [
@@ -60,6 +63,9 @@ import { PagesModule } from './modules/pages/pages.module';
     EmailModule,
     CouponsModule,
     PagesModule,
+    AdminDashboardModule,
+    AdminOrdersModule,
+    AdminReviewsModule,
   ],
   controllers: [AppController],
   providers: [
