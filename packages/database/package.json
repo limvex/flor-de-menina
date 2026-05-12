@@ -13,6 +13,7 @@
     "db:migrate:deploy": "node scripts/run-with-root-env.cjs migrate deploy",
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
+    "db:seed:institutional": "tsx prisma/seed-institutional-only.ts",
     "db:reset": "node scripts/run-with-root-env.cjs migrate reset --force && pnpm db:seed",
     "typecheck": "prisma generate && tsc --noEmit"
   },

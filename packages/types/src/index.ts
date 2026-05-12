@@ -114,4 +114,10 @@ export type {
   CreateCouponInput,
   UpdateCouponInput,
 } from './coupon.schema';
-export { MAX_COUPON_CODE_LENGTH } from './coupon.schema';
+export type {
+  InstitutionalPageFormValues,
+  InstitutionalPagePublic,
+  InstitutionalPageSummary,
+  InstitutionalPageAdmin,
+} from './institutional-page.schema';
+export { institutionalPageFormSchema } from './institutional-page.schema';

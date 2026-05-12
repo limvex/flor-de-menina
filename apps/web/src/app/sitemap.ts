@@ -5,6 +5,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3333';
 
 interface CategoryItem {
   slug: string;
+  updatedAt?: string;
   children?: CategoryItem[];
 }
 
@@ -26,7 +27,7 @@ function flattenCategories(categories: CategoryItem[]): CategoryItem[] {
     const current = stack.pop();
     if (!current) continue;
 
-    flat.push({ slug: current.slug });
+    flat.push({ slug: current.slug, updatedAt: current.updatedAt });
     if (Array.isArray(current.children) && current.children.length > 0) {
       stack.push(...current.children);
     }
@@ -69,9 +70,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   try {
-    const [products, categoriesResponse] = await Promise.all([
+    const [products, categoriesResponse, instResponse] = await Promise.all([
       fetchAllProducts(),
       fetch(`${API_URL}/categories`, { next: { revalidate: 300 } }),
+      fetch(`${API_URL}/pages`, { next: { revalidate: 300 } }),
     ]);
 
     if (!categoriesResponse.ok) {
@@ -84,20 +86,33 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       : (categoriesPayload?.items ?? []);
     const categories = flattenCategories(categoriesTree);
 
+    const institutionalRaw: unknown = instResponse.ok ? await instResponse.json() : [];
+    const institutional = Array.isArray(institutionalRaw) ? institutionalRaw : [];
+
     const categoryUrls: MetadataRoute.Sitemap = categories.map((c) => ({
       url: `${SITE}/categoria/${c.slug}`,
-      changeFrequency: 'daily' as const,
+      lastModified: c.updatedAt,
+      changeFrequency: 'weekly' as const,
       priority: 0.8,
     }));
 
     const productUrls: MetadataRoute.Sitemap = products.map((p) => ({
       url: `${SITE}/produto/${p.slug}`,
       lastModified: p.updatedAt,
-      changeFrequency: 'daily' as const,
+      changeFrequency: 'weekly' as const,
       priority: 0.7,
     }));
 
-    return [...staticUrls, ...categoryUrls, ...productUrls];
+    const instUrls: MetadataRoute.Sitemap = institutional.map(
+      (row: { slug: string; updatedAt?: string }) => ({
+        url: `${SITE}/p/${row.slug}`,
+        lastModified: row.updatedAt,
+        changeFrequency: 'monthly' as const,
+        priority: 0.5,
+      }),
+    );
+
+    return [...staticUrls, ...categoryUrls, ...productUrls, ...instUrls];
   } catch (error) {
     console.error('[sitemap] fallback para URLs estáticas:', error);
     return staticUrls;

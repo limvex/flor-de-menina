@@ -6,7 +6,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/admin', '/api', '/buscar', '/conta'],
+        disallow: ['/admin', '/api', '/buscar', '/conta', '/checkout'],
       },
     ],
     sitemap: 'https://flordemenina.store/sitemap.xml',

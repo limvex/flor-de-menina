@@ -60,10 +60,11 @@ export function FooterColumns() {
           <div>
             <ColumnTitle>Institucional</ColumnTitle>
             <ul className="space-y-2.5">
-              <ColumnLink href="/quem-somos">Quem Somos</ColumnLink>
-              <ColumnLink href="/trocas-e-devolucoes">Trocas e Devoluções</ColumnLink>
-              <ColumnLink href="/faq">FAQ</ColumnLink>
-              <ColumnLink href="/politica-de-privacidade">Política de Privacidade</ColumnLink>
+              <ColumnLink href="/p/sobre">Sobre</ColumnLink>
+              <ColumnLink href="/p/trocas-e-devolucoes">Trocas e Devoluções</ColumnLink>
+              <ColumnLink href="/p/faq">FAQ</ColumnLink>
+              <ColumnLink href="/p/politica-de-privacidade">Política de Privacidade</ColumnLink>
+              <ColumnLink href="/p/termos-de-uso">Termos de Uso</ColumnLink>
             </ul>
           </div>
 

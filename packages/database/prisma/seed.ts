@@ -9,6 +9,7 @@ import { Pool } from 'pg';
 import { UserRole, StockMovementType, StockMovementSource } from '../src/generated/prisma';
 import { createId } from '@paralleldrive/cuid2';
 import bcrypt from 'bcrypt';
+import { INSTITUTIONAL_PAGES_SEED } from './institutional-pages-seed';
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
@@ -56,9 +57,24 @@ async function main() {
   //            + seleção de endereço na etapa 2
   // =========================================================
   const clientePassword = await bcrypt.hash('cliente123', 12);
+  // CPF é único: libera o CPF demo se estiver em outro usuário (re-seed / banco sujo em dev).
+  await prisma.user.updateMany({
+    where: {
+      cpf: '52998224725',
+      email: { not: 'cliente@flordemenina.store' },
+    },
+    data: { cpf: null },
+  });
   const cliente1 = await prisma.user.upsert({
     where: { email: 'cliente@flordemenina.store' },
-    update: {},
+    update: {
+      passwordHash: clientePassword,
+      name: 'Ana Lima',
+      cpf: '52998224725',
+      phone: '82999990001',
+      emailVerified: true,
+      role: UserRole.CUSTOMER,
+    },
     create: {
       id: createId(),
       email: 'cliente@flordemenina.store',
@@ -138,6 +154,13 @@ async function main() {
   // CPF exclusivo da conta de testes de checkout (válido; não reutilizar o CPF do cliente demo).
   // =========================================================
   const pagamentoPassword = await bcrypt.hash('pagamento123', 12);
+  await prisma.user.updateMany({
+    where: {
+      cpf: '39053344705',
+      email: { not: 'pagamento@flordemenina.store' },
+    },
+    data: { cpf: null },
+  });
   const checkoutMp = await prisma.user.upsert({
     where: { email: 'pagamento@flordemenina.store' },
     update: {
@@ -513,49 +536,27 @@ async function main() {
   }
 
   // =========================================================
-  // PÁGINAS INSTITUCIONAIS
+  // PÁGINAS INSTITUCIONAIS (HTML TipTap — Task #24)
   // =========================================================
-  const paginas = [
-    {
-      slug: 'sobre',
-      title: 'Sobre a Flor de Menina',
-      content:
-        'A Flor de Menina é uma marca de moda feminina nascida em Maceió-AL, com 13 anos de história vestindo mulheres que valorizam o essencial e o atemporal. Clássica, chic e cool — para quem quer se sentir bonita todos os dias.',
-    },
-    {
-      slug: 'trocas-e-devolucoes',
-      title: 'Trocas e Devoluções',
-      content:
-        'Você tem 7 dias após o recebimento para solicitar troca ou devolução, conforme o Código de Defesa do Consumidor. O produto deve estar sem uso, com etiqueta e embalagem original. Entre em contato pelo nosso WhatsApp para iniciar o processo.',
-    },
-    {
-      slug: 'faq',
-      title: 'Perguntas Frequentes',
-      content:
-        '## Como faço para comprar?\n\nNavegue pelo catálogo, escolha seus produtos, adicione ao carrinho e finalize a compra. Você precisa criar uma conta para acompanhar seus pedidos.\n\n## Quais formas de pagamento aceitam?\n\nAceitamos PIX e cartão de crédito (parcelado em até 12x).\n\n## Qual o prazo de entrega?\n\nVaria conforme sua região. O cálculo do frete e prazo é feito no checkout com base no seu CEP.',
-    },
-    {
-      slug: 'politica-de-privacidade',
-      title: 'Política de Privacidade',
-      content:
-        'A Flor de Menina respeita sua privacidade e está comprometida com a Lei Geral de Proteção de Dados (LGPD). Coletamos apenas os dados necessários para processar seu pedido e oferecer uma experiência personalizada. Seus dados nunca são vendidos ou compartilhados com terceiros sem sua autorização.',
-    },
-    {
-      slug: 'termos-de-uso',
-      title: 'Termos de Uso',
-      content:
-        'Ao utilizar este site, você concorda com nossos termos de uso. As informações contidas no site são meramente informativas. Reservamo-nos o direito de alterar preços e disponibilidade sem aviso prévio.',
-    },
-  ];
-
-  for (const pg of paginas) {
+  for (const pg of INSTITUTIONAL_PAGES_SEED) {
     await prisma.institutionalPage.upsert({
       where: { slug: pg.slug },
-      update: {},
-      create: { id: createId(), ...pg },
+      create: {
+        id: createId(),
+        slug: pg.slug,
+        title: pg.title,
+        content: pg.content,
+        sortOrder: pg.sortOrder,
+        isActive: true,
+      },
+      update: {
+        title: pg.title,
+        content: pg.content,
+        sortOrder: pg.sortOrder,
+      },
     });
   }
-  console.log(`✅ ${paginas.length} páginas institucionais criadas`);
+  console.log(`✅ ${INSTITUTIONAL_PAGES_SEED.length} páginas institucionais (seed HTML)`);
 
   // =========================================================
   // RESUMO PARA TESTES

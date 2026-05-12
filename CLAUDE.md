@@ -166,7 +166,7 @@ Atualize esta seção a cada task concluída. Use os emojis:
 | 21  | Sistema de Reviews com foto           | -                                           | -                               | -   |
 | 22  | E-mails transacionais (Resend)        | ✅ Concluída (local)                        | `feat/22-emails-transacionais`  | -   |
 | 23  | Dashboard admin                       | -                                           | -                               | -   |
-| 24  | Páginas institucionais e SEO          | -                                           | -                               | -   |
+| 24  | Páginas institucionais e SEO          | ✅ Concluída (local)                        | `feat/24-institucionais-seo`    | -   |
 | 25  | Provisionamento de produção + Go-live | -                                           | -                               | -   |
 
 - `2026-05-12` — Domínio global: `flordemenina.site` → `flordemenina.store` em todos os arquivos (seed, E2E, sitemap, robots, footer, templates, adapters, CLAUDE.md, docs).
@@ -195,13 +195,15 @@ Atualize esta seção a cada task concluída. Use os emojis:
 - `2026-05-09` — Task #16 (Checkout multi-step) concluída. Fluxo de 5 etapas: Identificação → Endereço → Frete → Pagamento → Revisão. CheckoutContext com sessionStorage, stepper visual, validação CPF completa (algoritmo + dígitos verificadores), $transaction atômico no createOrder (Order + StockMovement + limpeza carrinho), página de confirmação Server Component com cookie forwarding. CustomerProfileService getOrders/getOrder implementados. Bugs corrigidos: 403 cross-user, dropdown de parcelas, payload de variantes no admin, endpoint de categorias admin.
 - `2026-05-08` — Task #14 (Carrinho) concluída. Módulo cart na API com CRUD + merge + SELECT FOR UPDATE contra race condition. CartCleanupService (@Cron a cada 5min) libera reservas expiradas. Frontend: CartProvider com merge localStorage→servidor no login, mini-carrinho drawer, página /carrinho com debounce, timer de reserva colorido e barra de frete grátis. LocalCartItemSnapshot: visitante vê nome/preço/estoque real sem precisar de API. Campo de cupom fica para Task #20.
 
+- `2026-05-12` — Task #24 concluída (local). API `pages` (CRUD admin + público). Prisma `InstitutionalPage` (`metaTitle`/`metaDescription` @map seo\*, `ogImage`, `sortOrder`, índice `isActive`). Seed HTML + `pnpm db:seed:institutional`. Admin `/admin/paginas` (TipTap, SEO). Loja `/p/[slug]` com **`dynamic = 'force-dynamic'`** e **`fetch` `cache: 'no-store'`** (edição e ativo/inativo no próximo acesso — sem ISR 60s que cacheava página desativada). Sitemap/robots, metadataBase, JSON-LD Organization, GTM/Pixel opcionais. Footer → `/p/...`; `/quem-somos` → `/p/sobre`. PDP: Product schema (preço mín. variante, descrição texto). Migration `20260512130000_institutional_page_og_sort_index`. `run-with-root-env.cjs`: Prisma via `node …/prisma/build/index.js` (Windows). Seed: libera CPF demo duplicado antes do upsert.
+
 - `2026-05-12` — Task #22 (E-mails transacionais) concluída e validada localmente. BullMQ+Redis, 8 templates React Email, EmailLog com idempotência, ResendAdapter (lazy init), MaildevAdapter para dev. Triggers em OrdersService (ORDER_CREATED) e PaymentsService (PAYMENT_APPROVED/REJECTED). Cron ReviewInvitationCron (10h diário). Admin UI: logs com filtros/resend e preview com iframe. Validado: PASSWORD_RESET, ORDER_CREATED, PAYMENT_APPROVED chegando no Maildev. REDIS_PASSWORD configurado para limvex-redis compartilhado (senha no .env local, não commitar). PAYMENT_PROVIDER mudado para "mock" para testes locais.
 
 ## ⚠️ Coisas que NÃO podem ser esquecidas
 
-- **DOMÍNIO é `flordemenina.store`** (não `.site`) — já propagado em todos os arquivos do projeto.
+- **Páginas institucionais**: API pública `GET /pages` (resumo) e `GET /pages/:slug` (HTML TipTap). Conteúdo só em `dangerouslySetInnerHTML` na loja. Admin em `/admin/paginas`. Loja `/p/[slug]`: **`export const dynamic = 'force-dynamic'`** + **`fetch(..., { cache: 'no-store' })`** (sem ISR — ativo/inativo e conteúdo refletem no próximo acesso). Seed só institucionais: `pnpm db:seed:institutional`.
 - **Redis na porta 6379** — adicionado ao docker-compose. Necessário para BullMQ (fila de emails). Subir com `docker compose up -d redis`.
-- **Migration pendente**: `add_email_logs_and_order_shipping` — rodar `pnpm --filter @flor/database db:migrate` quando Docker estiver ativo.
+- **Migration pendente**: `add_email_logs_and_order_shipping` e `20260512130000_institutional_page_og_sort_index` — rodar `pnpm --filter @flor/database db:migrate` quando Docker estiver ativo.
 - **BullMQ fila `mail`**: worker em `MailProcessor`, producer em `MailService.enqueue()`. Retry 3x com backoff exponencial (30s, 5min, 30min).
 - **`EmailLog` no Prisma** — auditoria completa de cada envio. `idempotencyKey` garante que o mesmo evento nunca dispara duplicado mesmo com webhook retentando N vezes.
 - **`MailService`** (em `mail/`) é o único canal de envio — `EmailService` (em `email/`) delega para ele. Não chamar MaildevAdapter diretamente de outros módulos.
