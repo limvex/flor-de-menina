@@ -50,7 +50,7 @@ test.describe('Criar produto', () => {
 
     // Login na API
     await page.request.post(`${API}/auth/admin/login`, {
-      data: { email: 'admin@flordemenina.site', password: 'admin123' },
+      data: { email: 'admin@flordemenina.store', password: 'admin123' },
     });
     const catsRes = await page.request.get(`${API}/categories/admin`);
     const cats = await catsRes.json();

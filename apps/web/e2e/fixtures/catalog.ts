@@ -11,7 +11,7 @@ const tokenCache: AdminTokenCache = { token: null };
 export async function getAdminToken(api: APIRequestContext): Promise<string> {
   if (tokenCache.token) return tokenCache.token;
   const res = await api.post(`${API_URL}/auth/admin/login`, {
-    data: { email: 'admin@flordemenina.site', password: 'admin123' },
+    data: { email: 'admin@flordemenina.store', password: 'admin123' },
   });
   if (!res.ok()) {
     throw new Error(`Falha ao logar admin: ${res.status()}`);

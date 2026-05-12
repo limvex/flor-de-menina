@@ -62,7 +62,7 @@ export default async function ProdutoPage({ params }: PageProps) {
     brand: { '@type': 'Brand', name: 'Flor de Menina' },
     offers: {
       '@type': 'Offer',
-      url: `https://flordemenina.site/produto/${product.slug}`,
+      url: `https://flordemenina.store/produto/${product.slug}`,
       priceCurrency: 'BRL',
       price: product.basePrice,
       availability: product.isOutOfStock

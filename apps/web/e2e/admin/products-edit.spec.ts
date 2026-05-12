@@ -18,7 +18,7 @@ test.describe('Editar produto', () => {
 
     // Busca via API diretamente com cookie
     await page.request.post(`${API}/auth/admin/login`, {
-      data: { email: 'admin@flordemenina.site', password: 'admin123' },
+      data: { email: 'admin@flordemenina.store', password: 'admin123' },
     });
 
     const listRes = await page.request.get(`${API}/products?limit=1&status=active`);

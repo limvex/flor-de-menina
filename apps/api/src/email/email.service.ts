@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { MailService } from '../mail/mail.service';
 import type {
   OrderConfirmationEmailPayload,
   PaymentFailureEmailPayload,
@@ -9,25 +10,30 @@ import type {
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
 
-  // TODO(task-#22): integrar Resend real
+  constructor(private readonly mailService: MailService) {}
+
   async sendOrderConfirmation(payload: OrderConfirmationEmailPayload) {
     this.logger.log(
-      `[EMAIL_TRIGGER] type=order_confirmation order=${payload.orderNumber} to=${payload.customerEmail}`,
+      `[EMAIL] order_confirmation order=${payload.orderNumber} to=${payload.customerEmail}`,
     );
-    this.logger.debug(JSON.stringify(payload, null, 2));
+    await this.mailService.sendPaymentApproved(payload.orderId);
   }
 
   async sendPaymentFailure(payload: PaymentFailureEmailPayload) {
     this.logger.log(
-      `[EMAIL_TRIGGER] type=payment_failure order=${payload.orderNumber} to=${payload.customerEmail} reason=${payload.reason}`,
+      `[EMAIL] payment_failure order=${payload.orderNumber} to=${payload.customerEmail}`,
     );
-    this.logger.debug(JSON.stringify(payload, null, 2));
+    await this.mailService.sendPaymentRejected(payload.orderId, payload.reason);
   }
 
   async sendRefund(payload: RefundEmailPayload) {
     this.logger.log(
-      `[EMAIL_TRIGGER] type=refund order=${payload.orderNumber} to=${payload.customerEmail} amount=${payload.amount}`,
+      `[EMAIL] refund order=${payload.orderNumber} to=${payload.customerEmail} amount=${payload.amount}`,
     );
-    this.logger.debug(JSON.stringify(payload, null, 2));
+    // Reembolso: notifica com email de pagamento rejeitado adaptado
+    await this.mailService.sendPaymentRejected(
+      payload.orderId,
+      `Reembolso de R$ ${payload.amount.toFixed(2)} processado.`,
+    );
   }
 }

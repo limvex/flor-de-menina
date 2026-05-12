@@ -25,7 +25,7 @@ export class OpenRouterService {
         apiKey,
         baseURL: 'https://openrouter.ai/api/v1',
         defaultHeaders: {
-          'HTTP-Referer': 'https://flordemenina.site',
+          'HTTP-Referer': 'https://flordemenina.store',
           'X-Title': 'Flor de Menina',
         },
       });

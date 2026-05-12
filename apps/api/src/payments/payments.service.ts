@@ -530,39 +530,57 @@ export class PaymentsService {
     };
 
     if (txResult.newStatus === PaymentStatus.APPROVED) {
-      await this.emailService.sendOrderConfirmation({
-        orderId: fullOrder.id,
-        orderNumber: fullOrder.number,
-        customerName: fullOrder.user.name,
-        customerEmail: fullOrder.user.email,
-        total: Number(fullOrder.total),
-        items: fullOrder.items.map((i) => ({
-          name: buildItemName(i),
-          quantity: i.quantity,
-          price: Number(i.unitPrice),
-        })),
-      });
+      this.emailService
+        .sendOrderConfirmation({
+          orderId: fullOrder.id,
+          orderNumber: fullOrder.number,
+          customerName: fullOrder.user.name,
+          customerEmail: fullOrder.user.email,
+          total: Number(fullOrder.total),
+          items: fullOrder.items.map((i) => ({
+            name: buildItemName(i),
+            quantity: i.quantity,
+            price: Number(i.unitPrice),
+          })),
+        })
+        .catch((err) => {
+          this.logger.error(
+            `sendOrderConfirmation falhou: orderId=${fullOrder.id} error=${String(err)}`,
+          );
+        });
     } else if (
       txResult.newStatus === PaymentStatus.REJECTED ||
       txResult.newStatus === PaymentStatus.CANCELLED
     ) {
-      await this.emailService.sendPaymentFailure({
-        orderId: fullOrder.id,
-        orderNumber: fullOrder.number,
-        customerName: fullOrder.user.name,
-        customerEmail: fullOrder.user.email,
-        reason:
-          fullOrder.payment?.failureReason ??
-          'Pagamento não autorizado pelo banco',
-      });
+      this.emailService
+        .sendPaymentFailure({
+          orderId: fullOrder.id,
+          orderNumber: fullOrder.number,
+          customerName: fullOrder.user.name,
+          customerEmail: fullOrder.user.email,
+          reason:
+            fullOrder.payment?.failureReason ??
+            'Pagamento não autorizado pelo banco',
+        })
+        .catch((err) => {
+          this.logger.error(
+            `sendPaymentFailure falhou: orderId=${fullOrder.id} error=${String(err)}`,
+          );
+        });
     } else if (txResult.newStatus === PaymentStatus.REFUNDED) {
-      await this.emailService.sendRefund({
-        orderId: fullOrder.id,
-        orderNumber: fullOrder.number,
-        customerName: fullOrder.user.name,
-        customerEmail: fullOrder.user.email,
-        amount: Number(fullOrder.payment?.amount ?? 0),
-      });
+      this.emailService
+        .sendRefund({
+          orderId: fullOrder.id,
+          orderNumber: fullOrder.number,
+          customerName: fullOrder.user.name,
+          customerEmail: fullOrder.user.email,
+          amount: Number(fullOrder.payment?.amount ?? 0),
+        })
+        .catch((err) => {
+          this.logger.error(
+            `sendRefund falhou: orderId=${fullOrder.id} error=${String(err)}`,
+          );
+        });
     }
 
     this.logger.log(

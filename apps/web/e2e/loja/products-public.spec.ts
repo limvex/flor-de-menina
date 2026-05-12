@@ -12,7 +12,7 @@ test.describe('Catálogo público', () => {
   test('produto inativo não aparece no público', async ({ page }) => {
     const API = 'http://localhost:3333';
     const loginRes = await page.request.post(`${API}/auth/admin/login`, {
-      data: { email: 'admin@flordemenina.site', password: 'admin123' },
+      data: { email: 'admin@flordemenina.store', password: 'admin123' },
     });
     const { access_token } = await loginRes.json();
 

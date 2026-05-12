@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import {
@@ -15,276 +16,291 @@ import {
 import type { PrismaClient } from '@flor/database';
 import { StockService } from '../stock/stock.service';
 import { CouponsService } from '../coupons/coupons.service';
+import { MailService } from '../../mail/mail.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 
 type Tx = Parameters<Parameters<PrismaClient['$transaction']>[0]>[0];
 
 @Injectable()
 export class OrdersService {
+  private readonly logger = new Logger(OrdersService.name);
+
   constructor(
     private readonly stockService: StockService,
     private readonly couponsService: CouponsService,
+    private readonly mailService: MailService,
   ) {}
 
   async createOrder(userId: string, dto: CreateOrderDto) {
-    return prisma.$transaction(async (tx) => {
-      // 1. Buscar carrinho do usuário com itens e variantes
-      const cart = await tx.cart.findFirst({
-        where: { userId },
-        select: {
-          id: true,
-          couponCode: true,
-          items: {
-            select: {
-              id: true,
-              variantId: true,
-              quantity: true,
-              productId: true,
-              product: {
-                select: {
-                  name: true,
-                  categoryId: true,
-                  images: {
-                    select: { cardUrl: true, url: true },
-                    orderBy: { position: 'asc' },
-                    take: 1,
+    return prisma
+      .$transaction(async (tx) => {
+        // 1. Buscar carrinho do usuário com itens e variantes
+        const cart = await tx.cart.findFirst({
+          where: { userId },
+          select: {
+            id: true,
+            couponCode: true,
+            items: {
+              select: {
+                id: true,
+                variantId: true,
+                quantity: true,
+                productId: true,
+                product: {
+                  select: {
+                    name: true,
+                    categoryId: true,
+                    images: {
+                      select: { cardUrl: true, url: true },
+                      orderBy: { position: 'asc' },
+                      take: 1,
+                    },
                   },
                 },
-              },
-              variant: {
-                select: {
-                  size: true,
-                  color: true,
-                  price: true,
-                  product: { select: { basePrice: true } },
+                variant: {
+                  select: {
+                    size: true,
+                    color: true,
+                    price: true,
+                    product: { select: { basePrice: true } },
+                  },
                 },
               },
             },
           },
-        },
-      });
+        });
 
-      // 2. Validar carrinho não vazio
-      if (!cart || cart.items.length === 0) {
-        throw new BadRequestException('Carrinho está vazio');
-      }
+        // 2. Validar carrinho não vazio
+        if (!cart || cart.items.length === 0) {
+          throw new BadRequestException('Carrinho está vazio');
+        }
 
-      // 3. Validar estoque de cada item
-      const insufficientItems: Array<{
-        productName: string;
-        variantLabel: string;
-        requested: number;
-        available: number;
-      }> = [];
+        // 3. Validar estoque de cada item
+        const insufficientItems: Array<{
+          productName: string;
+          variantLabel: string;
+          requested: number;
+          available: number;
+        }> = [];
 
-      for (const item of cart.items) {
-        const available = await this.getAvailableStockInTx(
-          item.variantId,
-          cart.id,
-          tx,
-        );
-        if (available < item.quantity) {
-          const size = item.variant.size;
-          const color = item.variant.color;
-          const parts = [size, color].filter(Boolean);
-          insufficientItems.push({
-            productName: item.product.name,
-            variantLabel: parts.length > 0 ? parts.join(' - ') : 'Padrão',
-            requested: item.quantity,
-            available,
+        for (const item of cart.items) {
+          const available = await this.getAvailableStockInTx(
+            item.variantId,
+            cart.id,
+            tx,
+          );
+          if (available < item.quantity) {
+            const size = item.variant.size;
+            const color = item.variant.color;
+            const parts = [size, color].filter(Boolean);
+            insufficientItems.push({
+              productName: item.product.name,
+              variantLabel: parts.length > 0 ? parts.join(' - ') : 'Padrão',
+              requested: item.quantity,
+              available,
+            });
+          }
+        }
+
+        if (insufficientItems.length > 0) {
+          throw new ConflictException({
+            error: 'INSUFFICIENT_STOCK',
+            items: insufficientItems,
           });
         }
-      }
 
-      if (insufficientItems.length > 0) {
-        throw new ConflictException({
-          error: 'INSUFFICIENT_STOCK',
-          items: insufficientItems,
-        });
-      }
-
-      // 4. Calcular valores
-      const subtotal = cart.items.reduce((sum, item) => {
-        const raw = item.variant.price?.toNumber();
-        const price =
-          raw != null && raw > 0
-            ? raw
-            : item.variant.product.basePrice.toNumber();
-        return sum + price * item.quantity;
-      }, 0);
-
-      const shippingCost = dto.shippingOption.cost;
-
-      // 4.5. Validar e calcular cupom
-      let discount = 0;
-      let finalShippingCost = shippingCost;
-      const couponCode = cart.couponCode ?? null;
-
-      if (couponCode) {
-        const couponItems = cart.items.map((item) => {
+        // 4. Calcular valores
+        const subtotal = cart.items.reduce((sum, item) => {
           const raw = item.variant.price?.toNumber();
           const price =
             raw != null && raw > 0
               ? raw
               : item.variant.product.basePrice.toNumber();
-          return {
-            variantId: item.variantId,
-            quantity: item.quantity,
-            price,
-            categoryId: item.product.categoryId ?? '',
-          };
-        });
+          return sum + price * item.quantity;
+        }, 0);
 
-        const couponResult = await this.couponsService.validate(
-          { code: couponCode, items: couponItems, subtotal, shippingCost },
-          userId,
-        );
+        const shippingCost = dto.shippingOption.cost;
 
-        if (!couponResult.valid) {
-          const firstError = couponResult.errors?.[0];
-          throw new ConflictException({
-            error: 'COUPON_INVALID',
-            message: firstError?.message ?? 'Cupom inválido ou expirado',
+        // 4.5. Validar e calcular cupom
+        let discount = 0;
+        let finalShippingCost = shippingCost;
+        const couponCode = cart.couponCode ?? null;
+
+        if (couponCode) {
+          const couponItems = cart.items.map((item) => {
+            const raw = item.variant.price?.toNumber();
+            const price =
+              raw != null && raw > 0
+                ? raw
+                : item.variant.product.basePrice.toNumber();
+            return {
+              variantId: item.variantId,
+              quantity: item.quantity,
+              price,
+              categoryId: item.product.categoryId ?? '',
+            };
           });
+
+          const couponResult = await this.couponsService.validate(
+            { code: couponCode, items: couponItems, subtotal, shippingCost },
+            userId,
+          );
+
+          if (!couponResult.valid) {
+            const firstError = couponResult.errors?.[0];
+            throw new ConflictException({
+              error: 'COUPON_INVALID',
+              message: firstError?.message ?? 'Cupom inválido ou expirado',
+            });
+          }
+
+          discount = couponResult.discount;
+          finalShippingCost = couponResult.finalShipping;
         }
 
-        discount = couponResult.discount;
-        finalShippingCost = couponResult.finalShipping;
-      }
+        const total = subtotal - discount + finalShippingCost;
 
-      const total = subtotal - discount + finalShippingCost;
+        // 5. Gerar número do pedido sequencial
+        const orderNumber = await this.generateOrderNumber(tx);
 
-      // 5. Gerar número do pedido sequencial
-      const orderNumber = await this.generateOrderNumber(tx);
+        // 6. Buscar e snapshottear endereço
+        const address = await tx.address.findUnique({
+          where: { id: dto.addressId },
+        });
+        if (!address) throw new NotFoundException('Endereço não encontrado');
+        if (address.userId !== userId) throw new ForbiddenException();
 
-      // 6. Buscar e snapshottear endereço
-      const address = await tx.address.findUnique({
-        where: { id: dto.addressId },
-      });
-      if (!address) throw new NotFoundException('Endereço não encontrado');
-      if (address.userId !== userId) throw new ForbiddenException();
+        const shippingAddress = {
+          recipientName: address.recipientName,
+          zipCode: address.zipCode,
+          street: address.street,
+          number: address.number,
+          complement: address.complement,
+          neighborhood: address.neighborhood,
+          city: address.city,
+          state: address.state,
+          country: address.country,
+        };
 
-      const shippingAddress = {
-        recipientName: address.recipientName,
-        zipCode: address.zipCode,
-        street: address.street,
-        number: address.number,
-        complement: address.complement,
-        neighborhood: address.neighborhood,
-        city: address.city,
-        state: address.state,
-        country: address.country,
-      };
-
-      // 7. Criar Order + OrderItems
-      const order = await tx.order.create({
-        data: {
-          id: createId(),
-          userId,
-          number: orderNumber,
-          cpf: dto.cpf,
-          subtotal,
-          shippingCost: finalShippingCost,
-          discount,
-          total,
-          couponCode: couponCode ?? undefined,
-          shippingAddress,
-          notes: dto.notes,
-          items: {
-            create: cart.items.map((item) => {
-              const rawItemPrice = item.variant.price?.toNumber();
-              const itemPrice =
-                rawItemPrice != null && rawItemPrice > 0
-                  ? rawItemPrice
-                  : item.variant.product.basePrice.toNumber();
-              return {
-                id: createId(),
-                productId: item.productId,
-                variantId: item.variantId,
-                productName: item.product.name,
-                variantSize: item.variant.size,
-                variantColor: item.variant.color,
-                productImageUrl:
-                  item.product.images[0]?.cardUrl ??
-                  item.product.images[0]?.url ??
-                  null,
-                unitPrice: itemPrice,
-                quantity: item.quantity,
-                subtotal: itemPrice * item.quantity,
-              };
-            }),
+        // 7. Criar Order + OrderItems
+        const order = await tx.order.create({
+          data: {
+            id: createId(),
+            userId,
+            number: orderNumber,
+            cpf: dto.cpf,
+            subtotal,
+            shippingCost: finalShippingCost,
+            discount,
+            total,
+            couponCode: couponCode ?? undefined,
+            shippingAddress,
+            notes: dto.notes,
+            items: {
+              create: cart.items.map((item) => {
+                const rawItemPrice = item.variant.price?.toNumber();
+                const itemPrice =
+                  rawItemPrice != null && rawItemPrice > 0
+                    ? rawItemPrice
+                    : item.variant.product.basePrice.toNumber();
+                return {
+                  id: createId(),
+                  productId: item.productId,
+                  variantId: item.variantId,
+                  productName: item.product.name,
+                  variantSize: item.variant.size,
+                  variantColor: item.variant.color,
+                  productImageUrl:
+                    item.product.images[0]?.cardUrl ??
+                    item.product.images[0]?.url ??
+                    null,
+                  unitPrice: itemPrice,
+                  quantity: item.quantity,
+                  subtotal: itemPrice * item.quantity,
+                };
+              }),
+            },
           },
-        },
-      });
+        });
 
-      // 8. Payment — criado em POST /payments/process (Task #18), não aqui
+        // 8. Payment — criado em POST /payments/process (Task #18), não aqui
 
-      // 9. Criar Shipping
-      await tx.shipping.create({
-        data: {
-          id: createId(),
-          orderId: order.id,
-          provider: ShippingProvider.MOCK,
-          serviceName: `${dto.shippingOption.carrier} ${dto.shippingOption.service}`,
-          estimatedDays: dto.shippingOption.estimatedDays,
-          cost: finalShippingCost,
-        },
-      });
-
-      // 9.5. Registrar uso do cupom (dentro da transação — idempotência)
-      if (couponCode && discount > 0) {
-        await this.couponsService.applyCoupon(
-          tx,
-          order.id,
-          couponCode,
-          userId,
-          discount,
-        );
-      }
-
-      // 10. Baixa de estoque para cada item
-      for (const item of cart.items) {
-        await this.stockService.applyMovement(
-          {
-            variantId: item.variantId,
-            type: StockMovementType.OUT,
-            source: StockMovementSource.ONLINE_ORDER,
-            quantity: item.quantity,
+        // 9. Criar Shipping
+        await tx.shipping.create({
+          data: {
+            id: createId(),
             orderId: order.id,
-            userId: null,
+            provider: ShippingProvider.MOCK,
+            serviceName: `${dto.shippingOption.carrier} ${dto.shippingOption.service}`,
+            estimatedDays: dto.shippingOption.estimatedDays,
+            cost: finalShippingCost,
           },
-          tx,
-        );
-      }
-
-      // 11. Limpar carrinho (itens + cupom)
-      await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
-      await tx.cart.update({
-        where: { id: cart.id },
-        data: { couponCode: null },
-      });
-
-      // 12. Salvar CPF no perfil se ainda não tiver
-      const userCpf = await tx.user.findUnique({
-        where: { id: userId },
-        select: { cpf: true },
-      });
-      if (!userCpf?.cpf) {
-        const cpfDigits = dto.cpf.replace(/\D/g, '');
-        const existing = await tx.user.findUnique({
-          where: { cpf: cpfDigits },
-          select: { id: true },
         });
-        if (!existing) {
-          await tx.user.update({
-            where: { id: userId },
-            data: { cpf: cpfDigits },
+
+        // 9.5. Registrar uso do cupom (dentro da transação — idempotência)
+        if (couponCode && discount > 0) {
+          await this.couponsService.applyCoupon(
+            tx,
+            order.id,
+            couponCode,
+            userId,
+            discount,
+          );
+        }
+
+        // 10. Baixa de estoque para cada item
+        for (const item of cart.items) {
+          await this.stockService.applyMovement(
+            {
+              variantId: item.variantId,
+              type: StockMovementType.OUT,
+              source: StockMovementSource.ONLINE_ORDER,
+              quantity: item.quantity,
+              orderId: order.id,
+              userId: null,
+            },
+            tx,
+          );
+        }
+
+        // 11. Limpar carrinho (itens + cupom)
+        await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
+        await tx.cart.update({
+          where: { id: cart.id },
+          data: { couponCode: null },
+        });
+
+        // 12. Salvar CPF no perfil se ainda não tiver
+        const userCpf = await tx.user.findUnique({
+          where: { id: userId },
+          select: { cpf: true },
+        });
+        if (!userCpf?.cpf) {
+          const cpfDigits = dto.cpf.replace(/\D/g, '');
+          const existing = await tx.user.findUnique({
+            where: { cpf: cpfDigits },
+            select: { id: true },
+          });
+          if (!existing) {
+            await tx.user.update({
+              where: { id: userId },
+              data: { cpf: cpfDigits },
+            });
+          }
+        }
+
+        return this.getOrderById(order.id, tx);
+      })
+      .then(async (result) => {
+        if (result) {
+          this.mailService.sendOrderCreated(result.id).catch((err) => {
+            this.logger.error(
+              `sendOrderCreated falhou: orderId=${result.id} error=${String(err)}`,
+            );
           });
         }
-      }
-
-      return this.getOrderById(order.id, tx);
-    });
+        return result;
+      });
   }
 
   async getOrder(userId: string, orderId: string) {

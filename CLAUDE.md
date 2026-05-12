@@ -48,7 +48,7 @@ Regras de execução:
 **Cliente:** Flor de Menina (loja de moda física em Maceió-AL, 13 anos, 293k seguidores Instagram, dona Daniela Costa)
 **Empresa executora:** Limvex (limvex.com)
 **Repo:** `linvex-software/flor-de-menina`
-**Domínio:** `flordemenina.site`
+**Domínio:** `flordemenina.store`
 
 ## 🛠 Stack
 
@@ -162,12 +162,14 @@ Atualize esta seção a cada task concluída. Use os emojis:
 | 17  | Integração Melhor Envio               | ✅ Concluída                                | `feat/17-melhor-envio`          | -   |
 | 18  | Integração Mercado Pago               | ⏳ Em progresso                             | `feat/18-mercado-pago-backend`  | -   |
 | 19  | Webhook MP + finalização              | ✅ Concluída (local)                        | `feat/19-webhook-finalizacao`   | -   |
-| 20  | Sistema de Cupons                     | -                                           | -                               | -   |
+| 20  | Sistema de Cupons                     | ✅ Concluída                                | `feat/20-cupons`                | #62 |
 | 21  | Sistema de Reviews com foto           | -                                           | -                               | -   |
-| 22  | E-mails transacionais (Resend)        | -                                           | -                               | -   |
+| 22  | E-mails transacionais (Resend)        | ✅ Concluída (local)                        | `feat/22-emails-transacionais`  | -   |
 | 23  | Dashboard admin                       | -                                           | -                               | -   |
 | 24  | Páginas institucionais e SEO          | -                                           | -                               | -   |
 | 25  | Provisionamento de produção + Go-live | -                                           | -                               | -   |
+
+- `2026-05-12` — Domínio global: `flordemenina.site` → `flordemenina.store` em todos os arquivos (seed, E2E, sitemap, robots, footer, templates, adapters, CLAUDE.md, docs).
 
 ## 📝 Log de mudanças relevantes
 
@@ -193,8 +195,21 @@ Atualize esta seção a cada task concluída. Use os emojis:
 - `2026-05-09` — Task #16 (Checkout multi-step) concluída. Fluxo de 5 etapas: Identificação → Endereço → Frete → Pagamento → Revisão. CheckoutContext com sessionStorage, stepper visual, validação CPF completa (algoritmo + dígitos verificadores), $transaction atômico no createOrder (Order + StockMovement + limpeza carrinho), página de confirmação Server Component com cookie forwarding. CustomerProfileService getOrders/getOrder implementados. Bugs corrigidos: 403 cross-user, dropdown de parcelas, payload de variantes no admin, endpoint de categorias admin.
 - `2026-05-08` — Task #14 (Carrinho) concluída. Módulo cart na API com CRUD + merge + SELECT FOR UPDATE contra race condition. CartCleanupService (@Cron a cada 5min) libera reservas expiradas. Frontend: CartProvider com merge localStorage→servidor no login, mini-carrinho drawer, página /carrinho com debounce, timer de reserva colorido e barra de frete grátis. LocalCartItemSnapshot: visitante vê nome/preço/estoque real sem precisar de API. Campo de cupom fica para Task #20.
 
+- `2026-05-12` — Task #22 (E-mails transacionais) concluída e validada localmente. BullMQ+Redis, 8 templates React Email, EmailLog com idempotência, ResendAdapter (lazy init), MaildevAdapter para dev. Triggers em OrdersService (ORDER_CREATED) e PaymentsService (PAYMENT_APPROVED/REJECTED). Cron ReviewInvitationCron (10h diário). Admin UI: logs com filtros/resend e preview com iframe. Validado: PASSWORD_RESET, ORDER_CREATED, PAYMENT_APPROVED chegando no Maildev. REDIS_PASSWORD configurado para limvex-redis compartilhado (senha no .env local, não commitar). PAYMENT_PROVIDER mudado para "mock" para testes locais.
+
 ## ⚠️ Coisas que NÃO podem ser esquecidas
 
+- **DOMÍNIO é `flordemenina.store`** (não `.site`) — já propagado em todos os arquivos do projeto.
+- **Redis na porta 6379** — adicionado ao docker-compose. Necessário para BullMQ (fila de emails). Subir com `docker compose up -d redis`.
+- **Migration pendente**: `add_email_logs_and_order_shipping` — rodar `pnpm --filter @flor/database db:migrate` quando Docker estiver ativo.
+- **BullMQ fila `mail`**: worker em `MailProcessor`, producer em `MailService.enqueue()`. Retry 3x com backoff exponencial (30s, 5min, 30min).
+- **`EmailLog` no Prisma** — auditoria completa de cada envio. `idempotencyKey` garante que o mesmo evento nunca dispara duplicado mesmo com webhook retentando N vezes.
+- **`MailService`** (em `mail/`) é o único canal de envio — `EmailService` (em `email/`) delega para ele. Não chamar MaildevAdapter diretamente de outros módulos.
+- **Templates React Email** em `apps/api/src/mail/templates/emails/` — renderizados server-side via `@react-email/render`.
+- **`RESEND_API_KEY` obrigatória em produção** — sem ela o `ResendAdapter` falha no boot.
+- **`APP_URL`** — URL da loja nos links dos emails (default `http://localhost:3000`).
+- **Cron `ReviewInvitationCron`**: roda 10h todo dia, busca pedidos com `shippedAt` ≥ 7 dias atrás sem `EmailLog REVIEW_INVITATION SENT`.
+- **`Order.shippedAt` + `Order.trackingCode`** — definir ao marcar pedido como SHIPPED; dispara email via `MailService.sendOrderShipped()`.
 - **NUNCA commitar `.env`** — só `.env.example`
 - **NUNCA fazer push sem validação humana** durante desenvolvimento
 - **NUNCA pular checklist da issue** sem avisar

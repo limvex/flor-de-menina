@@ -32,7 +32,7 @@ export default function AdminLoginPage() {
                 required
                 disabled={isPending}
                 className="w-full px-3 py-2.5 rounded-lg border border-flor-200 bg-flor-50 text-flor-900 placeholder-flor-300 text-sm focus:outline-none focus:ring-2 focus:ring-flor-400 focus:border-transparent disabled:opacity-50 transition"
-                placeholder="admin@flordemenina.site"
+                placeholder="admin@flordemenina.store"
               />
             </div>
 

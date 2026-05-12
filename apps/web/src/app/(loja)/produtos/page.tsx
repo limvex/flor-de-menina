@@ -5,7 +5,7 @@ import { ProductGridSkeleton } from '@/components/loja/product-skeleton';
 import { CatalogClient } from './catalog-client';
 import { listPublicProducts } from '@/lib/api/products-public';
 
-const SITE = 'https://flordemenina.site';
+const SITE = 'https://flordemenina.store';
 
 export const metadata: Metadata = {
   title: 'Todos os produtos | Flor de Menina',

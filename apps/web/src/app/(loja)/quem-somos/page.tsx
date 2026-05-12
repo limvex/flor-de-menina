@@ -64,8 +64,8 @@ export default function QuemSomosPage() {
           </p>
           <p className="mt-2">
             E-mail:{' '}
-            <a href="mailto:contato@flordemenina.site" className="text-flor-800 underline">
-              contato@flordemenina.site
+            <a href="mailto:contato@flordemenina.store" className="text-flor-800 underline">
+              contato@flordemenina.store
             </a>
           </p>
         </section>

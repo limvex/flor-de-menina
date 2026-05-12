@@ -42,6 +42,7 @@ model User {
   passwordResets     PasswordReset[]
   sessions           Session[]
   couponUsages       CouponUsage[]
+  emailLogs          EmailLog[]
 
   @@index([email])
   @@index([role])
@@ -343,6 +344,9 @@ model Order {
   couponId        String?
   couponCode      String?
   notes           String?     @db.Text
+  shippedAt       DateTime?
+  deliveredAt     DateTime?
+  trackingCode    String?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
@@ -353,6 +357,7 @@ model Order {
   stockMovements StockMovement[]
   coupon         Coupon?         @relation(fields: [couponId], references: [id])
   couponUsages   CouponUsage[]
+  emailLogs      EmailLog[]
 
   @@index([userId])
   @@index([status])
@@ -644,4 +649,54 @@ model InstitutionalPage {
   updatedAt      DateTime @updatedAt
 
   @@index([slug])
+}
+
+// ============================================================
+// E-MAILS TRANSACIONAIS
+// ============================================================
+
+enum EmailEventType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+  ORDER_CREATED
+  PAYMENT_APPROVED
+  PAYMENT_REJECTED
+  ORDER_SHIPPED
+  ORDER_DELIVERED
+  REVIEW_INVITATION
+}
+
+enum EmailStatus {
+  PENDING
+  SENT
+  FAILED
+  RETRYING
+}
+
+model EmailLog {
+  id             String         @id
+  event          EmailEventType
+  recipientEmail String
+  recipientName  String?
+  subject        String
+  status         EmailStatus    @default(PENDING)
+  resendId       String?
+  idempotencyKey String         @unique
+  payload        Json
+  errorMessage   String?
+  attemptCount   Int            @default(0)
+  userId         String?
+  orderId        String?
+  createdAt      DateTime       @default(now())
+  sentAt         DateTime?
+
+  user  User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
+  order Order? @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([event])
+  @@index([status])
+  @@index([recipientEmail])
+  @@index([userId])
+  @@index([orderId])
+  @@index([createdAt])
 }
