@@ -28,7 +28,7 @@ export function BaseLayout({ previewText, children }: BaseLayoutProps) {
   return (
     <Html lang="pt-BR">
       <Head />
-      <Preview>{previewText}</Preview>
+      <Preview>{[previewText]}</Preview>
       <Body
         style={{
           margin: 0,
