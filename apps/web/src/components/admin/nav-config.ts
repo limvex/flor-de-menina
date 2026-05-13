@@ -41,6 +41,7 @@ export const segmentLabels: Record<string, string> = {
   paginas: 'Páginas',
   configuracoes: 'Configurações',
   frete: 'Frete',
+  aparencia: 'Aparência',
   novo: 'Novo',
   nova: 'Nova',
   editar: 'Editar',

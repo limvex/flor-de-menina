@@ -27,6 +27,7 @@ import { CouponsModule } from './modules/coupons/coupons.module';
 import { PagesModule } from './modules/pages/pages.module';
 import { AdminDashboardModule } from './modules/admin-dashboard/admin-dashboard.module';
 import { AdminOrdersModule } from './modules/admin-orders/admin-orders.module';
+import { HomeContentModule } from './modules/home-content/home-content.module';
 
 @Module({
   imports: [
@@ -64,6 +65,7 @@ import { AdminOrdersModule } from './modules/admin-orders/admin-orders.module';
     PagesModule,
     AdminDashboardModule,
     AdminOrdersModule,
+    HomeContentModule,
   ],
   controllers: [AppController],
   providers: [

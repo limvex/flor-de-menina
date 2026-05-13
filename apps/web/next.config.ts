@@ -12,6 +12,18 @@ const mpPublicKey =
 /** Garante que variáveis públicas entrem no bundle do cliente (Turbopack/monorepo). */
 const nextConfig: NextConfig = {
   transpilePackages: ['@mercadopago/sdk-react'],
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '*.r2.dev',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.r2.cloudflarestorage.com',
+      },
+    ],
+  },
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3333',
     // Bricks no browser: aceita NEXT_PUBLIC_MP_PUBLIC_KEY ou MP_PUBLIC_KEY (mesmo .env da raiz que a API).

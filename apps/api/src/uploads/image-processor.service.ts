@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import sharp from 'sharp';
+import sharp = require('sharp');
 
 const SIZES = {
   thumb: { width: 200, height: 200 },
