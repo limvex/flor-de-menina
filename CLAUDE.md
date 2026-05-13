@@ -168,7 +168,7 @@ Atualize esta seção a cada task concluída. Use os emojis:
 | 23  | Dashboard admin                       | ⏳ Em progresso                             | `feat/23-dashboard-admin`       | -   |
 | 24  | Páginas institucionais e SEO          | ✅ Concluída (local)                        | `feat/24-institucionais-seo`    | -   |
 | 25  | Provisionamento de produção + Go-live | -                                           | -                               | -   |
-| 69  | Admin operacional (escopo reduzido)   | ⏳ Aguardando validação humana              | `test/69-admin-operacional`     | -   |
+| 69  | Admin operacional (escopo reduzido)   | ✅ Pronta pra merge                         | `test/69-admin-operacional`     | -   |
 
 - `2026-05-12` — Domínio global: `flordemenina.site` → `flordemenina.store` em todos os arquivos (seed, E2E, sitemap, robots, footer, templates, adapters, CLAUDE.md, docs).
 
@@ -200,7 +200,7 @@ Atualize esta seção a cada task concluída. Use os emojis:
 
 - `2026-05-12` — Task #24 concluída (local). API `pages` (CRUD admin + público). Prisma `InstitutionalPage` (`metaTitle`/`metaDescription` @map seo\*, `ogImage`, `sortOrder`, índice `isActive`). Seed HTML + `pnpm db:seed:institutional`. Admin `/admin/paginas` (TipTap, SEO). Loja `/p/[slug]` com **`dynamic = 'force-dynamic'`** e **`fetch` `cache: 'no-store'`** (edição e ativo/inativo no próximo acesso — sem ISR 60s que cacheava página desativada). Sitemap/robots, metadataBase, JSON-LD Organization, GTM/Pixel opcionais. Footer → `/p/...`; `/quem-somos` → `/p/sobre`. PDP: Product schema (preço mín. variante, descrição texto). Migration `20260512130000_institutional_page_og_sort_index`. `run-with-root-env.cjs`: Prisma via `node …/prisma/build/index.js` (Windows). Seed: libera CPF demo duplicado antes do upsert.
 
-- `2026-05-13` — Task #69 implementada (escopo reduzido, branch `test/69-admin-operacional`). Spec `docs/spec-69-admin-operacional.md`. API: `PATCH /admin/orders/:id/status`, `GET /admin/orders/:id/valid-transitions`, modelo `OrderStatusHistory`, máquina de estados (no Prisma o passo “preparando envio” é **`PROCESSING`**, não existe `SHIPPING`). Rastreio manual em `Order.trackingCode`; e-mails operacionais no dev via **SMTP (nodemailer)** em `EmailService` (Maildev); em produção `SHIPPED`/`DELIVERED` enfileiram via `MailService` existente; cancelamento em prod sem template dedicado (log + evolução #22). UI: `/admin/pedidos/[id]` com formulário e timeline. Migration `20260513120000_add_order_status_history`. Jest `admin-orders.service.spec` + E2E `pedidos-operacional.spec` (com skips se seed/Maildev ausentes).
+- `2026-05-13` — Task #69 finalizada (`test/69-admin-operacional`). Spec `docs/spec-69-admin-operacional.md`. API: `PATCH /admin/orders/:id/status`, histórico `OrderStatusHistory`, passo “preparando envio” = **`PROCESSING`**. E-mails operacionais: SMTP Maildev em dev; produção enfileira shipped/delivered via `MailService`. Pós-validação: labels PT-BR (`status-labels.ts`), toast em todo sucesso de PATCH, HTML Mirak (`renderEmailLayout`), breadcrumb Admin sem link, select controlado. Jest + E2E; smoke Maildev. Pronta pra push + PR + merge.
 
 - `2026-05-12` — Task #22 (E-mails transacionais) concluída e validada localmente. BullMQ+Redis, 8 templates React Email, EmailLog com idempotência, ResendAdapter (lazy init), MaildevAdapter para dev. Triggers em OrdersService (ORDER_CREATED) e PaymentsService (PAYMENT_APPROVED/REJECTED). Cron ReviewInvitationCron (10h diário). Admin UI: logs com filtros/resend e preview com iframe. Validado: PASSWORD_RESET, ORDER_CREATED, PAYMENT_APPROVED chegando no Maildev. REDIS_PASSWORD configurado para limvex-redis compartilhado (senha no .env local, não commitar). PAYMENT_PROVIDER mudado para "mock" para testes locais.
 
@@ -267,7 +267,9 @@ Atualize esta seção a cada task concluída. Use os emojis:
 - **MercadoPagoAdapter é esqueleto** — métodos lançam NotImplementedException. Real na Task #25.
 - **Webhook POST /webhooks/mercado-pago**: processamento OK → **200**; assinatura inválida → **401**; falha de servidor → **5xx** (logs). Idempotência + isolamento Serializable reduzem corrida em eventos duplicados/atrasados.
 - **MOCK_PIX_APPROVAL_RATE / MOCK_CARD_APPROVAL_RATE** (0–1) no `.env` — taxa no mock adapter (com Map de estado + webhook simulado); não usar `Math.random` no `getPaymentStatus`.
-- **Task #69 — Admin operacional**: transições rígidas `PAID → PROCESSING → SHIPPED → DELIVERED` ou cancelamento (sem cancelar após `SHIPPED`/`DELIVERED`). `SHIPPED` exige `trackingCode`. Cancelamento com estoque: `restoreStockForOrder` + `reverseCouponUsage`. Histórico em `OrderStatusHistory`. E-mail dev: Maildev `http://localhost:1080` (SMTP). Opcional: `WHATSAPP_SUPPORT_URL` no `.env` para link no rodapé do HTML.
+- **Task #69 — Admin operacional**: transições rígidas `PAID → PROCESSING → SHIPPED → DELIVERED` ou cancelamento (sem cancelar após `SHIPPED`/`DELIVERED`). `SHIPPED` exige `trackingCode`. Cancelamento com estoque: `restoreStockForOrder` + `reverseCouponUsage`. Histórico em `OrderStatusHistory`. E-mail dev: Maildev `http://localhost:1080` (SMTP). Opcional: `WHATSAPP_SUPPORT_URL` e **`INSTAGRAM_URL`** no `.env` para links no rodapé do HTML operacional.
+- **Labels PT-BR centralizados em `apps/web/src/lib/orders/status-labels.ts`** — toda UI de pedidos admin usa `getStatusLabel()` / `getTransitionLabel()`, nunca renderiza enum raw.
+- **Templates de e-mail operacionais (Task #69)** em `EmailService`: helper `renderEmailLayout()` — header + card + footer padronizado (SMTP / Maildev em dev).
 
 ## 🔗 Links úteis
 
