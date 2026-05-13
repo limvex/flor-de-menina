@@ -17,6 +17,7 @@ import {
 import { StockService } from '../../modules/stock/stock.service';
 import { CartService } from '../../modules/cart/cart.service';
 import { EmailService } from '../../email/email.service';
+import { CouponsService } from '../../modules/coupons/coupons.service';
 
 // Mock do @flor/database para evitar conexão real com o banco
 jest.mock('@flor/database', () => {
@@ -124,6 +125,12 @@ describe('PaymentsService', () => {
         { provide: StockService, useValue: {} },
         { provide: CartService, useValue: {} },
         { provide: EmailService, useValue: {} },
+        {
+          provide: CouponsService,
+          useValue: {
+            reverseCouponUsage: jest.fn().mockResolvedValue(undefined),
+          },
+        },
       ],
     }).compile();
 
