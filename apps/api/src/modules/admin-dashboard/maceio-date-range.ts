@@ -46,7 +46,5 @@ export function* eachYmdInclusive(
 }
 
 export function countInclusiveDays(fromYmd: string, toYmd: string): number {
-  let n = 0;
-  for (const _ of eachYmdInclusive(fromYmd, toYmd)) n++;
-  return n;
+  return [...eachYmdInclusive(fromYmd, toYmd)].length;
 }
