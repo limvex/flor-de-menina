@@ -1,15 +1,19 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { loginAdmin } from '../fixtures/auth';
+
+/** Lista admin-orders vem do client (React Query); espera rede antes do assert. */
+async function openFirstFdmOrderLink(page: Page, path: string) {
+  await page.goto(path);
+  await page.waitForLoadState('networkidle');
+  const link = page.getByRole('link').filter({ hasText: /^FDM-/ }).first();
+  await expect(link).toBeVisible({ timeout: 30_000 });
+  await link.click();
+}
 
 test.describe('Admin operacional — pedidos (#69)', () => {
   test('admin marca pedido PAID como PROCESSING e timeline aparece', async ({ page }) => {
     await loginAdmin(page);
-    await page.goto('/admin/pedidos?status=PAID');
-    const firstLink = page.getByRole('link').filter({ hasText: /^FDM-/ }).first();
-    if (!(await firstLink.isVisible().catch(() => false))) {
-      test.skip(true, 'Sem pedidos PAID no ambiente para este teste.');
-    }
-    await firstLink.click();
+    await openFirstFdmOrderLink(page, '/admin/pedidos?status=PAID');
     await expect(page.getByTestId('order-status-form')).toBeVisible({ timeout: 15_000 });
     await page.getByTestId('order-status-select').click();
     await page.getByRole('option', { name: /Preparando para envio/i }).click();
@@ -26,16 +30,12 @@ test.describe('Admin operacional — pedidos (#69)', () => {
     test.skip(inbox.status() !== 200, 'Maildev não está em http://127.0.0.1:1080');
 
     await loginAdmin(page);
-    await page.goto('/admin/pedidos?status=PROCESSING');
-    const firstLink = page.getByRole('link').filter({ hasText: /^FDM-/ }).first();
-    const visible = await firstLink.isVisible().catch(() => false);
-    test.skip(!visible, 'Sem pedidos PROCESSING para continuar o fluxo de envio.');
+    await openFirstFdmOrderLink(page, '/admin/pedidos?status=PROCESSING');
 
     const before = await request.get('http://127.0.0.1:1080/email');
     const beforeJson = (await before.json()) as unknown[];
     const countBefore = Array.isArray(beforeJson) ? beforeJson.length : 0;
 
-    await firstLink.click();
     await expect(page.getByTestId('order-status-form')).toBeVisible({ timeout: 15_000 });
     await page.getByTestId('order-status-select').click();
     await page.getByRole('option', { name: /^Enviado$/i }).click();
@@ -51,11 +51,7 @@ test.describe('Admin operacional — pedidos (#69)', () => {
 
   test('pedido PENDING não oferece envio direto (só cancelamento)', async ({ page }) => {
     await loginAdmin(page);
-    await page.goto('/admin/pedidos?status=PENDING');
-    const firstLink = page.getByRole('link').filter({ hasText: /^FDM-/ }).first();
-    const visible = await firstLink.isVisible().catch(() => false);
-    test.skip(!visible, 'Sem pedidos PENDING no ambiente.');
-    await firstLink.click();
+    await openFirstFdmOrderLink(page, '/admin/pedidos?status=PENDING');
     await expect(page.getByTestId('order-status-form')).toBeVisible({ timeout: 15_000 });
     await page.getByTestId('order-status-select').click();
     await expect(page.getByRole('option', { name: /^Enviado$/i })).toHaveCount(0);
@@ -65,11 +61,7 @@ test.describe('Admin operacional — pedidos (#69)', () => {
 
   test('SHIPPED sem código — botão desabilitado', async ({ page }) => {
     await loginAdmin(page);
-    await page.goto('/admin/pedidos?status=PROCESSING');
-    const firstLink = page.getByRole('link').filter({ hasText: /^FDM-/ }).first();
-    const visible = await firstLink.isVisible().catch(() => false);
-    test.skip(!visible, 'Sem pedidos PROCESSING.');
-    await firstLink.click();
+    await openFirstFdmOrderLink(page, '/admin/pedidos?status=PROCESSING');
     await expect(page.getByTestId('order-status-form')).toBeVisible({ timeout: 15_000 });
     await page.getByTestId('order-status-select').click();
     await page.getByRole('option', { name: /^Enviado$/i }).click();

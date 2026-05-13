@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { adminOrdersApi } from '@/lib/api/admin-orders';
+import { fetchAdminOrdersList } from '@/lib/api/admin-orders';
 
 const statusLabel: Record<string, string> = {
   all: 'Todos',
@@ -27,7 +27,7 @@ const statusLabel: Record<string, string> = {
 
 const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
-export function AdminOrdersListClient() {
+export function AdminOrdersListClient({ accessToken }: { accessToken: string }) {
   const searchParams = useSearchParams();
   const statusFromUrl = searchParams.get('status') ?? '';
 
@@ -45,11 +45,12 @@ export function AdminOrdersListClient() {
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey,
     queryFn: () =>
-      adminOrdersApi.list({
+      fetchAdminOrdersList(accessToken, {
         page,
         pageSize: 20,
         ...(status && status !== 'all' ? { status } : {}),
       }),
+    enabled: Boolean(accessToken),
   });
 
   const onStatusChange = useCallback((v: string) => {

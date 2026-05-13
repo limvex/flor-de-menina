@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { ApiError } from '@/lib/errors';
-import { adminOrdersApi } from '@/lib/api/admin-orders';
+import { fetchAdminOrderValidTransitions, patchAdminOrderStatus } from '@/lib/api/admin-orders';
 
 const NEXT_LABELS: Record<string, string> = {
   PROCESSING: 'Preparando para envio',
@@ -26,9 +26,11 @@ const NEXT_LABELS: Record<string, string> = {
 };
 
 export function OrderStatusUpdater({
+  accessToken,
   orderId,
   orderStatus,
 }: {
+  accessToken: string;
   orderId: string;
   orderStatus: string;
 }) {
@@ -40,8 +42,8 @@ export function OrderStatusUpdater({
 
   const { data: transitions, isLoading: loadingT } = useQuery({
     queryKey: ['admin-order-transitions', orderId, orderStatus],
-    queryFn: () => adminOrdersApi.getValidTransitions(orderId),
-    enabled: Boolean(orderId),
+    queryFn: () => fetchAdminOrderValidTransitions(accessToken, orderId),
+    enabled: Boolean(orderId) && Boolean(accessToken),
   });
 
   const validNext = transitions?.validNext ?? [];
@@ -49,7 +51,7 @@ export function OrderStatusUpdater({
   const mutation = useMutation({
     mutationFn: () => {
       if (!nextStatus) throw new Error('Selecione um status');
-      return adminOrdersApi.updateStatus(orderId, {
+      return patchAdminOrderStatus(accessToken, orderId, {
         status: nextStatus,
         trackingCode: nextStatus === 'SHIPPED' ? trackingCode.trim() : undefined,
         notifyCustomer: notify,
