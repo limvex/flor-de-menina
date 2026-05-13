@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { type Page, test, expect } from '@playwright/test';
 
 const SLUG = 'bolsa-couro-caramelo';
 
@@ -28,29 +28,33 @@ test.describe('PDP — Desktop', () => {
   });
 
   test.describe('SEO', () => {
+    async function getProductLdJson(page: Page): Promise<string> {
+      const scripts = page.locator('script[type="application/ld+json"]');
+      const count = await scripts.count();
+      for (let i = 0; i < count; i++) {
+        const text = await scripts.nth(i).textContent();
+        if (text?.includes('"Product"')) return text;
+      }
+      throw new Error('JSON-LD com @type Product não encontrado na página');
+    }
+
     test('<script type="application/ld+json"> existe e contém @type: Product', async ({ page }) => {
       await page.goto(`/produto/${SLUG}`);
-      const ldJson = await page.locator('script[type="application/ld+json"]').first().textContent();
+      const ldJson = await getProductLdJson(page);
       expect(ldJson).toContain('"@type":"Product"');
     });
 
     test('JSON-LD tem offers.priceCurrency = "BRL"', async ({ page }) => {
       await page.goto(`/produto/${SLUG}`);
-      const ldJsonRaw = await page
-        .locator('script[type="application/ld+json"]')
-        .first()
-        .textContent();
-      const ldJson = JSON.parse(ldJsonRaw ?? '{}') as { offers?: { priceCurrency?: string } };
+      const ldJsonRaw = await getProductLdJson(page);
+      const ldJson = JSON.parse(ldJsonRaw) as { offers?: { priceCurrency?: string } };
       expect(ldJson.offers?.priceCurrency).toBe('BRL');
     });
 
     test('JSON-LD tem brand.name = "Flor de Menina"', async ({ page }) => {
       await page.goto(`/produto/${SLUG}`);
-      const ldJsonRaw = await page
-        .locator('script[type="application/ld+json"]')
-        .first()
-        .textContent();
-      const ldJson = JSON.parse(ldJsonRaw ?? '{}') as { brand?: { name?: string } };
+      const ldJsonRaw = await getProductLdJson(page);
+      const ldJson = JSON.parse(ldJsonRaw) as { brand?: { name?: string } };
       expect(ldJson.brand?.name).toBe('Flor de Menina');
     });
 
