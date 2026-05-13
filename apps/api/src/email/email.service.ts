@@ -58,12 +58,106 @@ export class EmailService {
     return `${name} <${email}>`;
   }
 
-  private whatsappFooterHtml(): string {
-    const url = this.config.get<string>('WHATSAPP_SUPPORT_URL', '').trim();
-    if (!url) {
-      return '<p style="font-size:12px;color:#888;">Se tiver dúvidas, fale com a gente pelo site da loja.</p>';
-    }
-    return `<p style="font-size:12px;color:#888;">Se tiver dúvidas, fale com a gente no <a href="${escHtml(url)}">WhatsApp</a>.</p>`;
+  private optionalUrl(key: string): string | undefined {
+    const v = this.config.get<string>(key, '')?.trim();
+    return v || undefined;
+  }
+
+  private renderEmailLayout(input: {
+    title: string;
+    content: string;
+    cta?: { text: string; url: string };
+    whatsappUrl?: string;
+    instagramUrl?: string;
+  }): string {
+    const wa = input.whatsappUrl?.trim();
+    const ig = input.instagramUrl?.trim();
+    const ctaBlock = input.cta
+      ? `
+          <tr>
+            <td align="center" style="padding:0 32px 32px 32px;">
+              <a href="${escHtml(input.cta.url)}"
+                 style="display:inline-block;background-color:#3d2817;color:#ffffff;padding:14px 36px;text-decoration:none;font-size:14px;letter-spacing:2px;text-transform:uppercase;">
+                ${escHtml(input.cta.text)}
+              </a>
+            </td>
+          </tr>`
+      : '';
+
+    const waBlock = wa
+      ? `
+              <a href="${escHtml(wa)}" style="display:inline-block;margin:0 8px;color:#3d2817;text-decoration:none;font-size:13px;">
+                WhatsApp
+              </a>`
+      : '';
+    const igBlock = ig
+      ? `
+              <a href="${escHtml(ig)}" style="display:inline-block;margin:0 8px;color:#3d2817;text-decoration:none;font-size:13px;">
+                Instagram
+              </a>`
+      : '';
+
+    return `
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escHtml(input.title)}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f5f0ea;font-family:Georgia,'Times New Roman',serif;color:#3d2817;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#f5f0ea;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width:600px;background-color:#ffffff;border:1px solid #e5dcd0;box-shadow:0 2px 8px rgba(61,40,23,0.06);">
+
+          <tr>
+            <td align="center" style="padding:32px 24px 16px 24px;border-bottom:1px solid #e5dcd0;">
+              <h1 style="margin:0;font-size:24px;letter-spacing:6px;font-weight:400;color:#3d2817;text-transform:uppercase;">
+                Flor de Menina
+              </h1>
+              <p style="margin:8px 0 0 0;font-size:12px;letter-spacing:2px;color:#a87c4f;text-transform:uppercase;">
+                Moda Feminina
+              </p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:32px 32px 16px 32px;">
+              <h2 style="margin:0;font-size:22px;font-weight:400;color:#3d2817;text-align:center;">
+                ${escHtml(input.title)}
+              </h2>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:0 32px 24px 32px;font-size:15px;line-height:1.6;color:#5c4a36;font-family:Georgia,'Times New Roman',serif;">
+              ${input.content}
+            </td>
+          </tr>
+
+          ${ctaBlock}
+
+          <tr>
+            <td style="padding:24px 32px;border-top:1px solid #e5dcd0;background-color:#fafaf7;text-align:center;">
+              <p style="margin:0 0 12px 0;font-size:13px;color:#a87c4f;">
+                Dúvidas? Fale com a gente
+              </p>
+              ${waBlock}
+              ${igBlock}
+              <p style="margin:16px 0 0 0;font-size:11px;color:#a87c4f;letter-spacing:1px;">
+                FLOR DE MENINA · MACEIÓ/AL
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `.trim();
   }
 
   private async sendViaMaildev(input: {
@@ -161,8 +255,8 @@ export class EmailService {
       .map(
         (it) => `
       <tr>
-        <td style="padding:8px 0;border-bottom:1px solid #eee;">
-          ${it.imageUrl ? `<img src="${escHtml(it.imageUrl)}" alt="" width="56" height="56" style="object-fit:cover;border-radius:4px;vertical-align:middle;margin-right:8px;" />` : ''}
+        <td style="padding:8px 0;border-bottom:1px solid #f0e8db;">
+          ${it.imageUrl ? `<img src="${escHtml(it.imageUrl)}" alt="" width="56" height="56" style="object-fit:cover;vertical-align:middle;margin-right:8px;" />` : ''}
           <span>${escHtml(it.name)} × ${it.quantity}</span>
         </td>
       </tr>`,
@@ -176,57 +270,116 @@ export class EmailService {
       p.estimatedDays > 0
         ? `Em até ${p.estimatedDays} dia(s) úteis (estimativa).`
         : '');
-    const estHtml = est
-      ? `<p><strong>Previsão:</strong> ${escHtml(est)}</p>`
+    const estRow = est
+      ? `
+        <tr>
+          <td style="padding:8px 0;border-bottom:1px solid #f0e8db;">
+            <span style="color:#a87c4f;font-size:13px;">Previsão:</span>
+            <span style="float:right;color:#3d2817;font-size:14px;">${escHtml(est)}</span>
+          </td>
+        </tr>`
       : '';
 
-    return `<!DOCTYPE html>
-<html><body style="font-family:sans-serif;max-width:600px;margin:0 auto;color:#333;">
-  <h1 style="color:#6b4226;">Seu pedido foi enviado</h1>
-  <p>Olá ${escHtml(p.customerName)},</p>
-  <p>O pedido <strong>${escHtml(p.orderNumber)}</strong> foi despachado e está a caminho.</p>
-  <div style="background:#f5f0ea;padding:16px;border-radius:8px;margin:24px 0;">
-    <p style="margin:0;"><strong>Código de rastreio</strong></p>
-    <p style="font-size:18px;font-family:monospace;margin:8px 0;">${escHtml(p.trackingCode)}</p>
-    <a href="${escHtml(p.trackingUrl)}" style="display:inline-block;background:#6b4226;color:#fff;padding:12px 24px;text-decoration:none;border-radius:4px;">Rastrear pedido</a>
-  </div>
-  <p><strong>Forma de envio:</strong> ${escHtml(p.shippingMethod)}</p>
-  ${estHtml}
-  <p><strong>Endereço de entrega</strong><br/>${escHtml(p.shippingAddressSummary)}</p>
-  <table style="width:100%;border-collapse:collapse;margin-top:16px;">${itemsHtml}</table>
-  <hr style="border:0;border-top:1px solid #ddd;margin:32px 0;" />
-  ${this.whatsappFooterHtml()}
-  <p style="font-size:12px;color:#888;">Flor de Menina · Maceió/AL</p>
-</body></html>`;
+    const content = `
+      <p style="margin:0 0 16px 0;">Olá <strong>${escHtml(p.customerName)}</strong>,</p>
+      <p style="margin:0 0 24px 0;">
+        Seu pedido <strong>${escHtml(p.orderNumber)}</strong> foi despachado e está a caminho.
+      </p>
+
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:24px 0;background-color:#faf7f2;padding:20px;border:1px solid #e5dcd0;">
+        <tr>
+          <td>
+            <p style="margin:0 0 4px 0;font-size:11px;letter-spacing:2px;color:#a87c4f;text-transform:uppercase;">
+              Código de rastreio
+            </p>
+            <p style="margin:0;font-size:20px;font-family:'Courier New',monospace;color:#3d2817;letter-spacing:1px;">
+              ${escHtml(p.trackingCode)}
+            </p>
+          </td>
+        </tr>
+      </table>
+
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:16px 0;">
+        <tr>
+          <td style="padding:8px 0;border-bottom:1px solid #f0e8db;">
+            <span style="color:#a87c4f;font-size:13px;">Forma de envio:</span>
+            <span style="float:right;color:#3d2817;font-size:14px;">${escHtml(p.shippingMethod)}</span>
+          </td>
+        </tr>
+        ${estRow}
+      </table>
+
+      <p style="margin:16px 0 8px 0;"><strong style="color:#3d2817;">Endereço de entrega</strong></p>
+      <p style="margin:0 0 16px 0;">${escHtml(p.shippingAddressSummary)}</p>
+
+      <p style="margin:24px 0 8px 0;font-size:13px;color:#a87c4f;letter-spacing:1px;text-transform:uppercase;">Itens</p>
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;">${itemsHtml}</table>
+    `;
+
+    return this.renderEmailLayout({
+      title: 'Seu pedido foi enviado',
+      content,
+      cta: { text: 'Rastrear pedido', url: p.trackingUrl },
+      whatsappUrl: this.optionalUrl('WHATSAPP_SUPPORT_URL'),
+      instagramUrl: this.optionalUrl('INSTAGRAM_URL'),
+    });
   }
 
   private renderDeliveredTemplate(p: OrderDeliveredEmailPayload): string {
     const itemsHtml = p.items
-      .map((it) => `<li>${escHtml(it.name)} × ${it.quantity}</li>`)
+      .map(
+        (it) =>
+          `<li style="margin:4px 0;">${escHtml(it.name)} × ${it.quantity}</li>`,
+      )
       .join('');
-    return `<!DOCTYPE html>
-<html><body style="font-family:sans-serif;max-width:600px;margin:0 auto;">
-  <h1 style="color:#6b4226;">Entrega confirmada</h1>
-  <p>Olá ${escHtml(p.customerName)},</p>
-  <p>O pedido <strong>${escHtml(p.orderNumber)}</strong> consta como entregue. Esperamos que ame cada peça!</p>
-  <p><strong>Itens</strong></p>
-  <ul>${itemsHtml}</ul>
-  <p><strong>Endereço</strong><br/>${escHtml(p.shippingAddressSummary)}</p>
-  <hr style="border:0;border-top:1px solid #ddd;margin:32px 0;" />
-  ${this.whatsappFooterHtml()}
-</body></html>`;
+    const content = `
+      <p style="margin:0 0 16px 0;">Olá <strong>${escHtml(p.customerName)}</strong>,</p>
+      <p style="margin:0 0 24px 0;">
+        Confirmamos a entrega do seu pedido <strong>${escHtml(p.orderNumber)}</strong>.
+      </p>
+      <p style="margin:0 0 24px 0;">
+        Esperamos que você ame as peças. Se quiser compartilhar sua produção com a gente,
+        marca <strong>@flordemeninaoficial</strong> no Instagram — adoramos ver!
+      </p>
+      <p style="margin:0 0 8px 0;"><strong>Itens</strong></p>
+      <ul style="margin:0;padding-left:20px;">${itemsHtml}</ul>
+      <p style="margin:24px 0 0 0;"><strong>Endereço</strong><br/>${escHtml(p.shippingAddressSummary)}</p>
+    `;
+
+    return this.renderEmailLayout({
+      title: 'Seu pedido foi entregue',
+      content,
+      whatsappUrl: this.optionalUrl('WHATSAPP_SUPPORT_URL'),
+      instagramUrl: this.optionalUrl('INSTAGRAM_URL'),
+    });
   }
 
   private renderCancelledTemplate(p: OrderCancelledEmailPayload): string {
     const reason = p.reason?.trim();
-    return `<!DOCTYPE html>
-<html><body style="font-family:sans-serif;max-width:600px;margin:0 auto;">
-  <h1 style="color:#6b4226;">Pedido cancelado</h1>
-  <p>Olá ${escHtml(p.customerName)},</p>
-  <p>O pedido <strong>${escHtml(p.orderNumber)}</strong> foi cancelado pela loja.</p>
-  ${reason ? `<p>Motivo: ${escHtml(reason)}</p>` : ''}
-  <hr style="border:0;border-top:1px solid #ddd;margin:32px 0;" />
-  ${this.whatsappFooterHtml()}
-</body></html>`;
+    const reasonBlock = reason
+      ? `
+      <p style="margin:0 0 24px 0;padding:16px;background-color:#faf7f2;border-left:3px solid #a87c4f;font-size:14px;">
+        <strong style="color:#3d2817;">Motivo:</strong> ${escHtml(reason)}
+      </p>`
+      : '';
+
+    const content = `
+      <p style="margin:0 0 16px 0;">Olá <strong>${escHtml(p.customerName)}</strong>,</p>
+      <p style="margin:0 0 16px 0;">
+        Informamos que o pedido <strong>${escHtml(p.orderNumber)}</strong> foi cancelado.
+      </p>
+      ${reasonBlock}
+      <p style="margin:0;">
+        Se o pagamento já tinha sido feito, o reembolso será processado automaticamente.
+        Qualquer dúvida, é só chamar a gente.
+      </p>
+    `;
+
+    return this.renderEmailLayout({
+      title: 'Pedido cancelado',
+      content,
+      whatsappUrl: this.optionalUrl('WHATSAPP_SUPPORT_URL'),
+      instagramUrl: this.optionalUrl('INSTAGRAM_URL'),
+    });
   }
 }
