@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+
+export const revalidate = 60;
 import { LojaShell } from '@/components/loja/loja-shell';
 import { HomePage } from '@/components/loja/home-page';
 

@@ -121,3 +121,4 @@ export type {
   InstitutionalPageAdmin,
 } from './institutional-page.schema';
 export { institutionalPageFormSchema } from './institutional-page.schema';
+export type { HomePageContentResponse, UpdateHomePageContentInput } from './home-content.schema';

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Truck, Settings } from 'lucide-react';
+import { Truck, Palette, Settings } from 'lucide-react';
 import { AdminPageHeader } from '@/components/admin/admin-page-header';
 
 const CONFIG_ITEMS = [
@@ -8,6 +8,12 @@ const CONFIG_ITEMS = [
     icon: Truck,
     title: 'Frete',
     description: 'Provedor de cotação, endereço de origem e regras de frete grátis.',
+  },
+  {
+    href: '/admin/configuracoes/aparencia',
+    icon: Palette,
+    title: 'Aparência',
+    description: 'Banner, textos da home, WhatsApp e Instagram do footer.',
   },
 ];
 

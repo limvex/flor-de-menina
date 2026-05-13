@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Clock, MapPin, MessageCircle } from 'lucide-react';
 import { EloIcon, MastercardIcon, PixIcon, VisaIcon } from '@/components/loja/payment-brand-icons';
+import { fetchHomeContent } from '@/lib/api/home-content';
 
 function InstagramIcon({ className }: { className?: string }) {
   return (
@@ -51,7 +52,12 @@ function Subheading({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function FooterColumns() {
+export async function FooterColumns() {
+  const content = await fetchHomeContent();
+
+  const instagramUrl = content.instagramUrl || 'https://www.instagram.com/lojaflordemenina';
+  const whatsappNumber = content.whatsappNumber || '5582991955562';
+
   return (
     <div className="bg-background py-12">
       <div className="mx-auto max-w-7xl px-4 lg:px-8">
@@ -68,11 +74,11 @@ export function FooterColumns() {
             </ul>
           </div>
 
-          {/* Siga-nos — apenas ícone */}
+          {/* Siga-nos */}
           <div>
             <ColumnTitle>Siga-nos</ColumnTitle>
             <a
-              href="https://www.instagram.com/lojaflordemenina"
+              href={instagramUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex rounded-md p-1 text-flor-500 transition-colors hover:bg-flor-100 hover:text-flor-800"
@@ -117,7 +123,7 @@ export function FooterColumns() {
             </div>
           </div>
 
-          {/* Loja: texto, endereço, horário, WhatsApp */}
+          {/* Loja */}
           <div>
             <ColumnTitle>Flor de Menina Store</ColumnTitle>
             <p className="font-sans text-sm leading-relaxed text-flor-600">
@@ -146,13 +152,13 @@ export function FooterColumns() {
 
             <Subheading>WhatsApp</Subheading>
             <a
-              href="https://wa.me/5582991955562"
+              href={`https://wa.me/${whatsappNumber}`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 font-sans text-sm font-medium text-flor-700 underline-offset-2 transition-colors hover:text-flor-900 hover:underline"
             >
-              <MessageCircle className="h-4 w-4 shrink-0 text-flor-500" aria-hidden />
-              +55 82 99195-5562
+              <MessageCircle className="h-4 w-4 shrink-0 text-flor-500" aria-hidden />+
+              {whatsappNumber.replace(/(\d{2})(\d{2})(\d{5})(\d{4})/, '$1 $2 $3-$4')}
             </a>
           </div>
         </div>

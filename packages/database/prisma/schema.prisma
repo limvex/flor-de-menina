@@ -649,6 +649,28 @@ model MelhorEnvioCredentials {
 }
 
 // ============================================================
+// CMS — HOME PAGE
+// ============================================================
+
+model HomePageContent {
+  id String @id @default("singleton")
+
+  bannerImageUrl   String?
+  bannerTitle      String?
+  bannerSubtitle   String?
+  bannerButtonText String?
+  bannerButtonUrl  String?
+
+  aboutTitle String?
+  aboutText  String?
+
+  whatsappNumber String?
+  instagramUrl   String?
+
+  updatedAt DateTime @updatedAt
+}
+
+// ============================================================
 // PÁGINAS INSTITUCIONAIS
 // ============================================================
 

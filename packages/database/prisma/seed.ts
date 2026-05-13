@@ -405,6 +405,26 @@ async function main() {
   console.log('✅ StoreSettings singleton criado');
 
   // =========================================================
+  // HOME PAGE CONTENT (singleton)
+  // =========================================================
+  await prisma.homePageContent.upsert({
+    where: { id: 'singleton' },
+    update: {},
+    create: {
+      id: 'singleton',
+      bannerTitle: 'Nova Coleção',
+      bannerSubtitle: 'Peças exclusivas para você',
+      bannerButtonText: 'Ver coleção',
+      bannerButtonUrl: '/produtos',
+      aboutTitle: 'Sobre a Flor de Menina',
+      aboutText: 'Loja de moda feminina em Maceió-AL com amor por cada detalhe.',
+      whatsappNumber: '5582999999999',
+      instagramUrl: 'https://instagram.com/flordemenina',
+    },
+  });
+  console.log('✅ HomePageContent singleton criado');
+
+  // =========================================================
   // ADMIN
   // =========================================================
   const adminPassword = await bcrypt.hash('admin123', 12);
