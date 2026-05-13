@@ -67,7 +67,43 @@ export interface AdminOrderDetail {
     shippedAt: string | null;
     deliveredAt: string | null;
   } | null;
+  statusHistory?: Array<{
+    id: string;
+    fromStatus: string;
+    toStatus: string;
+    notes: string | null;
+    changedByUserId: string | null;
+    at: string;
+  }>;
 }
+
+export type AdminOrderValidTransitions = {
+  current: string;
+  validNext: string[];
+};
+
+export type AdminOrderStatusUpdateBody = {
+  status: string;
+  trackingCode?: string;
+  notifyCustomer?: boolean;
+  notes?: string;
+};
+
+export type AdminOrderStatusUpdateResponse = {
+  id: string;
+  number: string;
+  status: string;
+  trackingCode: string | null;
+  trackingUrl: string | null;
+  updatedAt: string;
+  notifiedCustomer: boolean;
+  history: Array<{
+    fromStatus: string;
+    toStatus: string;
+    at: string;
+    notes: string | null;
+  }>;
+};
 
 export type AdminOrdersListParams = {
   page?: number;
@@ -89,4 +125,10 @@ export const adminOrdersApi = {
   },
 
   getById: (id: string) => api.get<AdminOrderDetail>(`/admin/orders/${id}`),
+
+  getValidTransitions: (id: string) =>
+    api.get<AdminOrderValidTransitions>(`/admin/orders/${id}/valid-transitions`),
+
+  updateStatus: (id: string, body: AdminOrderStatusUpdateBody) =>
+    api.patch<AdminOrderStatusUpdateResponse>(`/admin/orders/${id}/status`, body),
 };

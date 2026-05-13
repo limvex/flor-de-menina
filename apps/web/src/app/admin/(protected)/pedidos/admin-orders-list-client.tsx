@@ -18,7 +18,7 @@ const statusLabel: Record<string, string> = {
   all: 'Todos',
   PENDING: 'Aguardando pagamento',
   PAID: 'Pago',
-  PROCESSING: 'Em separação',
+  PROCESSING: 'Preparando para envio',
   SHIPPED: 'Enviado',
   DELIVERED: 'Entregue',
   CANCELLED: 'Cancelado',

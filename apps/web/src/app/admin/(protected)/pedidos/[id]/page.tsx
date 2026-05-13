@@ -5,6 +5,8 @@ import { useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
 import { AdminPageHeader } from '@/components/admin/admin-page-header';
+import { OrderStatusTimeline } from '@/components/admin/orders/order-status-timeline';
+import { OrderStatusUpdater } from '@/components/admin/orders/order-status-updater';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { adminOrdersApi } from '@/lib/api/admin-orders';
@@ -14,7 +16,7 @@ const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' 
 const statusLabel: Record<string, string> = {
   PENDING: 'Aguardando pagamento',
   PAID: 'Pago',
-  PROCESSING: 'Em separação',
+  PROCESSING: 'Preparando para envio',
   SHIPPED: 'Enviado',
   DELIVERED: 'Entregue',
   CANCELLED: 'Cancelado',
@@ -78,6 +80,11 @@ export default function AdminPedidoDetailPage() {
             title={data.number}
             description={`${statusLabel[data.status] ?? data.status} · ${new Date(data.createdAt).toLocaleString('pt-BR')}`}
           />
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            <OrderStatusTimeline status={data.status} />
+            <OrderStatusUpdater orderId={data.id} orderStatus={data.status} />
+          </div>
 
           <div className="grid gap-4 lg:grid-cols-2">
             <section className="rounded-xl border border-flor-100 bg-white p-4 shadow-sm">
