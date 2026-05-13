@@ -7,23 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { ApiError } from '@/lib/errors';
+import { getTransitionLabel } from '@/lib/orders/status-labels';
 import { fetchAdminOrderValidTransitions, patchAdminOrderStatus } from '@/lib/api/admin-orders';
+import { cn } from '@/lib/utils';
 
-const NEXT_LABELS: Record<string, string> = {
-  PROCESSING: 'Preparando para envio',
-  SHIPPED: 'Enviado',
-  DELIVERED: 'Entregue',
-  CANCELLED: 'Cancelado',
-};
+const selectTriggerClass =
+  'flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
 
 export function OrderStatusUpdater({
   accessToken,
@@ -35,7 +26,7 @@ export function OrderStatusUpdater({
   orderStatus: string;
 }) {
   const queryClient = useQueryClient();
-  const [nextStatus, setNextStatus] = useState<string | undefined>(undefined);
+  const [nextStatus, setNextStatus] = useState('');
   const [trackingCode, setTrackingCode] = useState('');
   const [notify, setNotify] = useState(true);
   const [notes, setNotes] = useState('');
@@ -63,12 +54,16 @@ export function OrderStatusUpdater({
       void queryClient.invalidateQueries({ queryKey: ['admin-order', orderId] });
       void queryClient.invalidateQueries({ queryKey: ['admin-order-transitions', orderId] });
       void queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
-      setNextStatus(undefined);
+      setNextStatus('');
       setTrackingCode('');
       setNotes('');
     },
     onError: (err: unknown) => {
-      const msg = ApiError.isApiError(err) ? err.message : 'Não foi possível atualizar o status.';
+      const msg = ApiError.isApiError(err)
+        ? err.message
+        : err instanceof Error
+          ? err.message
+          : 'Erro ao atualizar status';
       toast.error(msg);
     },
   });
@@ -109,18 +104,20 @@ export function OrderStatusUpdater({
 
       <div className="space-y-2">
         <Label htmlFor="next-status">Novo status</Label>
-        <Select value={nextStatus} onValueChange={(v) => setNextStatus(v ?? undefined)}>
-          <SelectTrigger id="next-status" data-testid="order-status-select">
-            <SelectValue placeholder="Selecione…" />
-          </SelectTrigger>
-          <SelectContent>
-            {validNext.map((s) => (
-              <SelectItem key={s} value={s}>
-                {NEXT_LABELS[s] ?? s}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <select
+          id="next-status"
+          data-testid="order-status-select"
+          className={cn(selectTriggerClass)}
+          value={nextStatus}
+          onChange={(e) => setNextStatus(e.target.value)}
+        >
+          <option value="">Selecione…</option>
+          {validNext.map((s) => (
+            <option key={s} value={s}>
+              {getTransitionLabel(s)}
+            </option>
+          ))}
+        </select>
       </div>
 
       {nextStatus === 'SHIPPED' && (

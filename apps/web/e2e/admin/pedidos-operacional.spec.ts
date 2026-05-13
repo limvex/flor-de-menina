@@ -15,8 +15,7 @@ test.describe('Admin operacional — pedidos (#69)', () => {
     await loginAdmin(page);
     await openFirstFdmOrderLink(page, '/admin/pedidos?status=PAID');
     await expect(page.getByTestId('order-status-form')).toBeVisible({ timeout: 15_000 });
-    await page.getByTestId('order-status-select').click();
-    await page.getByRole('option', { name: /Preparando para envio/i }).click();
+    await page.getByTestId('order-status-select').selectOption('PROCESSING');
     await page.getByTestId('order-status-submit').click();
     await expect(page.getByText('Status atualizado!')).toBeVisible({ timeout: 15_000 });
     await expect(page.getByTestId('order-status-timeline')).toBeVisible();
@@ -37,8 +36,7 @@ test.describe('Admin operacional — pedidos (#69)', () => {
     const countBefore = Array.isArray(beforeJson) ? beforeJson.length : 0;
 
     await expect(page.getByTestId('order-status-form')).toBeVisible({ timeout: 15_000 });
-    await page.getByTestId('order-status-select').click();
-    await page.getByRole('option', { name: /^Enviado$/i }).click();
+    await page.getByTestId('order-status-select').selectOption('SHIPPED');
     await page.getByTestId('order-tracking-input').fill('BR987654321BR');
     await page.getByTestId('order-status-submit').click();
     await expect(page.getByText('Status atualizado!')).toBeVisible({ timeout: 20_000 });
@@ -53,18 +51,16 @@ test.describe('Admin operacional — pedidos (#69)', () => {
     await loginAdmin(page);
     await openFirstFdmOrderLink(page, '/admin/pedidos?status=PENDING');
     await expect(page.getByTestId('order-status-form')).toBeVisible({ timeout: 15_000 });
-    await page.getByTestId('order-status-select').click();
-    await expect(page.getByRole('option', { name: /^Enviado$/i })).toHaveCount(0);
-    await expect(page.getByRole('option', { name: /Cancelado/i })).toBeVisible();
-    await page.keyboard.press('Escape');
+    const sel = page.getByTestId('order-status-select');
+    await expect(sel.locator('option[value="SHIPPED"]')).toHaveCount(0);
+    await expect(sel.locator('option[value="CANCELLED"]')).toBeVisible();
   });
 
   test('SHIPPED sem código — botão desabilitado', async ({ page }) => {
     await loginAdmin(page);
     await openFirstFdmOrderLink(page, '/admin/pedidos?status=PROCESSING');
     await expect(page.getByTestId('order-status-form')).toBeVisible({ timeout: 15_000 });
-    await page.getByTestId('order-status-select').click();
-    await page.getByRole('option', { name: /^Enviado$/i }).click();
+    await page.getByTestId('order-status-select').selectOption('SHIPPED');
     await page.getByTestId('order-tracking-input').fill('   ');
     const btn = page.getByTestId('order-status-submit');
     await expect(btn).toBeDisabled();
