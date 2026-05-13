@@ -156,3 +156,53 @@ Response:
 ```json
 { "current": "PAID", "validNext": ["PROCESSING", "CANCELLED"] }
 ```
+
+---
+
+## ADENDO — Fixes pós-validação (2026-05-13)
+
+### Fix B1+B2 — Labels PT-BR consistentes
+
+Mapeamento canônico (frontend) para enum interno:
+
+| Enum (banco/API) | Label PT-BR (UI)     |
+| ---------------- | -------------------- |
+| PENDING          | Aguardando pagamento |
+| PAID             | Pago                 |
+| PROCESSING       | Preparando envio     |
+| SHIPPED          | Enviado              |
+| DELIVERED        | Entregue             |
+| CANCELLED        | Cancelado            |
+| REFUNDED         | Reembolsado          |
+
+Regra: TODO render de status em UI usa o label PT-BR. Nunca exibe enum raw.
+Cria `apps/web/src/lib/orders/status-labels.ts` exportando função `getStatusLabel(status)`.
+Aplica em: select de transições, timeline, badge de status, lista de pedidos.
+
+### Fix B3 — Toast em todas operações
+
+Toast verde "Status atualizado!" SEMPRE após sucesso de PATCH (não só DELIVERED).
+Toast vermelho com mensagem específica em erro.
+
+### Fix B4 — E-mail bonito estilo Mirak
+
+Template HTML dos 3 e-mails (enviado, entregue, cancelado) com:
+
+- Header com nome "FLOR DE MENINA" centralizado, fonte serifa, espaçamento entre letras (estilo Mirak)
+- Conteúdo em card branco com borda sutil, sombra leve
+- Cores: fundo bege claro (#f5f0ea), texto marrom escuro (#3d2817), accent dourado (#a87c4f)
+- Botão CTA estilo Mirak (marrom escuro, sem border-radius forte, padding generoso)
+- Footer com link WhatsApp + Instagram (se configurado) + endereço da loja
+- Responsivo mobile
+
+### Fix B5 — Breadcrumb não-clicável quando é raiz
+
+Em `/admin/*`, o item "Admin" do breadcrumb não deve ser link se a rota atual é raiz do admin.
+Ou: sempre não-clicável, é só ancestral textual.
+
+Decisão: tornar "Admin" sempre texto cinza (não-link). Os filhos continuam links.
+
+### Fix B6 — Select controlled
+
+No `OrderStatusUpdater`, o `<select>` ou Select shadcn deve ter `value=""` default e onChange controlado.
+Resolve warning React de uncontrolled→controlled.
