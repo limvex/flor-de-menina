@@ -12,6 +12,7 @@ import {
 import { StockService } from '../../modules/stock/stock.service';
 import { CartService } from '../../modules/cart/cart.service';
 import { EmailService } from '../../email/email.service';
+import { CouponsService } from '../../modules/coupons/coupons.service';
 
 jest.mock('@flor/database', () => {
   const original = jest.requireActual('@flor/database');
@@ -146,6 +147,12 @@ describe('handleWebhook — finalização do pedido', () => {
         { provide: StockService, useValue: stockServiceMock },
         { provide: CartService, useValue: cartServiceMock },
         { provide: EmailService, useValue: emailServiceMock },
+        {
+          provide: CouponsService,
+          useValue: {
+            reverseCouponUsage: jest.fn().mockResolvedValue(undefined),
+          },
+        },
       ],
     }).compile();
 
@@ -378,6 +385,12 @@ describe('handleWebhook — finalização do pedido', () => {
         { provide: StockService, useValue: stockServiceThrow },
         { provide: CartService, useValue: cartServiceMock },
         { provide: EmailService, useValue: emailServiceMock },
+        {
+          provide: CouponsService,
+          useValue: {
+            reverseCouponUsage: jest.fn().mockResolvedValue(undefined),
+          },
+        },
       ],
     }).compile();
 

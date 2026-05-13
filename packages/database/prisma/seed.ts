@@ -6,7 +6,16 @@ loadRootEnv({ path: resolve(__dirname, '../../../.env') });
 import { PrismaClient } from '../src/generated/prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
-import { UserRole, StockMovementType, StockMovementSource } from '../src/generated/prisma';
+import {
+  UserRole,
+  StockMovementType,
+  StockMovementSource,
+  OrderStatus,
+  PaymentStatus,
+  PaymentProvider,
+  PaymentMethod,
+  ShippingProvider,
+} from '../src/generated/prisma';
 import { createId } from '@paralleldrive/cuid2';
 import bcrypt from 'bcrypt';
 import { INSTITUTIONAL_PAGES_SEED } from './institutional-pages-seed';
@@ -14,6 +23,368 @@ import { INSTITUTIONAL_PAGES_SEED } from './institutional-pages-seed';
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
+
+const SEED_TEST_ORDER_PREFIX = 'FDM-2026-T69-';
+
+async function removeSeedTestOrders() {
+  const existing = await prisma.order.findMany({
+    where: { number: { startsWith: SEED_TEST_ORDER_PREFIX } },
+    select: { id: true },
+  });
+  const eids = existing.map((o) => o.id);
+  if (eids.length === 0) return;
+
+  const outs = await prisma.stockMovement.findMany({
+    where: {
+      orderId: { in: eids },
+      type: StockMovementType.OUT,
+      source: StockMovementSource.ONLINE_ORDER,
+    },
+  });
+  for (const m of outs) {
+    await prisma.productVariant.update({
+      where: { id: m.variantId },
+      data: { stock: { increment: m.quantity } },
+    });
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.orderStatusHistory.deleteMany({ where: { orderId: { in: eids } } });
+    await tx.stockMovement.deleteMany({ where: { orderId: { in: eids } } });
+    await tx.payment.deleteMany({ where: { orderId: { in: eids } } });
+    await tx.shipping.deleteMany({ where: { orderId: { in: eids } } });
+    await tx.orderItem.deleteMany({ where: { orderId: { in: eids } } });
+    await tx.couponUsage.deleteMany({ where: { orderId: { in: eids } } });
+    await tx.emailLog.deleteMany({ where: { orderId: { in: eids } } });
+    await tx.order.deleteMany({ where: { id: { in: eids } } });
+  });
+}
+
+async function seedTestOrders(cliente: { id: string }, adminUserId: string) {
+  await removeSeedTestOrders();
+
+  const shipAddr = {
+    recipientName: 'Ana Lima',
+    zipCode: '57035-270',
+    street: 'Rua João Pessoa',
+    number: '123',
+    complement: 'Apto 4',
+    neighborhood: 'Centro',
+    city: 'Maceió',
+    state: 'AL',
+    country: 'BR',
+  };
+
+  const blusaP = await prisma.productVariant.findFirst({
+    where: { product: { slug: 'blusa-cropped-camel' }, size: 'P' },
+    include: { product: { include: { images: { orderBy: { position: 'asc' }, take: 1 } } } },
+  });
+  const vestidoMidiM = await prisma.productVariant.findFirst({
+    where: { product: { slug: 'vestido-midi-floral-marrom' }, size: 'M' },
+    include: { product: { include: { images: { orderBy: { position: 'asc' }, take: 1 } } } },
+  });
+  const vestidoLongoP = await prisma.productVariant.findFirst({
+    where: { product: { slug: 'vestido-longo-bege' }, size: 'P' },
+    include: { product: { include: { images: { orderBy: { position: 'asc' }, take: 1 } } } },
+  });
+  const bolsa = await prisma.productVariant.findFirst({
+    where: { product: { slug: 'bolsa-couro-caramelo' } },
+    include: { product: { include: { images: { orderBy: { position: 'asc' }, take: 1 } } } },
+  });
+
+  if (!blusaP || !vestidoMidiM || !vestidoLongoP || !bolsa) {
+    console.log('⚠️ seedTestOrders: variantes esperadas não encontradas — pulando pedidos #69');
+    return;
+  }
+
+  async function createPaidOrder(params: {
+    number: string;
+    variant: typeof blusaP;
+    quantity: number;
+    shippingCost: number;
+  }) {
+    const { number, variant, quantity, shippingCost } = params;
+    const unit = Number(variant.product.basePrice);
+    const subtotal = unit * quantity;
+    const total = subtotal + shippingCost;
+    const img = variant.product.images[0]?.cardUrl ?? variant.product.images[0]?.url ?? null;
+    const stockBefore = variant.stock;
+    const stockAfter = stockBefore - quantity;
+
+    const orderId = createId();
+    await prisma.$transaction(async (tx) => {
+      await tx.order.create({
+        data: {
+          id: orderId,
+          userId: cliente.id,
+          number,
+          status: OrderStatus.PAID,
+          cpf: '52998224725',
+          subtotal,
+          shippingCost,
+          discount: 0,
+          total,
+          shippingAddress: shipAddr,
+          items: {
+            create: [
+              {
+                id: createId(),
+                productId: variant.productId,
+                variantId: variant.id,
+                productName: variant.product.name,
+                variantSize: variant.size,
+                variantColor: variant.color,
+                productImageUrl: img,
+                unitPrice: unit,
+                quantity,
+                subtotal,
+              },
+            ],
+          },
+        },
+      });
+      await tx.shipping.create({
+        data: {
+          id: createId(),
+          orderId,
+          provider: ShippingProvider.MOCK,
+          serviceName: 'PAC',
+          estimatedDays: 5,
+          cost: shippingCost,
+        },
+      });
+      await tx.payment.create({
+        data: {
+          id: createId(),
+          orderId,
+          provider: PaymentProvider.MOCK,
+          method: PaymentMethod.PIX,
+          status: PaymentStatus.APPROVED,
+          amount: total,
+          paidAt: new Date(),
+          externalId: `seed_ext_${orderId.slice(0, 12)}`,
+        },
+      });
+      await tx.stockMovement.create({
+        data: {
+          id: createId(),
+          variantId: variant.id,
+          type: StockMovementType.OUT,
+          source: StockMovementSource.ONLINE_ORDER,
+          quantity,
+          stockBefore,
+          stockAfter,
+          reason: 'Pedido pago (seed #69)',
+          orderId,
+          userId: null,
+        },
+      });
+      await tx.productVariant.update({
+        where: { id: variant.id },
+        data: { stock: stockAfter },
+      });
+    });
+  }
+
+  await createPaidOrder({
+    number: `${SEED_TEST_ORDER_PREFIX}PAID-01`,
+    variant: blusaP,
+    quantity: 1,
+    shippingCost: 19.9,
+  });
+
+  await createPaidOrder({
+    number: `${SEED_TEST_ORDER_PREFIX}PAID-02`,
+    variant: vestidoMidiM,
+    quantity: 1,
+    shippingCost: 0,
+  });
+
+  // PROCESSING: pago + separação + histórico PAID → PROCESSING
+  {
+    const variant = vestidoLongoP;
+    const unit = Number(variant.product.basePrice);
+    const shippingCost = 15.9;
+    const qty = 1;
+    const subtotal = unit * qty;
+    const total = subtotal + shippingCost;
+    const img = variant.product.images[0]?.cardUrl ?? variant.product.images[0]?.url ?? null;
+    const stockBefore = variant.stock;
+    const stockAfter = stockBefore - qty;
+    const orderId = createId();
+    await prisma.$transaction(async (tx) => {
+      await tx.order.create({
+        data: {
+          id: orderId,
+          userId: cliente.id,
+          number: `${SEED_TEST_ORDER_PREFIX}PROC-01`,
+          status: OrderStatus.PROCESSING,
+          cpf: '52998224725',
+          subtotal,
+          shippingCost,
+          discount: 0,
+          total,
+          shippingAddress: shipAddr,
+          items: {
+            create: [
+              {
+                id: createId(),
+                productId: variant.productId,
+                variantId: variant.id,
+                productName: variant.product.name,
+                variantSize: variant.size,
+                variantColor: variant.color,
+                productImageUrl: img,
+                unitPrice: unit,
+                quantity: qty,
+                subtotal,
+              },
+            ],
+          },
+        },
+      });
+      await tx.shipping.create({
+        data: {
+          id: createId(),
+          orderId,
+          provider: ShippingProvider.MOCK,
+          serviceName: 'Sedex',
+          estimatedDays: 3,
+          cost: shippingCost,
+        },
+      });
+      await tx.payment.create({
+        data: {
+          id: createId(),
+          orderId,
+          provider: PaymentProvider.MOCK,
+          method: PaymentMethod.PIX,
+          status: PaymentStatus.APPROVED,
+          amount: total,
+          paidAt: new Date(),
+          externalId: `seed_ext_${orderId.slice(0, 12)}_p`,
+        },
+      });
+      await tx.stockMovement.create({
+        data: {
+          id: createId(),
+          variantId: variant.id,
+          type: StockMovementType.OUT,
+          source: StockMovementSource.ONLINE_ORDER,
+          quantity: qty,
+          stockBefore,
+          stockAfter,
+          reason: 'Pedido pago (seed #69)',
+          orderId,
+          userId: null,
+        },
+      });
+      await tx.productVariant.update({
+        where: { id: variant.id },
+        data: { stock: stockAfter },
+      });
+      await tx.orderStatusHistory.create({
+        data: {
+          id: createId(),
+          orderId,
+          fromStatus: OrderStatus.PAID,
+          toStatus: OrderStatus.PROCESSING,
+          notes: 'Seed #69 — preparando envio',
+          changedByUserId: adminUserId,
+        },
+      });
+    });
+  }
+
+  // PENDING: aguardando pagamento, estoque já baixado (fluxo igual checkout)
+  {
+    const variant = bolsa;
+    const unit = Number(variant.product.basePrice);
+    const shippingCost = 12.9;
+    const qty = 1;
+    const subtotal = unit * qty;
+    const total = subtotal + shippingCost;
+    const img = variant.product.images[0]?.cardUrl ?? variant.product.images[0]?.url ?? null;
+    const stockBefore = variant.stock;
+    const stockAfter = stockBefore - qty;
+    const orderId = createId();
+    await prisma.$transaction(async (tx) => {
+      await tx.order.create({
+        data: {
+          id: orderId,
+          userId: cliente.id,
+          number: `${SEED_TEST_ORDER_PREFIX}PEND-01`,
+          status: OrderStatus.PENDING,
+          cpf: '52998224725',
+          subtotal,
+          shippingCost,
+          discount: 0,
+          total,
+          shippingAddress: shipAddr,
+          items: {
+            create: [
+              {
+                id: createId(),
+                productId: variant.productId,
+                variantId: variant.id,
+                productName: variant.product.name,
+                variantSize: variant.size,
+                variantColor: variant.color,
+                productImageUrl: img,
+                unitPrice: unit,
+                quantity: qty,
+                subtotal,
+              },
+            ],
+          },
+        },
+      });
+      await tx.shipping.create({
+        data: {
+          id: createId(),
+          orderId,
+          provider: ShippingProvider.MOCK,
+          serviceName: 'PAC',
+          estimatedDays: 7,
+          cost: shippingCost,
+        },
+      });
+      await tx.payment.create({
+        data: {
+          id: createId(),
+          orderId,
+          provider: PaymentProvider.MOCK,
+          method: PaymentMethod.PIX,
+          status: PaymentStatus.PENDING,
+          amount: total,
+          externalId: `seed_ext_${orderId.slice(0, 12)}_w`,
+        },
+      });
+      await tx.stockMovement.create({
+        data: {
+          id: createId(),
+          variantId: variant.id,
+          type: StockMovementType.OUT,
+          source: StockMovementSource.ONLINE_ORDER,
+          quantity: qty,
+          stockBefore,
+          stockAfter,
+          reason: 'Pedido criado (seed #69)',
+          orderId,
+          userId: null,
+        },
+      });
+      await tx.productVariant.update({
+        where: { id: variant.id },
+        data: { stock: stockAfter },
+      });
+    });
+  }
+
+  console.log(
+    `✅ Pedidos de teste #69: 2× PAID, 1× PROCESSING, 1× PENDING (prefixo ${SEED_TEST_ORDER_PREFIX})`,
+  );
+}
 
 async function main() {
   console.log('🌱 Iniciando seed...');
@@ -557,6 +928,11 @@ async function main() {
     });
   }
   console.log(`✅ ${INSTITUTIONAL_PAGES_SEED.length} páginas institucionais (seed HTML)`);
+
+  // =========================================================
+  // PEDIDOS DE TESTE — Task #69 (admin operacional / smoke / E2E)
+  // =========================================================
+  await seedTestOrders(cliente1, admin.id);
 
   // =========================================================
   // RESUMO PARA TESTES

@@ -27,13 +27,22 @@ export function AdminBreadcrumbs() {
           const href = '/' + segments.slice(0, index + 1).join('/');
           const isLast = index === segments.length - 1;
           const label = labelFor(segment);
+          const isAdminSegment = segment === 'admin';
 
           return (
             <span key={href} className="flex items-center gap-1.5">
               {index > 0 && <BreadcrumbSeparator />}
               <BreadcrumbItem>
                 {isLast ? (
-                  <BreadcrumbPage>{label}</BreadcrumbPage>
+                  <BreadcrumbPage
+                    className={isAdminSegment ? 'text-muted-foreground font-normal' : undefined}
+                  >
+                    {label}
+                  </BreadcrumbPage>
+                ) : isAdminSegment ? (
+                  <BreadcrumbPage className="text-muted-foreground font-normal">
+                    {label}
+                  </BreadcrumbPage>
                 ) : (
                   <BreadcrumbLink render={<Link href={href} />}>{label}</BreadcrumbLink>
                 )}

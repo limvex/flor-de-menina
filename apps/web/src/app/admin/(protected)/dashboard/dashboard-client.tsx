@@ -19,6 +19,7 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { ApiError } from '@/lib/errors';
 import { dashboardApi, type DashboardPreset, type DashboardSummary } from '@/lib/api/dashboard';
+import { getStatusLabel } from '@/lib/orders/status-labels';
 
 const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const brlCompact = new Intl.NumberFormat('pt-BR', {
@@ -27,16 +28,6 @@ const brlCompact = new Intl.NumberFormat('pt-BR', {
   notation: 'compact',
   maximumFractionDigits: 1,
 });
-
-const orderStatusLabel: Record<string, string> = {
-  PENDING: 'Aguardando pagamento',
-  PAID: 'Pago',
-  PROCESSING: 'Em separação',
-  SHIPPED: 'Enviado',
-  DELIVERED: 'Entregue',
-  CANCELLED: 'Cancelado',
-  REFUNDED: 'Reembolsado',
-};
 
 function formatDayLabel(ymd: string) {
   const [, m, d] = ymd.split('-');
@@ -320,7 +311,7 @@ export function DashboardClient() {
                         <div className="min-w-0 flex-1">
                           <p className="font-medium leading-snug text-flor-900">{o.number}</p>
                           <p className="mt-0.5 line-clamp-2 text-xs leading-snug text-flor-600">
-                            {orderStatusLabel[o.status] ?? o.status}
+                            {getStatusLabel(o.status)}
                             {o.customerName ? ` · ${o.customerName}` : ''}
                           </p>
                         </div>

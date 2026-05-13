@@ -8,6 +8,7 @@ import { PaymentStatus, PaymentProvider, PaymentMethod } from '@flor/database';
 import { StockService } from '../../modules/stock/stock.service';
 import { CartService } from '../../modules/cart/cart.service';
 import { EmailService } from '../../email/email.service';
+import { CouponsService } from '../../modules/coupons/coupons.service';
 
 // Mock do prisma — reutiliza o mock definido no payments.service.spec
 jest.mock('@flor/database', () => {
@@ -107,6 +108,12 @@ describe('handleWebhook — idempotência', () => {
             sendOrderConfirmation: jest.fn(),
             sendPaymentFailure: jest.fn(),
             sendRefund: jest.fn(),
+          },
+        },
+        {
+          provide: CouponsService,
+          useValue: {
+            reverseCouponUsage: jest.fn().mockResolvedValue(undefined),
           },
         },
       ],

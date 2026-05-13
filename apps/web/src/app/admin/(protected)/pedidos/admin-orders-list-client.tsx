@@ -12,22 +12,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { adminOrdersApi } from '@/lib/api/admin-orders';
-
-const statusLabel: Record<string, string> = {
-  all: 'Todos',
-  PENDING: 'Aguardando pagamento',
-  PAID: 'Pago',
-  PROCESSING: 'Em separação',
-  SHIPPED: 'Enviado',
-  DELIVERED: 'Entregue',
-  CANCELLED: 'Cancelado',
-  REFUNDED: 'Reembolsado',
-};
+import { fetchAdminOrdersList, type AdminOrderListItem } from '@/lib/api/admin-orders';
+import { ORDER_STATUS_LABELS, getStatusLabel } from '@/lib/orders/status-labels';
 
 const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
-export function AdminOrdersListClient() {
+export function AdminOrdersListClient({ accessToken }: { accessToken: string }) {
   const searchParams = useSearchParams();
   const statusFromUrl = searchParams.get('status') ?? '';
 
@@ -45,11 +35,12 @@ export function AdminOrdersListClient() {
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey,
     queryFn: () =>
-      adminOrdersApi.list({
+      fetchAdminOrdersList(accessToken, {
         page,
         pageSize: 20,
         ...(status && status !== 'all' ? { status } : {}),
       }),
+    enabled: Boolean(accessToken),
   });
 
   const onStatusChange = useCallback((v: string) => {
@@ -67,7 +58,7 @@ export function AdminOrdersListClient() {
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
-            {Object.entries(statusLabel).map(([value, label]) => (
+            {Object.entries(ORDER_STATUS_LABELS).map(([value, label]) => (
               <SelectItem key={value} value={value}>
                 {label}
               </SelectItem>
@@ -108,7 +99,7 @@ export function AdminOrdersListClient() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.items.map((o) => (
+                  {data.items.map((o: AdminOrderListItem) => (
                     <tr
                       key={o.id}
                       className="border-b border-flor-50 last:border-0 hover:bg-flor-50/40"
@@ -124,7 +115,7 @@ export function AdminOrdersListClient() {
                       <td className="px-4 py-3 text-muted-foreground">
                         {o.customerName ?? o.customerEmail ?? '—'}
                       </td>
-                      <td className="px-4 py-3">{statusLabel[o.status] ?? o.status}</td>
+                      <td className="px-4 py-3">{getStatusLabel(o.status)}</td>
                       <td className="px-4 py-3 text-right tabular-nums font-medium">
                         {brl.format(o.total)}
                       </td>

@@ -358,10 +358,25 @@ model Order {
   coupon         Coupon?         @relation(fields: [couponId], references: [id])
   couponUsages   CouponUsage[]
   emailLogs      EmailLog[]
+  statusHistory  OrderStatusHistory[]
 
   @@index([userId])
   @@index([status])
   @@index([number])
+  @@index([createdAt])
+}
+
+model OrderStatusHistory {
+  id                String      @id
+  orderId           String
+  order             Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  fromStatus        OrderStatus
+  toStatus          OrderStatus
+  notes             String?     @db.Text
+  changedByUserId   String?
+  createdAt         DateTime    @default(now())
+
+  @@index([orderId])
   @@index([createdAt])
 }
 
