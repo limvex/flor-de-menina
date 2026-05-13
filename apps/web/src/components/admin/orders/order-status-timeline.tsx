@@ -1,17 +1,12 @@
 'use client';
 
+import { getStatusLabel } from '@/lib/orders/status-labels';
 import { cn } from '@/lib/utils';
 
-const FLOW: { key: string; label: string }[] = [
-  { key: 'PAID', label: 'Pago' },
-  { key: 'PROCESSING', label: 'Preparando' },
-  { key: 'SHIPPED', label: 'Enviado' },
-  { key: 'DELIVERED', label: 'Entregue' },
-];
+const FLOW_KEYS = ['PAID', 'PROCESSING', 'SHIPPED', 'DELIVERED'] as const;
 
 function flowIndex(status: string): number {
-  const i = FLOW.findIndex((s) => s.key === status);
-  return i;
+  return FLOW_KEYS.findIndex((s) => s === status);
 }
 
 export function OrderStatusTimeline({ status }: { status: string }) {
@@ -23,7 +18,7 @@ export function OrderStatusTimeline({ status }: { status: string }) {
       >
         {status === 'PENDING'
           ? 'Aguardando pagamento — a timeline completa aparece após confirmação do pagamento.'
-          : `Pedido ${status === 'CANCELLED' ? 'cancelado' : 'reembolsado'}.`}
+          : `Pedido ${status === 'CANCELLED' ? getStatusLabel('CANCELLED').toLowerCase() : getStatusLabel('REFUNDED').toLowerCase()}.`}
       </div>
     );
   }
@@ -38,12 +33,13 @@ export function OrderStatusTimeline({ status }: { status: string }) {
     >
       <h2 className="mb-4 font-medium text-flor-900">Andamento do pedido</h2>
       <div className="flex flex-wrap items-center gap-1 sm:gap-0">
-        {FLOW.map((step, i) => {
+        {FLOW_KEYS.map((stepKey, i) => {
+          const stepLabel = getStatusLabel(stepKey);
           const done = activeIdx >= i;
           const current = activeIdx === i;
           const muted = activeIdx >= 0 && i > activeIdx;
           return (
-            <div key={step.key} className="flex items-center">
+            <div key={stepKey} className="flex items-center">
               <div className="flex flex-col items-center min-w-[4.5rem]">
                 <div
                   className={cn(
@@ -61,10 +57,10 @@ export function OrderStatusTimeline({ status }: { status: string }) {
                     muted ? 'text-flor-400' : 'text-flor-800',
                   )}
                 >
-                  {step.label}
+                  {stepLabel}
                 </span>
               </div>
-              {i < FLOW.length - 1 && (
+              {i < FLOW_KEYS.length - 1 && (
                 <div
                   className={cn(
                     'hidden sm:block h-0.5 w-6 md:w-10 -mt-6 mx-0.5 shrink-0',

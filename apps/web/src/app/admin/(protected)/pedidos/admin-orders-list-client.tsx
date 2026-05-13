@@ -12,18 +12,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { fetchAdminOrdersList } from '@/lib/api/admin-orders';
-
-const statusLabel: Record<string, string> = {
-  all: 'Todos',
-  PENDING: 'Aguardando pagamento',
-  PAID: 'Pago',
-  PROCESSING: 'Preparando para envio',
-  SHIPPED: 'Enviado',
-  DELIVERED: 'Entregue',
-  CANCELLED: 'Cancelado',
-  REFUNDED: 'Reembolsado',
-};
+import { fetchAdminOrdersList, type AdminOrderListItem } from '@/lib/api/admin-orders';
+import { ORDER_STATUS_LABELS, getStatusLabel } from '@/lib/orders/status-labels';
 
 const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -68,7 +58,7 @@ export function AdminOrdersListClient({ accessToken }: { accessToken: string }) 
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
-            {Object.entries(statusLabel).map(([value, label]) => (
+            {Object.entries(ORDER_STATUS_LABELS).map(([value, label]) => (
               <SelectItem key={value} value={value}>
                 {label}
               </SelectItem>
@@ -109,7 +99,7 @@ export function AdminOrdersListClient({ accessToken }: { accessToken: string }) 
                   </tr>
                 </thead>
                 <tbody>
-                  {data.items.map((o) => (
+                  {data.items.map((o: AdminOrderListItem) => (
                     <tr
                       key={o.id}
                       className="border-b border-flor-50 last:border-0 hover:bg-flor-50/40"
@@ -125,7 +115,7 @@ export function AdminOrdersListClient({ accessToken }: { accessToken: string }) 
                       <td className="px-4 py-3 text-muted-foreground">
                         {o.customerName ?? o.customerEmail ?? '—'}
                       </td>
-                      <td className="px-4 py-3">{statusLabel[o.status] ?? o.status}</td>
+                      <td className="px-4 py-3">{getStatusLabel(o.status)}</td>
                       <td className="px-4 py-3 text-right tabular-nums font-medium">
                         {brl.format(o.total)}
                       </td>

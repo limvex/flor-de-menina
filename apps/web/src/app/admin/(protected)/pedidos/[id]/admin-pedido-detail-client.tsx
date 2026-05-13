@@ -9,18 +9,9 @@ import { OrderStatusUpdater } from '@/components/admin/orders/order-status-updat
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { fetchAdminOrderById } from '@/lib/api/admin-orders';
+import { getStatusLabel } from '@/lib/orders/status-labels';
 
 const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
-
-const statusLabel: Record<string, string> = {
-  PENDING: 'Aguardando pagamento',
-  PAID: 'Pago',
-  PROCESSING: 'Preparando para envio',
-  SHIPPED: 'Enviado',
-  DELIVERED: 'Entregue',
-  CANCELLED: 'Cancelado',
-  REFUNDED: 'Reembolsado',
-};
 
 const paymentMethodLabel: Record<string, string> = {
   PIX: 'PIX',
@@ -80,7 +71,7 @@ export function AdminPedidoDetailClient({
         <>
           <AdminPageHeader
             title={data.number}
-            description={`${statusLabel[data.status] ?? data.status} · ${new Date(data.createdAt).toLocaleString('pt-BR')}`}
+            description={`${getStatusLabel(data.status)} · ${new Date(data.createdAt).toLocaleString('pt-BR')}`}
           />
 
           <div className="grid gap-4 lg:grid-cols-2">
