@@ -3,15 +3,17 @@ import { test, expect } from '@playwright/test';
 test.describe('Catálogo — busca', () => {
   test('header tem botão de busca que abre input ao clicar', async ({ page }) => {
     await page.goto('/');
+    await page.waitForLoadState('networkidle');
     const searchTrigger = page.getByRole('button', { name: 'Buscar' });
     await expect(searchTrigger).toBeVisible();
     await searchTrigger.click();
     const input = page.getByPlaceholder('Buscar produtos...');
-    await expect(input).toBeVisible();
+    await expect(input).toBeVisible({ timeout: 5_000 });
   });
 
   test('submeter busca pelo header navega pra /buscar?q=', async ({ page }) => {
     await page.goto('/');
+    await page.waitForLoadState('networkidle');
     await page.getByRole('button', { name: 'Buscar' }).click();
     const input = page.getByPlaceholder('Buscar produtos...');
     await input.fill('vestido');

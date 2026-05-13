@@ -41,13 +41,13 @@ export function ShippingCalculator() {
           type="text"
           placeholder="00000-000"
           value={formatCep(cep)}
-          onChange={(e) => setCep(e.target.value)}
+          onChange={(e) => setCep(e.target.value.replace(/\D/g, ''))}
           maxLength={9}
           className="flex-1 rounded border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-stone-400"
         />
         <button
           onClick={handleCalculate}
-          disabled={loading || cep.replace(/\D/g, '').length < 8}
+          disabled={loading || cep.length < 8}
           className="rounded bg-stone-800 px-4 py-2 text-sm text-white disabled:bg-stone-300 disabled:cursor-not-allowed hover:bg-stone-900 transition-colors"
         >
           {loading ? '...' : 'Calcular'}

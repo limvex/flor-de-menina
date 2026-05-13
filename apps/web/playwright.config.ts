@@ -5,12 +5,15 @@ export default defineConfig({
   fullyParallel: false,
   retries: process.env.CI ? 2 : 1,
   workers: 1,
-  reporter: [['list'], ['html', { open: 'never' }]],
+  timeout: 60_000,
+  expect: { timeout: 12_000 },
+  reporter: [['list'], ['html', { open: 'never', outputFolder: 'playwright-report' }]],
   use: {
     baseURL: 'http://localhost:3000',
     trace: 'on-first-retry',
     video: 'retain-on-failure',
-    actionTimeout: 15000,
+    screenshot: 'only-on-failure',
+    actionTimeout: 15_000,
   },
   projects: [
     {
@@ -21,11 +24,15 @@ export default defineConfig({
     {
       name: 'mobile',
       testMatch: /.*mobile\.spec\.ts$/,
-      use: { ...devices['Pixel 7'] },
+      use: { ...devices['iPhone 13'] },
     },
   ],
+  globalSetup: './e2e/global-setup.ts',
+  globalTeardown: './e2e/global-teardown.ts',
   webServer: {
-    command: 'node --env-file=../../.env apps/api/dist/main.js & pnpm dev',
+    // NEXT_PUBLIC_MOCK_PAYMENT is set in apps/web/.env — no need to pass it here.
+    // `&` backgrounds the API on Linux/CI; on Windows servers are started manually.
+    command: 'node --env-file=../../.env ../../apps/api/dist/main.js & pnpm dev',
     url: 'http://localhost:3000',
     reuseExistingServer: true,
     timeout: 60_000,

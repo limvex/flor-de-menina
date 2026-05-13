@@ -6,4 +6,6 @@ export async function loginAdmin(page: Page) {
   await page.fill('input[type="password"]', 'admin123');
   await page.click('button[type="submit"]');
   await page.waitForURL(/\/admin(?!\/login)/);
+  // Aguarda a navegação de redirect completar antes de retornar
+  await page.waitForLoadState('networkidle');
 }

@@ -11,5 +11,6 @@ build
 coverage
 playwright-report
 test-results
+e2e/.playwright-auth-cache.json
 .vscode
 .idea
