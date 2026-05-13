@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import { loginAsQaUser, getAdminToken, getQaCustomerToken } from '../fixtures/auth.fixture';
 import { getTestVariant, addToCartApi } from '../fixtures/checkout.fixture';
 import { CartPage } from '../pages/cart.page';
+import { CheckoutPage } from '../pages/checkout.page';
 import { COUPON_CODE } from '../global-setup';
 
 test.describe('04 — Sistema de cupons', () => {
@@ -13,12 +14,10 @@ test.describe('04 — Sistema de cupons', () => {
     await loginAsQaUser(context, request);
   });
 
-  test('cenário A — cupom QATEST10 aplicado no carrinho mostra desconto', async ({
-    page,
-    request,
-  }) => {
+  test('cenário A — cupom QATEST10 aplicado no carrinho mostra desconto', async ({ page }) => {
     const cart = new CartPage(page);
     await cart.goto();
+    await page.waitForLoadState('networkidle');
 
     // Capturar total sem cupom
     const subtotalEl = page
@@ -33,7 +32,7 @@ test.describe('04 — Sistema de cupons', () => {
     await cart.expectCouponApplied(COUPON_CODE);
 
     // Desconto visível na página
-    await expect(page.getByText(/Desconto|10%|−R\$/i)).toBeVisible({ timeout: 8_000 });
+    await expect(page.getByText(/Desconto|10%|−R\$/i).first()).toBeVisible({ timeout: 8_000 });
 
     // Total com cupom é menor
     const totalEl = page.getByText(/Total/).locator('xpath=following-sibling::*').first();
@@ -50,11 +49,16 @@ test.describe('04 — Sistema de cupons', () => {
     await cart.applyCoupon(COUPON_CODE);
     await cart.expectCouponApplied(COUPON_CODE);
 
-    // Ir para checkout
+    // Ir para checkout (etapa 1: Identificação)
     await cart.goToCheckout();
     await page.waitForURL('**/checkout**');
 
-    // Código do cupom visível no resumo do checkout
+    // Completar identificação para chegar na etapa 2 onde o resumo exibe o cupom
+    const checkout = new CheckoutPage(page);
+    await checkout.fillIdentification();
+    await checkout.submitIdentification();
+
+    // Código do cupom visível no resumo lateral da etapa 2
     await expect(page.getByText(COUPON_CODE)).toBeVisible({ timeout: 10_000 });
   });
 

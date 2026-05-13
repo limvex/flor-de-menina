@@ -30,8 +30,9 @@ export default defineConfig({
   globalSetup: './e2e/global-setup.ts',
   globalTeardown: './e2e/global-teardown.ts',
   webServer: {
-    command:
-      'NEXT_PUBLIC_MOCK_PAYMENT=true node --env-file=../../.env ../../apps/api/dist/main.js & pnpm dev',
+    // NEXT_PUBLIC_MOCK_PAYMENT is set in apps/web/.env — no need to pass it here.
+    // `&` backgrounds the API on Linux/CI; on Windows servers are started manually.
+    command: 'node --env-file=../../.env ../../apps/api/dist/main.js & pnpm dev',
     url: 'http://localhost:3000',
     reuseExistingServer: true,
     timeout: 60_000,

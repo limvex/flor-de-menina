@@ -48,6 +48,7 @@ test.describe('05 — Consistência de estoque', () => {
     context,
     request,
   }) => {
+    test.setTimeout(90_000);
     const adminToken = await getAdminToken(request);
     const customerToken = await getQaCustomerToken(request);
     const variant = await getTestVariant(request, adminToken, 'P');

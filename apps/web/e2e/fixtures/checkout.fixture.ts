@@ -90,7 +90,7 @@ export async function getLastStockMovement(
   adminToken: string,
   variantId: string,
 ) {
-  const res = await api.get(`${API}/admin/stock/variants/${variantId}/movements?limit=1`, {
+  const res = await api.get(`${API}/admin/stock/variants/${variantId}/movements?pageSize=1`, {
     headers: { Authorization: `Bearer ${adminToken}` },
   });
   if (!res.ok()) throw new Error(`Movements não encontrado: ${res.status()}`);

@@ -47,8 +47,11 @@ test.describe('02 — Jornada completa Cartão aprovado', () => {
     // Pedido aparece na conta
     const account = new AccountPage(page);
     await account.gotoOrders();
-    await expect(page.getByText(/Pagamento confirmado|Pago|Confirmado/i).first()).toBeVisible({
-      timeout: 10_000,
-    });
+    await expect(
+      page
+        .getByText(/Pagamento confirmado|Pago|Confirmado/i)
+        .and(page.locator(':visible'))
+        .first(),
+    ).toBeVisible({ timeout: 10_000 });
   });
 });

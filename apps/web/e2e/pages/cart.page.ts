@@ -13,7 +13,17 @@ export class CartPage {
   }
 
   async applyCoupon(code: string) {
-    const input = this.page.getByPlaceholder(/Cupom/i).or(this.page.getByLabel(/Cupom/i));
+    const removeBtn = this.page.getByRole('button', { name: /remover cupom/i });
+    const input = this.page.getByPlaceholder(/cupom/i);
+
+    // Aguarda o componente de cupom terminar de carregar (React Query pode ser lento)
+    await expect(removeBtn.or(input)).toBeVisible({ timeout: 10_000 });
+
+    if (await removeBtn.isVisible()) {
+      await removeBtn.click();
+      await expect(input).toBeVisible({ timeout: 8_000 });
+    }
+
     await input.fill(code);
     await this.page.getByRole('button', { name: /Aplicar/i }).click();
   }
@@ -38,7 +48,7 @@ export class CartPage {
   }
 
   async goToCheckout() {
-    await this.page.getByRole('link', { name: /Finalizar compra/i }).click();
+    await this.page.getByRole('button', { name: /Finalizar compra/i }).click();
     await this.page.waitForURL('**/checkout**');
   }
 }

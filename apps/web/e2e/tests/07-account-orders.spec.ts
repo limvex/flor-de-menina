@@ -36,7 +36,10 @@ test.describe('07 — Pedido na conta do cliente', () => {
 
     // Pedido visível na lista (busca por parte do id ou status)
     await expect(
-      page.getByText(/Pagamento confirmado|Pago|Confirmado|confirmado|PAYMENT_CONFIRMED/i).first(),
+      page
+        .getByText(/Pagamento confirmado|Pago|Confirmado|confirmado|PAYMENT_CONFIRMED/i)
+        .and(page.locator(':visible'))
+        .first(),
     ).toBeVisible({ timeout: 10_000 });
 
     // Clicar em algum pedido para abrir detalhe
@@ -61,7 +64,8 @@ test.describe('07 — Pedido na conta do cliente', () => {
     }
   });
 
-  test('/conta/pedidos redireciona para /login se não autenticado', async ({ page }) => {
+  test('/conta/pedidos redireciona para /login se não autenticado', async ({ page, context }) => {
+    await context.clearCookies();
     await page.goto('/conta/pedidos');
     await expect(page).toHaveURL(/\/(login|entrar)(\?|$)/);
   });

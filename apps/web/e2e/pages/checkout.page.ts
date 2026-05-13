@@ -17,6 +17,7 @@ export class CheckoutPage {
     const phone = opts?.phone ?? QA_USER.phone;
 
     const nameInput = this.page.getByLabel('Nome completo');
+    await expect(nameInput).toBeVisible({ timeout: 25_000 });
     await nameInput.clear();
     await nameInput.fill(name);
 
@@ -106,10 +107,14 @@ export class CheckoutPage {
   async submitMockCardPayment() {
     // O botão só aparece se NEXT_PUBLIC_MOCK_PAYMENT=true
     const btn = this.page.getByRole('button', { name: /Simular pagamento com cart/i });
-    if ((await btn.count()) > 0) {
-      await expect(btn).toBeEnabled({ timeout: 10_000 });
-      await btn.click();
+    const btnCount = await btn.count();
+    if (btnCount === 0) {
+      throw new Error(
+        'Botão "Simular pagamento com cartão" não encontrado. Verifique se NEXT_PUBLIC_MOCK_PAYMENT=true está configurado.',
+      );
     }
+    await expect(btn).toBeEnabled({ timeout: 10_000 });
+    await btn.click();
   }
 
   // ── Página aguardando PIX ───────────────────────────────────────────────
@@ -142,8 +147,9 @@ export class CheckoutPage {
   async expectRetryButton() {
     await expect(
       this.page
-        .getByRole('button', { name: /tentar novamente|outro m[eé]todo/i })
-        .or(this.page.getByRole('link', { name: /tentar novamente|voltar|carrinho/i })),
+        .getByRole('button', { name: /tentar (novamente|de novo)|tentar com pix|outro m[eé]todo/i })
+        .or(this.page.getByRole('link', { name: /tentar (novamente|de novo)|voltar|carrinho/i }))
+        .first(),
     ).toBeVisible({ timeout: 8_000 });
   }
 }

@@ -32,7 +32,7 @@ test.describe('06 — Mobile checkout (375px)', () => {
     await page.goto('/carrinho');
     await page.waitForLoadState('networkidle');
     // Ao menos um item visível (produto do seed)
-    const productLink = page.locator('a[href^"/produto/"]').first();
+    const productLink = page.locator('a[href^="/produto/"]').first();
     await expect(productLink).toBeVisible({ timeout: 8_000 });
     // Em mobile pode não ter controles de quantidade visíveis
   });

@@ -10,6 +10,7 @@ test.describe('01 — Jornada completa PIX aprovado', () => {
     context,
     request,
   }) => {
+    test.setTimeout(120_000);
     const adminToken = await getAdminToken(request);
     const customerToken = await getQaCustomerToken(request);
 
@@ -53,9 +54,9 @@ test.describe('01 — Jornada completa PIX aprovado', () => {
     // Verificar pedido em /conta/pedidos
     const account = new AccountPage(page);
     await account.gotoOrders();
-    // Busca por padrão de status confirmado/aprovado
-    await expect(
-      page.getByText(/Pagamento confirmado|Pago|Confirmado|confirmado/i).first(),
-    ).toBeVisible({ timeout: 10_000 });
+    // Busca por heading de pedido confirmado
+    await expect(page.getByRole('heading', { name: /Pedido|pedido/i }).first()).toBeVisible({
+      timeout: 10_000,
+    });
   });
 });

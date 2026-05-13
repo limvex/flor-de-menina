@@ -75,16 +75,32 @@ export default async function globalSetup() {
   const customerToken = raw.match(/flor_customer_token=([^;]+)/)?.[1] ?? '';
   writeFileSync(AUTH_CACHE_PATH, JSON.stringify({ customerToken, customerCookies, adminToken }));
 
-  // 2. Garantir cupom QATEST10
+  // 2. Garantir cupom QATEST10 com maxUsesPerCustomer alto para testes repetidos
   const couponsRes = await api.get(`${API}/admin/coupons?search=${COUPON_CODE}`, { headers });
   const couponsBody = couponsRes.ok()
-    ? ((await couponsRes.json()) as { items?: Array<{ code: string }> })
-    : { items: [] };
-  const couponExists = couponsBody.items?.some((c) => c.code === COUPON_CODE);
+    ? ((await couponsRes.json()) as { data?: Array<{ id: string; code: string }> })
+    : { data: [] };
+  const existingCoupon = couponsBody.data?.find((c) => c.code === COUPON_CODE);
 
-  if (!couponExists) {
-    const validUntil = new Date();
-    validUntil.setFullYear(validUntil.getFullYear() + 1);
+  const validUntil = new Date();
+  validUntil.setFullYear(validUntil.getFullYear() + 1);
+
+  if (existingCoupon) {
+    // Atualiza para garantir que o QA user possa usar o cupom múltiplas vezes
+    const updateRes = await api.patch(`${API}/admin/coupons/${existingCoupon.id}`, {
+      headers,
+      data: {
+        maxUsesPerCustomer: 100,
+        isActive: true,
+        validUntil: validUntil.toISOString(),
+      },
+    });
+    if (!updateRes.ok()) {
+      console.warn(`[QA setup] Cupom update: ${updateRes.status()} ${await updateRes.text()}`);
+    } else {
+      console.log(`[QA setup] Cupom ${COUPON_CODE} atualizado (maxUsesPerCustomer=100)`);
+    }
+  } else {
     const createRes = await api.post(`${API}/admin/coupons`, {
       headers,
       data: {
@@ -94,6 +110,7 @@ export default async function globalSetup() {
         isActive: true,
         validFrom: new Date().toISOString(),
         validUntil: validUntil.toISOString(),
+        maxUsesPerCustomer: 100,
       },
     });
     if (!createRes.ok()) {
@@ -101,8 +118,6 @@ export default async function globalSetup() {
     } else {
       console.log(`[QA setup] Cupom ${COUPON_CODE} criado`);
     }
-  } else {
-    console.log(`[QA setup] Cupom ${COUPON_CODE} já existe`);
   }
 
   // 3. Garantir estoque mínimo para o produto de teste
