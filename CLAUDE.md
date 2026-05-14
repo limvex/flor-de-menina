@@ -213,6 +213,8 @@ Atualize esta seção a cada task concluída. Use os emojis:
 
 - `2026-05-12` — Task #22 (E-mails transacionais) concluída e validada localmente. BullMQ+Redis, 8 templates React Email, EmailLog com idempotência, ResendAdapter (lazy init), MaildevAdapter para dev. Triggers em OrdersService (ORDER_CREATED) e PaymentsService (PAYMENT_APPROVED/REJECTED). Cron ReviewInvitationCron (10h diário). Admin UI: logs com filtros/resend e preview com iframe. Validado: PASSWORD_RESET, ORDER_CREATED, PAYMENT_APPROVED chegando no Maildev. REDIS_PASSWORD configurado para limvex-redis compartilhado (senha no .env local, não commitar). PAYMENT_PROVIDER mudado para "mock" para testes locais.
 
+- `2026-05-14` — Deploy Coolify: crash loop `MODULE_NOT_FOUND: dotenv` na API (imagem pnpm sem `apps/api/node_modules`). Fix: `load-env.ts` só chama `dotenv` quando `NODE_ENV !== 'production'`; produção usa só env injetado pelo painel/Docker.
+
 ## ⚠️ Coisas que NÃO podem ser esquecidas
 
 - **Páginas institucionais**: API pública `GET /pages` (resumo) e `GET /pages/:slug` (HTML TipTap). Conteúdo só em `dangerouslySetInnerHTML` na loja. Admin em `/admin/paginas`. Loja `/p/[slug]`: **`export const dynamic = 'force-dynamic'`** + **`fetch(..., { cache: 'no-store' })`** (sem ISR — ativo/inativo e conteúdo refletem no próximo acesso). Seed só institucionais: `pnpm db:seed:institutional`.
@@ -280,6 +282,7 @@ Atualize esta seção a cada task concluída. Use os emojis:
 - **Labels PT-BR centralizados em `apps/web/src/lib/orders/status-labels.ts`** — toda UI de pedidos admin usa `getStatusLabel()` / `getTransitionLabel()`, nunca renderiza enum raw.
 - **Templates de e-mail operacionais (Task #69)** em `EmailService`: helper `renderEmailLayout()` — header + card + footer padronizado (SMTP / Maildev em dev).
 - **Task #71 — Production readiness**: `parseEnv()` em `apps/api/src/main.ts` antes do Nest; em produção nunca `prisma migrate dev` — usar `scripts/migrate-prod.sh` ou `pnpm db:migrate:deploy`; seed mínimo `pnpm db:seed:prod` (idempotente); health `GET /health` (API) e `GET /api/health` (Web); logs JSON em produção (`nestjs-pino`); Dockerfiles + `docker-compose.production.yml`; guia `docs/DEPLOY.md`.
+- **Coolify / Docker API**: `NODE_ENV=production` — não depender de `require('dotenv')` no arranque (`apps/api/src/load-env.ts`); variáveis no painel Coolify ou `--env-file` local.
 
 ## 🔗 Links úteis
 
