@@ -31,4 +31,4 @@ EXPOSE 3333
 ENV NODE_ENV=production
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
   CMD curl -fsS http://127.0.0.1:3333/health || exit 1
-CMD ["node", "dist/main.js"]
+CMD ["./start.sh"]

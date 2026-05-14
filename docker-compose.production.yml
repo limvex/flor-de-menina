@@ -78,6 +78,7 @@ services:
       - .env.production
     environment:
       NODE_ENV: production
+      PORT: '3000'
       INTERNAL_API_URL: http://api:3333
     logging:
       driver: json-file
