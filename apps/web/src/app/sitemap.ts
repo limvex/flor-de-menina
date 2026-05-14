@@ -1,7 +1,13 @@
 import type { MetadataRoute } from 'next';
 
 const SITE = 'https://flordemenina.store';
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3333';
+
+/** Servidor: rede Docker (http://api:3333). Build: evita HTTPS self-signed do proxy Coolify. */
+function getApiBaseUrl(): string {
+  const internal = process.env.INTERNAL_API_URL?.trim();
+  if (internal) return internal;
+  return process.env.NEXT_PUBLIC_API_URL?.trim() || 'http://localhost:3333';
+}
 
 interface CategoryItem {
   slug: string;
@@ -36,12 +42,12 @@ function flattenCategories(categories: CategoryItem[]): CategoryItem[] {
   return flat;
 }
 
-async function fetchAllProducts(): Promise<ProductItem[]> {
+async function fetchAllProducts(apiBase: string): Promise<ProductItem[]> {
   const all: ProductItem[] = [];
   let page = 1;
 
   while (true) {
-    const response = await fetch(`${API_URL}/products/public?limit=${PAGE_SIZE}&page=${page}`, {
+    const response = await fetch(`${apiBase}/products/public?limit=${PAGE_SIZE}&page=${page}`, {
       next: { revalidate: 300 },
     });
 
@@ -63,17 +69,26 @@ async function fetchAllProducts(): Promise<ProductItem[]> {
   return all;
 }
 
+/** Sitemap dinâmico: não pré-renderiza URLs da API no `next build` (API ausente ou TLS inválido). */
+export const dynamic = 'force-dynamic';
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticUrls: MetadataRoute.Sitemap = [
     { url: `${SITE}/`, changeFrequency: 'daily', priority: 1.0 },
     { url: `${SITE}/produtos`, changeFrequency: 'daily', priority: 0.9 },
   ];
 
+  if (process.env.NEXT_PHASE === 'phase-production-build') {
+    return staticUrls;
+  }
+
+  const apiBase = getApiBaseUrl();
+
   try {
     const [products, categoriesResponse, instResponse] = await Promise.all([
-      fetchAllProducts(),
-      fetch(`${API_URL}/categories`, { next: { revalidate: 300 } }),
-      fetch(`${API_URL}/pages`, { next: { revalidate: 300 } }),
+      fetchAllProducts(apiBase),
+      fetch(`${apiBase}/categories`, { next: { revalidate: 300 } }),
+      fetch(`${apiBase}/pages`, { next: { revalidate: 300 } }),
     ]);
 
     if (!categoriesResponse.ok) {
