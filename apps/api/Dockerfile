@@ -9,7 +9,8 @@ COPY pnpm-workspace.yaml pnpm-lock.yaml package.json turbo.json ./
 COPY packages ./packages
 COPY apps/api ./apps/api
 
-RUN pnpm install --frozen-lockfile
+# Coolify injeta NODE_ENV=production no build; sem devDependencies o install do monorepo falha.
+RUN NODE_ENV=development pnpm install --frozen-lockfile
 RUN pnpm --filter @flor/database db:generate
 RUN pnpm --filter @flor/database build
 RUN pnpm --filter @flor/api build
