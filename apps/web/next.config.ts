@@ -11,6 +11,7 @@ const mpPublicKey =
 
 /** Garante que variáveis públicas entrem no bundle do cliente (Turbopack/monorepo). */
 const nextConfig: NextConfig = {
+  output: 'standalone',
   transpilePackages: ['@mercadopago/sdk-react'],
   images: {
     remotePatterns: [
