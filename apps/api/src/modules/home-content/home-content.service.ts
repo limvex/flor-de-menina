@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { prisma, createId } from '@flor/database';
 import { R2Service } from '../../uploads/r2.service';
 import type { UpdateHomeContentDto } from './dto/update-home-content.dto';
-import sharp = require('sharp');
+import sharp from 'sharp';
 
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB

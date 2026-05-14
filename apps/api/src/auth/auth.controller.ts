@@ -13,7 +13,18 @@ import { Response, Request } from 'express';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './strategies/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
-import { User } from '@flor/database';
+import type { User } from '@flor/database';
+import { IsString, MinLength, MaxLength } from 'class-validator';
+
+class ChangePasswordDto {
+  @IsString()
+  currentPassword!: string;
+
+  @IsString()
+  @MinLength(8)
+  @MaxLength(100)
+  newPassword!: string;
+}
 
 interface AuthenticatedRequest extends Request {
   user?: User;
@@ -55,6 +66,7 @@ export class AuthController {
         email: user.email,
         name: user.name,
         role: user.role,
+        mustChangePassword: user.mustChangePassword,
       },
     };
   }
@@ -100,12 +112,28 @@ export class AuthController {
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  async me(@CurrentUser() user: User) {
+  async me(@CurrentUser() user: User & { mustChangePassword: boolean }) {
     return {
       id: user.id,
       email: user.email,
       name: user.name,
       role: user.role,
+      mustChangePassword: user.mustChangePassword,
     };
+  }
+
+  @Post('admin/change-password')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(200)
+  async changePassword(
+    @CurrentUser('id') userId: string,
+    @Body() dto: ChangePasswordDto,
+  ) {
+    await this.authService.changePassword(
+      userId,
+      dto.currentPassword,
+      dto.newPassword,
+    );
+    return { success: true };
   }
 }

@@ -2,11 +2,12 @@ import {
   Injectable,
   UnauthorizedException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
-import { UserRole } from '@flor/database';
+import { UserRole, prisma } from '@flor/database';
 
 export interface JwtPayload {
   sub: string;
@@ -24,12 +25,15 @@ export interface AuthUser {
   email: string;
   name: string;
   role: UserRole;
+  isActive: boolean;
+  mustChangePassword: boolean;
   emailVerified: boolean;
   createdAt: Date;
 }
 
 const ACCESS_TOKEN_EXPIRY = '15m';
 const REFRESH_TOKEN_EXPIRY = '7d';
+const BCRYPT_ROUNDS = 12;
 
 @Injectable()
 export class AuthService {
@@ -61,6 +65,8 @@ export class AuthService {
       email: user.email,
       name: user.name,
       role: user.role,
+      isActive: user.isActive,
+      mustChangePassword: user.mustChangePassword,
       emailVerified: user.emailVerified,
       createdAt: user.createdAt,
     };
@@ -81,6 +87,10 @@ export class AuthService {
 
     if (user.role !== UserRole.ADMIN && user.role !== UserRole.OPERATOR) {
       throw new UnauthorizedException('Acesso não autorizado');
+    }
+
+    if (!user.isActive) {
+      throw new UnauthorizedException('Conta desativada');
     }
 
     const tokens = await this.generateTokens(user);
@@ -106,6 +116,10 @@ export class AuthService {
         throw new UnauthorizedException('Acesso não autorizado');
       }
 
+      if (!user.isActive) {
+        throw new UnauthorizedException('Conta desativada');
+      }
+
       return this.generateTokens(user);
     } catch {
       throw new UnauthorizedException('Refresh token expirado ou inválido');
@@ -118,6 +132,32 @@ export class AuthService {
       throw new UnauthorizedException('Usuário não encontrado');
     }
     return user;
+  }
+
+  async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<void> {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { passwordHash: true },
+    });
+
+    if (!user?.passwordHash) {
+      throw new UnauthorizedException('Usuário não encontrado');
+    }
+
+    const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!isValid) {
+      throw new BadRequestException('Senha atual incorreta');
+    }
+
+    const newHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
+    await prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash: newHash, mustChangePassword: false },
+    });
   }
 
   private async generateTokens(user: AuthUser): Promise<AuthTokens> {

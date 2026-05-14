@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Truck, Palette, Settings } from 'lucide-react';
+import { Truck, Palette, Users2 } from 'lucide-react';
 import { AdminPageHeader } from '@/components/admin/admin-page-header';
 
 const CONFIG_ITEMS = [
@@ -14,6 +14,12 @@ const CONFIG_ITEMS = [
     icon: Palette,
     title: 'Aparência',
     description: 'Banner, textos da home, WhatsApp e Instagram do footer.',
+  },
+  {
+    href: '/admin/configuracoes/usuarios',
+    icon: Users2,
+    title: 'Usuários',
+    description: 'Adicione ou desative administradores do painel.',
   },
 ];
 
@@ -42,10 +48,6 @@ export default function ConfiguracoesPage() {
             </div>
           </Link>
         ))}
-      </div>
-      <div className="mt-6 flex items-center gap-2 text-sm text-flor-400">
-        <Settings className="h-4 w-4" aria-hidden="true" />
-        <span>Mais configurações estarão disponíveis nas próximas tasks.</span>
       </div>
     </>
   );

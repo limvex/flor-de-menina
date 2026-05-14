@@ -13,6 +13,16 @@ export type AdminUser = {
   email: string;
   name: string;
   role: 'ADMIN' | 'OPERATOR';
+  mustChangePassword: boolean;
+};
+
+export type AdminUserListItem = {
+  id: string;
+  name: string;
+  email: string;
+  isActive: boolean;
+  mustChangePassword: boolean;
+  createdAt: string;
 };
 
 export { SizeChartSchema } from './size-chart.schema';

@@ -425,22 +425,52 @@ async function main() {
   console.log('✅ HomePageContent singleton criado');
 
   // =========================================================
-  // ADMIN
+  // ADMINS
   // =========================================================
-  const adminPassword = await bcrypt.hash('admin123', 12);
-  const admin = await prisma.user.upsert({
-    where: { email: 'admin@flordemenina.store' },
-    update: {},
-    create: {
-      id: createId(),
-      email: 'admin@flordemenina.store',
-      passwordHash: adminPassword,
+  const testAdmins = [
+    {
+      email: 'daniela@flordemenina.store',
       name: 'Daniela Costa',
-      role: UserRole.ADMIN,
-      emailVerified: true,
+      password: 'Admin@2024!',
+      mustChangePassword: false,
     },
+    {
+      email: 'admin@flordemenina.store',
+      name: 'Administrador',
+      password: 'Admin@2024!',
+      mustChangePassword: true,
+    },
+    {
+      email: 'funcionaria@flordemenina.store',
+      name: 'Funcionária',
+      password: 'Temp@1234!',
+      mustChangePassword: true,
+    },
+  ];
+
+  for (const a of testAdmins) {
+    const hash = await bcrypt.hash(a.password, 12);
+    await prisma.user.upsert({
+      where: { email: a.email },
+      update: {},
+      create: {
+        id: createId(),
+        email: a.email,
+        passwordHash: hash,
+        name: a.name,
+        role: UserRole.ADMIN,
+        isActive: true,
+        mustChangePassword: a.mustChangePassword,
+        emailVerified: true,
+      },
+    });
+    console.log(`✅ Admin: ${a.email} / ${a.password}`);
+  }
+
+  // Compatibilidade: alias para testes que usam admin@
+  const admin = await prisma.user.findUniqueOrThrow({
+    where: { email: 'admin@flordemenina.store' },
   });
-  console.log(`✅ Admin: ${admin.email} / admin123`);
 
   // =========================================================
   // CLIENTE 1 — com CPF e telefone já salvos + endereço

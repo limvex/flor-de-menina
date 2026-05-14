@@ -28,6 +28,7 @@ import { PagesModule } from './modules/pages/pages.module';
 import { AdminDashboardModule } from './modules/admin-dashboard/admin-dashboard.module';
 import { AdminOrdersModule } from './modules/admin-orders/admin-orders.module';
 import { HomeContentModule } from './modules/home-content/home-content.module';
+import { AdminUsersModule } from './modules/admin-users/admin-users.module';
 
 @Module({
   imports: [
@@ -66,6 +67,7 @@ import { HomeContentModule } from './modules/home-content/home-content.module';
     AdminDashboardModule,
     AdminOrdersModule,
     HomeContentModule,
+    AdminUsersModule,
   ],
   controllers: [AppController],
   providers: [
