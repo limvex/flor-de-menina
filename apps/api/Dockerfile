@@ -6,14 +6,17 @@ WORKDIR /app
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json turbo.json tsconfig.base.json ./
 COPY packages ./packages
 COPY apps/api ./apps/api
+# Coolify injeta NODE_ENV=production no build; sem devDependencies o install do monorepo falha.
 RUN NODE_ENV=development pnpm install --frozen-lockfile
 RUN pnpm --filter @flor/database db:generate
 RUN pnpm --filter @flor/database build
+# @flor/types publica só dist/ — sem este passo o nest build não acha os .d.ts
 RUN pnpm --filter @flor/types build
 RUN pnpm --filter @flor/api build
+# Cria bundle de produção com apenas as deps necessárias
 RUN pnpm --filter @flor/api deploy --prod /app/deploy
-# Copia o Prisma Client gerado para dentro do deploy
-RUN cp -r /app/packages/database/src/generated /app/deploy/node_modules/@flor/database/src/generated
+# Achar e copiar o Prisma Client gerado para dentro do bundle (caminho com hash do pnpm)
+RUN find /app/deploy/node_modules -path "*/@flor/database/dist" -type d | head -1 | xargs -I{} cp -r /app/packages/database/src/generated {}/generated
 
 # Runtime
 FROM node:20-alpine AS runner
