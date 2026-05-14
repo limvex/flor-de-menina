@@ -2,8 +2,8 @@ import './load-env';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
-import * as cookieParser from 'cookie-parser';
-import * as bodyParser from 'body-parser';
+import cookieParser from 'cookie-parser';
+import bodyParser from 'body-parser';
 import type { NextFunction, Request, Response } from 'express';
 
 async function bootstrap() {

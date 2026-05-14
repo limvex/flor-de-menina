@@ -20,6 +20,7 @@ export async function requireAdmin(): Promise<AdminUser | null> {
       email: string;
       name: string;
       role: string;
+      mustChangePassword: boolean;
     };
 
     if (user.role !== 'ADMIN' && user.role !== 'OPERATOR') return null;
