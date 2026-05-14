@@ -1,13 +1,21 @@
 import './load-env';
+import { parseEnv } from './config/env.schema';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
 import cookieParser from 'cookie-parser';
 import bodyParser from 'body-parser';
 import type { NextFunction, Request, Response } from 'express';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const env = parseEnv();
+  process.env.PORT = String(env.PORT);
+  process.env.API_PORT = String(env.PORT);
+  console.log(`✅ Env validada. Ambiente: ${env.NODE_ENV}`);
+
+  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  app.useLogger(app.get(Logger));
 
   app.enableCors({
     origin:
@@ -46,6 +54,6 @@ async function bootstrap() {
     }),
   );
 
-  await app.listen(process.env.API_PORT ?? 3333);
+  await app.listen(env.PORT);
 }
 bootstrap();
