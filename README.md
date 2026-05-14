@@ -74,9 +74,14 @@ pnpm lint          # Lint em todos os pacotes
 pnpm typecheck     # Type-check em todos os pacotes
 pnpm format        # Formata todos os arquivos com Prettier
 
-pnpm db:migrate    # Roda migrations do Prisma
+pnpm db:migrate    # Roda migrations do Prisma (dev)
+pnpm db:migrate:deploy  # deploy de migrations (produção / CI)
 pnpm db:studio     # Abre Prisma Studio (visualizar banco)
-pnpm db:seed       # Popula banco com dados iniciais
+pnpm db:seed       # Popula banco com dados iniciais (dev)
+pnpm db:seed:prod  # Seed mínimo de produção (admin + categorias) — ver `.env.example`
+
+# Backup + migrate em produção (na VPS, com DATABASE_URL)
+bash scripts/migrate-prod.sh
 ```
 
 ## Variáveis de ambiente
