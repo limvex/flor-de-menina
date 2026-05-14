@@ -171,6 +171,9 @@ Atualize esta seção a cada task concluída. Use os emojis:
 | 69  | Admin operacional (escopo reduzido)   | ✅ Pronta pra merge                         | `test/69-admin-operacional`     | -   |
 | 73  | Multi-admin simples (sem convite)     | ✅ Concluída (local)                        | `feat/72-multi-admin`           | -   |
 | 74  | CMS simples de home                   | ✅ Concluída (local)                        | `feat/73-cms-home`              | -   |
+| 71  | Production readiness (prep deploy)    | ⏳ Aguardando validação humana              | `chore/71-production-readiness` | -   |
+
+- `2026-05-13` — Task #71 (Production readiness): spec `docs/spec-71-production-readiness.md`, validação de env com Zod na API (`parseEnv` no `main.ts`) e Web (`apps/web/src/lib/env.ts`), `GET /health` (DB+Redis) e `GET /api/health`, logs JSON/pretty com `nestjs-pino`, seed `seed.production.ts` + `pnpm db:seed:prod`, scripts `migrate-prod.sh` / `smoke-deploy.sh`, Dockerfiles + `docker-compose.production.yml`, `docs/DEPLOY.md`, `.env.production.example`, CI com job opcional de compose. Deploy Coolify permanece manual.
 
 - `2026-05-12` — Domínio global: `flordemenina.site` → `flordemenina.store` em todos os arquivos (seed, E2E, sitemap, robots, footer, templates, adapters, CLAUDE.md, docs).
 
@@ -276,6 +279,7 @@ Atualize esta seção a cada task concluída. Use os emojis:
 - **Task #69 — Admin operacional**: transições rígidas `PAID → PROCESSING → SHIPPED → DELIVERED` ou cancelamento (sem cancelar após `SHIPPED`/`DELIVERED`). `SHIPPED` exige `trackingCode`. Cancelamento com estoque: `restoreStockForOrder` + `reverseCouponUsage`. Histórico em `OrderStatusHistory`. E-mail dev: Maildev `http://localhost:1080` (SMTP). Opcional: `WHATSAPP_SUPPORT_URL` e **`INSTAGRAM_URL`** no `.env` para links no rodapé do HTML operacional.
 - **Labels PT-BR centralizados em `apps/web/src/lib/orders/status-labels.ts`** — toda UI de pedidos admin usa `getStatusLabel()` / `getTransitionLabel()`, nunca renderiza enum raw.
 - **Templates de e-mail operacionais (Task #69)** em `EmailService`: helper `renderEmailLayout()` — header + card + footer padronizado (SMTP / Maildev em dev).
+- **Task #71 — Production readiness**: `parseEnv()` em `apps/api/src/main.ts` antes do Nest; em produção nunca `prisma migrate dev` — usar `scripts/migrate-prod.sh` ou `pnpm db:migrate:deploy`; seed mínimo `pnpm db:seed:prod` (idempotente); health `GET /health` (API) e `GET /api/health` (Web); logs JSON em produção (`nestjs-pino`); Dockerfiles + `docker-compose.production.yml`; guia `docs/DEPLOY.md`.
 
 ## 🔗 Links úteis
 

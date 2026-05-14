@@ -14,9 +14,11 @@
     "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
     "db:generate": "pnpm --filter @flor/database db:generate",
     "db:migrate": "pnpm --filter @flor/database db:migrate",
+    "db:migrate:deploy": "pnpm --filter @flor/database db:migrate:deploy",
     "db:studio": "pnpm --filter @flor/database db:studio",
     "db:seed": "pnpm --filter @flor/database db:seed",
     "db:seed:institutional": "pnpm --filter @flor/database db:seed:institutional",
+    "db:seed:prod": "pnpm --filter @flor/database db:seed:prod",
     "db:prepare": "pnpm db:generate && pnpm --filter @flor/database db:migrate:deploy && pnpm db:seed",
     "db:reset": "pnpm --filter @flor/database db:reset",
     "prepare": "husky"
