@@ -5,7 +5,7 @@ RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
 
 WORKDIR /app
 
-COPY pnpm-workspace.yaml pnpm-lock.yaml package.json turbo.json ./
+COPY pnpm-workspace.yaml pnpm-lock.yaml package.json turbo.json tsconfig.base.json ./
 COPY packages ./packages
 COPY apps/api ./apps/api
 
@@ -13,6 +13,8 @@ COPY apps/api ./apps/api
 RUN NODE_ENV=development pnpm install --frozen-lockfile
 RUN pnpm --filter @flor/database db:generate
 RUN pnpm --filter @flor/database build
+# @flor/types publica só dist/ — sem este passo o nest build não acha os .d.ts (diferente do web, que mapeia paths → src)
+RUN pnpm --filter @flor/types build
 RUN pnpm --filter @flor/api build
 
 # Runtime
