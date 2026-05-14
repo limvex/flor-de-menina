@@ -27,9 +27,10 @@ COPY --from=builder /app/deploy/node_modules ./node_modules
 COPY --from=builder /app/deploy/package.json ./package.json
 COPY --from=builder /app/apps/api/dist ./dist
 COPY --from=builder /app/packages/database/prisma ./prisma
+COPY --from=builder /app/packages/database/prisma.config.ts ./prisma.config.ts
 USER nestjs
 EXPOSE 3333
 ENV NODE_ENV=production
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
   CMD curl -fsS http://127.0.0.1:3333/health || exit 1
-CMD ["sh", "-c", "npx prisma migrate deploy --schema=./prisma/schema.prisma && node dist/main.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
