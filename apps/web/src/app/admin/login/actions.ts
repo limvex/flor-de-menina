@@ -43,10 +43,12 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
     const name = nameValue.slice(0, eqIdx);
     const value = nameValue.slice(eqIdx + 1);
 
+    const cookieDomain = process.env.COOKIE_DOMAIN?.trim() || undefined;
     const opts: Parameters<typeof cookieStore.set>[2] = {
       httpOnly: true,
       sameSite: 'lax',
       secure: process.env.NODE_ENV === 'production',
+      ...(cookieDomain ? { domain: cookieDomain } : {}),
     };
 
     for (const dir of directives) {
@@ -75,8 +77,14 @@ export async function logoutAction(): Promise<void> {
     // ignora erros de rede no logout
   }
 
-  cookieStore.delete('access_token');
-  cookieStore.delete('refresh_token');
+  const cookieDomain = process.env.COOKIE_DOMAIN?.trim() || undefined;
+  if (cookieDomain) {
+    cookieStore.delete({ name: 'access_token', domain: cookieDomain });
+    cookieStore.delete({ name: 'refresh_token', domain: cookieDomain });
+  } else {
+    cookieStore.delete('access_token');
+    cookieStore.delete('refresh_token');
+  }
 
   redirect('/admin/login');
 }
