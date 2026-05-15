@@ -17,9 +17,10 @@ RUN pnpm --filter @flor/api build
 RUN pnpm --filter @flor/api deploy --prod /app/deploy
 # Achar e copiar o Prisma Client gerado para dentro do bundle (caminho com hash do pnpm)
 RUN find /app/deploy/node_modules -path "*/@flor/database/dist" -type d | head -1 | xargs -I{} cp -r /app/packages/database/src/generated {}/generated
-# Copia o prisma CLI para o bundle (necessário para rodar migrations em runtime)
-RUN cp -r /app/node_modules/.bin/prisma /app/deploy/node_modules/.bin/prisma 2>/dev/null || true
-RUN cp -r /app/node_modules/prisma /app/deploy/node_modules/prisma 2>/dev/null || true
+# Garante que o prisma CLI está no bundle (pnpm deploy já deve incluir via @flor/database,
+# mas o cp -rL garante o conteúdo real em vez de symlink quebrado do virtual store)
+RUN cp -rL /app/node_modules/.bin/prisma /app/deploy/node_modules/.bin/prisma 2>/dev/null || true
+RUN cp -rL /app/node_modules/prisma /app/deploy/node_modules/prisma 2>/dev/null || true
 
 # Runtime
 FROM node:20-alpine AS runner
