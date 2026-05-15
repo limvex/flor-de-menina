@@ -15,18 +15,23 @@ export async function HomePage() {
   return (
     <>
       {/* Banner principal */}
-      <section className="relative flex min-h-[340px] flex-col items-center justify-center overflow-hidden bg-bege-50 px-4 py-20 text-center md:min-h-[420px]">
+      <section className="relative -mt-[92px] lg:-mt-[104px] flex min-h-[100dvh] items-center justify-center overflow-hidden bg-bege-50 text-center">
         {content.bannerImageUrl && (
-          <Image
-            src={content.bannerImageUrl}
-            alt={content.bannerTitle ?? 'Banner Flor de Menina'}
-            fill
-            priority
-            className="object-cover"
-            sizes="100vw"
-          />
+          <>
+            <Image
+              src={content.bannerImageUrl}
+              alt={content.bannerTitle ?? 'Banner Flor de Menina'}
+              fill
+              priority
+              className="object-cover object-center"
+              sizes="100vw"
+            />
+            <div className="absolute inset-0 bg-black/30" />
+          </>
         )}
-        <div className={`relative z-10 ${content.bannerImageUrl ? 'text-white drop-shadow' : ''}`}>
+        <div
+          className={`relative z-10 px-6 lg:px-12 ${content.bannerImageUrl ? 'text-white' : ''}`}
+        >
           {!content.bannerTitle && !content.bannerSubtitle && !content.bannerImageUrl && (
             <>
               <p className="mb-4 font-sans text-[11px] font-medium tracking-[0.2em] uppercase text-flor-400">
@@ -42,7 +47,7 @@ export async function HomePage() {
             </>
           )}
           {content.bannerTitle && (
-            <h1 className="font-serif text-4xl font-normal tracking-[0.15em] uppercase md:text-6xl">
+            <h1 className="font-serif text-4xl font-normal tracking-[0.15em] uppercase drop-shadow md:text-6xl">
               {content.bannerTitle}
             </h1>
           )}
@@ -54,7 +59,7 @@ export async function HomePage() {
           {hasBannerCta && (
             <Link
               href={content.bannerButtonUrl!}
-              className="mt-8 inline-flex items-center justify-center rounded-full border border-current px-10 py-3.5 font-sans text-xs font-medium tracking-[0.2em] uppercase transition-colors hover:bg-white/20"
+              className="mt-8 inline-block rounded-full bg-white px-8 py-4 font-sans text-sm font-medium uppercase tracking-widest text-flor-800 transition-colors duration-300 hover:bg-flor-800 hover:text-white"
             >
               {content.bannerButtonText}
             </Link>
@@ -62,7 +67,11 @@ export async function HomePage() {
           {!hasBannerCta && !content.bannerTitle && !content.bannerSubtitle && (
             <Link
               href="/produtos"
-              className="mt-8 inline-flex items-center justify-center rounded-full border border-flor-600 px-10 py-3.5 font-sans text-xs font-medium tracking-[0.2em] uppercase text-flor-600 transition-colors hover:bg-flor-600 hover:text-white"
+              className={
+                content.bannerImageUrl
+                  ? 'mt-8 inline-block rounded-full bg-white px-8 py-4 font-sans text-sm font-medium uppercase tracking-widest text-flor-800 transition-colors duration-300 hover:bg-flor-800 hover:text-white'
+                  : 'mt-8 inline-flex items-center justify-center rounded-full border border-flor-600 px-10 py-3.5 font-sans text-xs font-medium tracking-[0.2em] uppercase text-flor-600 transition-colors hover:bg-flor-600 hover:text-white'
+              }
             >
               Ver coleção
             </Link>

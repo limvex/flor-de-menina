@@ -10,7 +10,7 @@ export function LojaShell({ children }: { children: React.ReactNode }) {
     <CartProvider>
       <TopBar />
       <Header />
-      <main className="flex-1">{children}</main>
+      <main className="flex-1 pt-[92px] lg:pt-[104px]">{children}</main>
       <Footer />
       <Toaster position="top-right" richColors />
     </CartProvider>

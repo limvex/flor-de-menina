@@ -5,13 +5,16 @@ import { ShoppingBag } from 'lucide-react';
 interface CartBadgeProps {
   count?: number;
   onClick?: () => void;
+  isTransparent?: boolean;
 }
 
-export function CartBadge({ count = 0, onClick }: CartBadgeProps) {
+export function CartBadge({ count = 0, onClick, isTransparent = false }: CartBadgeProps) {
   return (
     <button
       onClick={onClick}
-      className="relative cursor-pointer p-2 text-flor-500 transition-colors hover:text-flor-700"
+      className={`relative cursor-pointer p-2 transition-colors ${
+        isTransparent ? 'text-white hover:text-white/70' : 'text-flor-500 hover:text-flor-700'
+      }`}
       aria-label={`Sacola de compras (${count} ${count === 1 ? 'item' : 'itens'})`}
     >
       <ShoppingBag className="h-5 w-5" />
