@@ -15,6 +15,7 @@ import { JwtAuthGuard } from './strategies/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 import type { User } from '@flor/database';
 import { IsString, MinLength, MaxLength } from 'class-validator';
+import { getAuthCookieOptions, getClearCookieOptions } from './helpers/cookie';
 
 class ChangePasswordDto {
   @IsString()
@@ -45,20 +46,17 @@ export class AuthController {
       body.password,
     );
 
-    res.cookie('access_token', tokens.accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 15 * 60 * 1000,
-    });
+    res.cookie(
+      'access_token',
+      tokens.accessToken,
+      getAuthCookieOptions(15 * 60 * 1000),
+    );
 
-    res.cookie('refresh_token', tokens.refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/auth/admin/refresh',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    res.cookie(
+      'refresh_token',
+      tokens.refreshToken,
+      getAuthCookieOptions(7 * 24 * 60 * 60 * 1000, '/auth/admin/refresh'),
+    );
 
     return {
       user: {
@@ -84,20 +82,17 @@ export class AuthController {
 
     const tokens = await this.authService.refresh(refreshToken);
 
-    res.cookie('access_token', tokens.accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 15 * 60 * 1000,
-    });
+    res.cookie(
+      'access_token',
+      tokens.accessToken,
+      getAuthCookieOptions(15 * 60 * 1000),
+    );
 
-    res.cookie('refresh_token', tokens.refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/auth/admin/refresh',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    res.cookie(
+      'refresh_token',
+      tokens.refreshToken,
+      getAuthCookieOptions(7 * 24 * 60 * 60 * 1000, '/auth/admin/refresh'),
+    );
 
     return { success: true };
   }
@@ -105,8 +100,11 @@ export class AuthController {
   @Post('admin/logout')
   @HttpCode(200)
   async logout(@Res({ passthrough: true }) res: Response) {
-    res.clearCookie('access_token', { path: '/' });
-    res.clearCookie('refresh_token', { path: '/auth/admin/refresh' });
+    res.clearCookie('access_token', getClearCookieOptions());
+    res.clearCookie(
+      'refresh_token',
+      getClearCookieOptions('/auth/admin/refresh'),
+    );
     return { success: true };
   }
 
