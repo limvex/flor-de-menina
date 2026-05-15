@@ -30,7 +30,7 @@ COPY --from=builder /app/deploy/node_modules ./node_modules
 COPY --from=builder /app/deploy/package.json ./package.json
 COPY --from=builder /app/apps/api/dist ./dist
 COPY --from=builder /app/packages/database/prisma ./prisma
-COPY --from=builder /app/packages/database/prisma.config.ts ./prisma.config.ts
+COPY --from=builder /app/packages/database/prisma.config.js ./prisma.config.js
 USER nestjs
 EXPOSE 3333
 ENV NODE_ENV=production
