@@ -22,19 +22,12 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { GoogleCallbackDto } from './dto/google-callback.dto';
 import { ResendVerificationDto } from './dto/resend-verification.dto';
+import { getAuthCookieOptions, getClearCookieOptions } from '../helpers/cookie';
 
 const ACCESS_COOKIE = 'flor_customer_token';
 const REFRESH_COOKIE = 'flor_customer_refresh';
 const ACCESS_MAX_AGE = 15 * 60 * 1000;
 const REFRESH_MAX_AGE = 30 * 24 * 60 * 60 * 1000;
-
-function cookieOptions(isProd: boolean) {
-  return {
-    httpOnly: true,
-    secure: isProd,
-    sameSite: 'lax' as const,
-  };
-}
 
 @Controller('auth/customer')
 @UsePipes(
@@ -45,8 +38,6 @@ function cookieOptions(isProd: boolean) {
   }),
 )
 export class CustomerAuthController {
-  private isProd = process.env.NODE_ENV === 'production';
-
   constructor(private service: CustomerAuthService) {}
 
   @Post('register')
@@ -92,8 +83,11 @@ export class CustomerAuthController {
       await this.service.logout(user.id, refreshToken);
     }
 
-    res.clearCookie(ACCESS_COOKIE, { path: '/' });
-    res.clearCookie(REFRESH_COOKIE, { path: '/auth/customer/refresh' });
+    res.clearCookie(ACCESS_COOKIE, getClearCookieOptions());
+    res.clearCookie(
+      REFRESH_COOKIE,
+      getClearCookieOptions('/auth/customer/refresh'),
+    );
 
     return { success: true };
   }
@@ -190,17 +184,16 @@ export class CustomerAuthController {
     accessToken: string,
     refreshToken: string,
   ) {
-    const base = cookieOptions(this.isProd);
+    res.cookie(
+      ACCESS_COOKIE,
+      accessToken,
+      getAuthCookieOptions(ACCESS_MAX_AGE),
+    );
 
-    res.cookie(ACCESS_COOKIE, accessToken, {
-      ...base,
-      maxAge: ACCESS_MAX_AGE,
-    });
-
-    res.cookie(REFRESH_COOKIE, refreshToken, {
-      ...base,
-      maxAge: REFRESH_MAX_AGE,
-      path: '/auth/customer/refresh',
-    });
+    res.cookie(
+      REFRESH_COOKIE,
+      refreshToken,
+      getAuthCookieOptions(REFRESH_MAX_AGE, '/auth/customer/refresh'),
+    );
   }
 }

@@ -68,6 +68,8 @@ const baseSchema = z
     ADMIN_SEED_PASSWORD: z.string().min(8).optional(),
 
     LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).optional(),
+
+    COOKIE_DOMAIN: z.string().optional(),
   })
   .superRefine((data, ctx) => {
     const needsEncryption =
