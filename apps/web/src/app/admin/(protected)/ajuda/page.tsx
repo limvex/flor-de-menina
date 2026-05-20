@@ -1,60 +1,534 @@
+'use client';
+
+import { useState } from 'react';
 import {
   Package,
   Tag,
-  BarChart3,
+  BarChart2,
   ShoppingBag,
   Ticket,
-  Palette,
+  Paintbrush,
   Truck,
   Users,
   FileText,
   HelpCircle,
+  Search,
+  ChevronDown,
+  ChevronUp,
+  AlertTriangle,
+  Lightbulb,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { AdminPageHeader } from '@/components/admin/admin-page-header';
 
-function Section({
-  icon: Icon,
-  title,
-  children,
-}: {
-  icon: React.ElementType;
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+type Badge = 'Fácil' | 'Médio';
+
+interface StepsBlock {
+  type: 'steps';
   title: string;
-  children: React.ReactNode;
-}) {
+  items: string[];
+}
+
+interface StatusListBlock {
+  type: 'status-list';
+  title: string;
+  items: string[];
+}
+
+interface TipBlock {
+  type: 'tip';
+  text: string;
+}
+
+interface WarningBlock {
+  type: 'warning';
+  text: string;
+}
+
+type ContentBlock = StepsBlock | StatusListBlock | TipBlock | WarningBlock;
+
+interface Section {
+  id: string;
+  icon: LucideIcon;
+  title: string;
+  badge: Badge;
+  description: string;
+  content: ContentBlock[];
+}
+
+// ─── Data ────────────────────────────────────────────────────────────────────
+
+const SECTIONS: Section[] = [
+  {
+    id: 'produtos',
+    icon: Package,
+    title: 'Produtos',
+    badge: 'Médio',
+    description: 'Cadastre, edite e organize os produtos da loja',
+    content: [
+      {
+        type: 'steps',
+        title: 'Como cadastrar um produto',
+        items: [
+          'Clique em Produtos no menu lateral',
+          'Clique no botão Novo produto (canto superior direito)',
+          'Preencha nome, descrição e preço',
+          'Adicione as fotos (arraste ou clique para selecionar)',
+          'Escolha a categoria',
+          'Adicione variações (tamanhos e cores disponíveis)',
+          'Clique em Salvar produto',
+        ],
+      },
+      {
+        type: 'steps',
+        title: 'Como editar um produto',
+        items: [
+          'Clique em Produtos no menu',
+          'Encontre o produto na lista e clique nele',
+          'Altere o que precisar e clique em Salvar',
+        ],
+      },
+      {
+        type: 'steps',
+        title: 'Como tirar um produto da loja sem apagar',
+        items: [
+          'Abra o produto',
+          'Mude o status para Inativo',
+          'Salve — o produto some da loja mas fica salvo no sistema',
+        ],
+      },
+    ],
+  },
+  {
+    id: 'categorias',
+    icon: Tag,
+    title: 'Categorias',
+    badge: 'Fácil',
+    description: 'Organize os produtos em grupos para facilitar a navegação',
+    content: [
+      {
+        type: 'steps',
+        title: 'Como criar uma categoria',
+        items: [
+          'Clique em Categorias no menu',
+          'Clique em Nova categoria',
+          'Digite o nome (ex: Vestidos, Blusas, Calças)',
+          'Salve',
+        ],
+      },
+      {
+        type: 'steps',
+        title: 'Como editar ou excluir',
+        items: [
+          'Clique em Categorias',
+          'Clique na categoria desejada',
+          'Edite o nome ou clique em Excluir',
+        ],
+      },
+      {
+        type: 'warning',
+        text: 'Não exclua uma categoria que ainda tem produtos — mova os produtos primeiro.',
+      },
+    ],
+  },
+  {
+    id: 'estoque',
+    icon: BarChart2,
+    title: 'Estoque',
+    badge: 'Fácil',
+    description: 'Controle quantas peças de cada tamanho e cor estão disponíveis',
+    content: [
+      {
+        type: 'steps',
+        title: 'Como ver o estoque atual',
+        items: [
+          'Clique em Estoque no menu',
+          'Você verá todos os produtos com quantidade disponível por tamanho e cor',
+        ],
+      },
+      {
+        type: 'steps',
+        title: 'Como ajustar o estoque',
+        items: [
+          'Clique em Estoque',
+          'Encontre a variação (ex: Vestido Floral — P — Rosa)',
+          'Clique no item',
+          'Altere a quantidade e salve',
+        ],
+      },
+      {
+        type: 'tip',
+        text: 'Quando o estoque de uma variação chega a zero, ela aparece como Esgotado automaticamente na loja.',
+      },
+    ],
+  },
+  {
+    id: 'pedidos',
+    icon: ShoppingBag,
+    title: 'Pedidos',
+    badge: 'Fácil',
+    description: 'Acompanhe e atualize todos os pedidos feitos na loja',
+    content: [
+      {
+        type: 'steps',
+        title: 'Como ver os pedidos',
+        items: ['Clique em Pedidos no menu', 'Você verá todos os pedidos com status, valor e data'],
+      },
+      {
+        type: 'status-list',
+        title: 'O que significa cada status',
+        items: [
+          'Aguardando pagamento — cliente fez o pedido mas ainda não pagou',
+          'Pago — pagamento confirmado, separe para envio',
+          'Enviado — produto saiu para entrega',
+          'Entregue — cliente recebeu',
+          'Cancelado — pedido cancelado',
+        ],
+      },
+      {
+        type: 'steps',
+        title: 'Como atualizar o status de um pedido',
+        items: [
+          'Clique no pedido',
+          'Altere o status no campo correspondente',
+          'Salve — o cliente recebe e-mail automático com a atualização',
+        ],
+      },
+      {
+        type: 'tip',
+        text: 'Os dados de entrega do cliente aparecem dentro de cada pedido.',
+      },
+    ],
+  },
+  {
+    id: 'cupons',
+    icon: Ticket,
+    title: 'Cupons',
+    badge: 'Fácil',
+    description: 'Crie códigos de desconto para promoções e campanhas',
+    content: [
+      {
+        type: 'steps',
+        title: 'Como criar um cupom',
+        items: [
+          'Clique em Cupons no menu',
+          'Clique em Novo cupom',
+          'Defina o código (ex: BEMVINDA10), tipo (porcentagem ou valor fixo) e valor',
+          'Defina a data de validade se quiser',
+          'Salve',
+        ],
+      },
+      {
+        type: 'steps',
+        title: 'Como desativar um cupom',
+        items: [
+          'Clique no cupom',
+          'Mude o status para Inativo',
+          'Salve — o cupom para de funcionar imediatamente',
+        ],
+      },
+    ],
+  },
+  {
+    id: 'aparencia',
+    icon: Paintbrush,
+    title: 'Aparência',
+    badge: 'Fácil',
+    description: 'Troque o banner da página inicial e personalize a loja',
+    content: [
+      {
+        type: 'steps',
+        title: 'Como trocar o banner da home',
+        items: [
+          'Clique em Configurações no menu',
+          'Clique em Aparência',
+          'Na seção de banners, clique em Adicionar banner ou substitua a imagem existente',
+          'Faça o upload da nova imagem',
+          'Preencha o título e texto do botão se quiser',
+          'Clique em Salvar banners',
+        ],
+      },
+      {
+        type: 'tip',
+        text: 'Use imagens horizontais e de boa qualidade. O banner aparece na página inicial da loja.',
+      },
+    ],
+  },
+  {
+    id: 'frete',
+    icon: Truck,
+    title: 'Frete',
+    badge: 'Médio',
+    description: 'Configure as opções de entrega disponíveis para os clientes',
+    content: [
+      {
+        type: 'steps',
+        title: 'Como configurar o frete',
+        items: [
+          'Clique em Configurações',
+          'Clique em Frete',
+          'Configure as opções de entrega disponíveis',
+          'Salve',
+        ],
+      },
+    ],
+  },
+  {
+    id: 'usuarios',
+    icon: Users,
+    title: 'Usuários',
+    badge: 'Médio',
+    description: 'Gerencie quem tem acesso ao painel administrativo',
+    content: [
+      {
+        type: 'steps',
+        title: 'Como adicionar um novo administrador',
+        items: [
+          'Clique em Configurações',
+          'Clique em Usuários',
+          'Clique em Novo usuário',
+          'Preencha nome, e-mail e defina a função (Admin ou Operador)',
+          'Salve — a pessoa receberá e-mail para criar a senha',
+        ],
+      },
+      {
+        type: 'warning',
+        text: 'Só crie usuários admin para pessoas de confiança. Eles terão acesso total ao sistema.',
+      },
+    ],
+  },
+  {
+    id: 'paginas',
+    icon: FileText,
+    title: 'Páginas',
+    badge: 'Fácil',
+    description: 'Edite textos institucionais como Sobre nós e Política de trocas',
+    content: [
+      {
+        type: 'steps',
+        title: 'Como editar uma página',
+        items: [
+          'Clique em Páginas no menu',
+          'Clique na página que deseja editar',
+          'Edite o conteúdo no editor',
+          'Salve — a página é atualizada automaticamente no site',
+        ],
+      },
+    ],
+  },
+  {
+    id: 'duvidas',
+    icon: HelpCircle,
+    title: 'Dúvidas frequentes',
+    badge: 'Fácil',
+    description: 'Respostas para as perguntas mais comuns',
+    content: [
+      {
+        type: 'steps',
+        title: 'O produto não aparece na loja — o que fazer?',
+        items: [
+          'Verifique se o status do produto está como Ativo',
+          'Confira se ele tem pelo menos uma variação com estoque maior que zero',
+        ],
+      },
+      {
+        type: 'steps',
+        title: 'O cliente não recebeu o e-mail de confirmação',
+        items: [
+          'Peça para verificar a pasta de spam',
+          'Se não estiver lá, abra o pedido e confirme se o e-mail do cliente está correto',
+        ],
+      },
+      {
+        type: 'steps',
+        title: 'Como cancelar um pedido',
+        items: [
+          'Abra o pedido e mude o status para Cancelado',
+          'Se o pagamento já foi feito, entre em contato com o cliente para combinar o reembolso',
+        ],
+      },
+      {
+        type: 'steps',
+        title: 'Esqueci a senha do admin',
+        items: ['Na tela de login, clique em Esqueci minha senha', 'Siga as instruções no e-mail'],
+      },
+    ],
+  },
+];
+
+// ─── Status dot colors ────────────────────────────────────────────────────────
+
+const STATUS_COLORS: Record<number, string> = {
+  0: 'bg-amber-400',
+  1: 'bg-green-500',
+  2: 'bg-blue-500',
+  3: 'bg-green-700',
+  4: 'bg-red-500',
+};
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+function StepsBlock({ block }: { block: StepsBlock }) {
   return (
-    <div className="rounded-lg border border-stone-200 bg-white p-6 space-y-4">
-      <h2 className="font-serif text-xl text-stone-900 flex items-center gap-2">
-        <Icon className="h-5 w-5 text-flor-600 shrink-0" aria-hidden="true" />
-        {title}
-      </h2>
-      {children}
+    <div className="space-y-3">
+      {block.title && <p className="text-sm font-semibold text-stone-700">{block.title}</p>}
+      <ol className="space-y-0">
+        {block.items.map((item, i) => {
+          const isLast = i === block.items.length - 1;
+          return (
+            <li key={i} className="flex gap-3">
+              <div className="flex flex-col items-center shrink-0">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-stone-800 text-white text-xs font-semibold shrink-0">
+                  {i + 1}
+                </span>
+                {!isLast && <div className="w-0.5 flex-1 bg-stone-200 my-1" />}
+              </div>
+              <p className="text-sm text-stone-600 leading-relaxed pb-3">{item}</p>
+            </li>
+          );
+        })}
+      </ol>
     </div>
   );
 }
 
-function Steps({ items }: { items: string[] }) {
+function StatusListBlock({ block }: { block: StatusListBlock }) {
   return (
-    <ol className="space-y-1.5 text-stone-600 text-sm leading-relaxed list-decimal list-inside">
-      {items.map((item, i) => (
-        <li key={i} dangerouslySetInnerHTML={{ __html: item }} />
-      ))}
-    </ol>
+    <div className="space-y-3">
+      {block.title && <p className="text-sm font-semibold text-stone-700">{block.title}</p>}
+      <ul className="space-y-2">
+        {block.items.map((item, i) => {
+          const [label, ...rest] = item.split(' — ');
+          const desc = rest.join(' — ');
+          return (
+            <li key={i} className="flex items-start gap-2.5">
+              <span
+                className={`mt-1.5 h-2.5 w-2.5 rounded-full shrink-0 ${STATUS_COLORS[i] ?? 'bg-stone-400'}`}
+              />
+              <span className="text-sm text-stone-600 leading-relaxed">
+                <strong className="font-semibold text-stone-800">{label}</strong>
+                {desc ? ` — ${desc}` : ''}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }
 
-function Tip({ children }: { children: React.ReactNode }) {
+function TipBlock({ block }: { block: TipBlock }) {
   return (
-    <p className="rounded-md bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800 leading-relaxed">
-      {children}
-    </p>
+    <div className="flex gap-3 rounded-r-lg border-l-4 border-amber-400 bg-amber-50 p-4">
+      <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+      <p className="text-sm text-amber-800 leading-relaxed">{block.text}</p>
+    </div>
   );
 }
 
-function SubHeading({ children }: { children: React.ReactNode }) {
-  return <h3 className="font-medium text-stone-800 text-sm">{children}</h3>;
+function WarningBlock({ block }: { block: WarningBlock }) {
+  return (
+    <div className="flex gap-3 rounded-r-lg border-l-4 border-red-400 bg-red-50 p-4">
+      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
+      <p className="text-sm text-red-800 leading-relaxed">{block.text}</p>
+    </div>
+  );
 }
+
+function BlockRenderer({ block }: { block: ContentBlock }) {
+  if (block.type === 'steps') return <StepsBlock block={block} />;
+  if (block.type === 'status-list') return <StatusListBlock block={block} />;
+  if (block.type === 'tip') return <TipBlock block={block} />;
+  if (block.type === 'warning') return <WarningBlock block={block} />;
+  return null;
+}
+
+function BadgeChip({ badge }: { badge: Badge }) {
+  if (badge === 'Fácil') {
+    return (
+      <span className="inline-flex items-center rounded-full border border-green-200 bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">
+        Fácil
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
+      Médio
+    </span>
+  );
+}
+
+function SectionCard({
+  section,
+  isOpen,
+  onToggle,
+}: {
+  section: Section;
+  isOpen: boolean;
+  onToggle: () => void;
+}) {
+  const Icon = section.icon;
+  return (
+    <div id={section.id} className="rounded-lg border border-stone-200 bg-white overflow-hidden">
+      <button
+        onClick={onToggle}
+        className="w-full flex items-start gap-4 p-5 text-left transition-colors hover:bg-stone-50"
+        aria-expanded={isOpen}
+      >
+        <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-stone-100">
+          <Icon className="h-5 w-5 text-stone-700" aria-hidden="true" />
+        </span>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-semibold text-stone-900">{section.title}</span>
+            <BadgeChip badge={section.badge} />
+          </div>
+          <p className="mt-0.5 text-sm text-stone-500 leading-snug">{section.description}</p>
+        </div>
+        {isOpen ? (
+          <ChevronUp className="mt-1 h-4 w-4 shrink-0 text-stone-400" />
+        ) : (
+          <ChevronDown className="mt-1 h-4 w-4 shrink-0 text-stone-400" />
+        )}
+      </button>
+
+      <div
+        className={`transition-all duration-300 ease-in-out ${
+          isOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0 overflow-hidden'
+        }`}
+      >
+        <div className="border-t border-stone-100 px-5 pb-5 pt-4 space-y-5">
+          {section.content.map((block, i) => (
+            <BlockRenderer key={i} block={block} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AjudaPage() {
+  const [search, setSearch] = useState('');
+  const [openSections, setOpenSections] = useState<string[]>([]);
+
+  const filtered = SECTIONS.filter(
+    (s) =>
+      s.title.toLowerCase().includes(search.toLowerCase()) ||
+      s.description.toLowerCase().includes(search.toLowerCase()),
+  );
+
+  const visibleSections = search.trim() ? filtered : SECTIONS;
+  const effectiveOpen = search.trim() ? filtered.map((s) => s.id) : openSections;
+
+  function toggle(id: string) {
+    if (search.trim()) return;
+    setOpenSections((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
+
   return (
     <div>
       <AdminPageHeader
@@ -62,292 +536,71 @@ export default function AjudaPage() {
         description="Tudo que você precisa saber para usar o painel."
       />
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Produtos */}
-        <Section icon={Package} title="Produtos">
-          <div className="space-y-3">
-            <SubHeading>Como cadastrar um produto:</SubHeading>
-            <Steps
-              items={[
-                'Clique em <strong>Produtos</strong> no menu lateral',
-                'Clique no botão <strong>Novo produto</strong> (canto superior direito)',
-                'Preencha o nome do produto, descrição e preço',
-                'Adicione as fotos do produto (arraste ou clique para selecionar)',
-                'Escolha a categoria do produto',
-                'Adicione as variações (tamanhos e cores disponíveis)',
-                'Clique em <strong>Salvar produto</strong>',
-              ]}
-            />
-          </div>
-          <div className="space-y-3">
-            <SubHeading>Como editar um produto:</SubHeading>
-            <Steps
-              items={[
-                'Clique em <strong>Produtos</strong> no menu',
-                'Encontre o produto na lista e clique nele',
-                'Altere o que precisar e clique em <strong>Salvar</strong>',
-              ]}
-            />
-          </div>
-          <div className="space-y-3">
-            <SubHeading>Como desativar um produto (tirar da loja sem apagar):</SubHeading>
-            <Steps
-              items={[
-                'Abra o produto',
-                'Mude o status para <strong>Inativo</strong>',
-                'Salve — o produto some da loja mas fica salvo no sistema',
-              ]}
-            />
-          </div>
-        </Section>
+      {/* Buscador */}
+      <div className="relative mb-6">
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400 pointer-events-none" />
+        <input
+          type="text"
+          placeholder="Buscar na ajuda... (ex: produto, pedido, estoque)"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full rounded-lg border border-stone-200 bg-white py-2.5 pl-10 pr-4 text-sm text-stone-800 placeholder:text-stone-400 outline-none focus:border-stone-400 focus:ring-2 focus:ring-stone-200 transition-shadow"
+        />
+      </div>
 
-        {/* Categorias */}
-        <Section icon={Tag} title="Categorias">
-          <div className="space-y-3">
-            <SubHeading>Como criar uma categoria:</SubHeading>
-            <Steps
-              items={[
-                'Clique em <strong>Categorias</strong> no menu',
-                'Clique em <strong>Nova categoria</strong>',
-                'Digite o nome (ex: Vestidos, Blusas, Calças)',
-                'Salve',
-              ]}
-            />
-          </div>
-          <div className="space-y-3">
-            <SubHeading>Como editar ou excluir:</SubHeading>
-            <Steps
-              items={[
-                'Clique em <strong>Categorias</strong>',
-                'Clique na categoria desejada',
-                'Edite o nome ou clique em <strong>Excluir</strong>',
-              ]}
-            />
-          </div>
-          <Tip>⚠️ Não exclua uma categoria que ainda tem produtos — mova os produtos primeiro.</Tip>
-        </Section>
+      <div className="flex gap-8 items-start">
+        {/* Sidebar sticky — desktop only */}
+        <aside className="hidden lg:block w-56 shrink-0 sticky top-6">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-stone-400">
+            Nesta página
+          </p>
+          <nav className="space-y-0.5">
+            {SECTIONS.map((s) => {
+              const isVisible = visibleSections.some((v) => v.id === s.id);
+              return (
+                <a
+                  key={s.id}
+                  href={`#${s.id}`}
+                  className={`flex items-center gap-2 rounded-md px-2.5 py-1.5 text-sm transition-colors ${
+                    isVisible && search.trim()
+                      ? 'bg-stone-100 font-semibold text-stone-900'
+                      : 'text-stone-500 hover:text-stone-800 hover:bg-stone-50'
+                  }`}
+                >
+                  <s.icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  {s.title}
+                </a>
+              );
+            })}
+          </nav>
+        </aside>
 
-        {/* Estoque */}
-        <Section icon={BarChart3} title="Estoque">
-          <div className="space-y-3">
-            <SubHeading>Como ver o estoque atual:</SubHeading>
-            <Steps
-              items={[
-                'Clique em <strong>Estoque</strong> no menu',
-                'Você verá todos os produtos com a quantidade disponível por tamanho e cor',
-              ]}
-            />
-          </div>
-          <div className="space-y-3">
-            <SubHeading>Como ajustar o estoque:</SubHeading>
-            <Steps
-              items={[
-                'Clique em <strong>Estoque</strong>',
-                'Encontre a variação que deseja ajustar (ex: Vestido Floral — P — Rosa)',
-                'Clique no item',
-                'Altere a quantidade e salve',
-              ]}
-            />
-          </div>
-          <Tip>
-            💡 Quando o estoque de uma variação chega a zero, ela aparece como{' '}
-            <strong>Esgotado</strong> automaticamente na loja.
-          </Tip>
-        </Section>
-
-        {/* Pedidos */}
-        <Section icon={ShoppingBag} title="Pedidos">
-          <div className="space-y-3">
-            <SubHeading>Como ver os pedidos:</SubHeading>
-            <Steps
-              items={[
-                'Clique em <strong>Pedidos</strong> no menu',
-                'Você verá todos os pedidos com status, valor e data',
-              ]}
-            />
-          </div>
-          <div className="space-y-3">
-            <SubHeading>Status dos pedidos:</SubHeading>
-            <ul className="space-y-1.5 text-stone-600 text-sm leading-relaxed">
-              <li>
-                <strong>Aguardando pagamento</strong> — cliente fez o pedido mas ainda não pagou
-              </li>
-              <li>
-                <strong>Pago</strong> — pagamento confirmado, separar para envio
-              </li>
-              <li>
-                <strong>Enviado</strong> — produto saiu para entrega
-              </li>
-              <li>
-                <strong>Entregue</strong> — cliente recebeu
-              </li>
-              <li>
-                <strong>Cancelado</strong> — pedido cancelado
-              </li>
-            </ul>
-          </div>
-          <div className="space-y-3">
-            <SubHeading>Como atualizar o status de um pedido:</SubHeading>
-            <Steps
-              items={[
-                'Clique no pedido',
-                'Altere o status no campo correspondente',
-                'Salve — o cliente recebe e-mail automático com a atualização',
-              ]}
-            />
-          </div>
-          <div className="space-y-3">
-            <SubHeading>Como ver os dados de entrega:</SubHeading>
-            <Steps
-              items={[
-                'Abra o pedido',
-                'Os dados do cliente e endereço de entrega aparecem na página do pedido',
-              ]}
-            />
-          </div>
-        </Section>
-
-        {/* Cupons */}
-        <Section icon={Ticket} title="Cupons">
-          <div className="space-y-3">
-            <SubHeading>Como criar um cupom de desconto:</SubHeading>
-            <Steps
-              items={[
-                'Clique em <strong>Cupons</strong> no menu',
-                'Clique em <strong>Novo cupom</strong>',
-                'Defina o código (ex: BEMVINDA10), o tipo de desconto (porcentagem ou valor fixo) e o valor',
-                'Defina a data de validade se quiser',
-                'Salve',
-              ]}
-            />
-          </div>
-          <div className="space-y-3">
-            <SubHeading>Como desativar um cupom:</SubHeading>
-            <Steps
-              items={[
-                'Clique no cupom',
-                'Mude o status para <strong>Inativo</strong>',
-                'Salve — o cupom para de funcionar imediatamente',
-              ]}
-            />
-          </div>
-        </Section>
-
-        {/* Aparência */}
-        <Section icon={Palette} title="Aparência">
-          <div className="space-y-3">
-            <SubHeading>Como trocar a imagem do banner da home:</SubHeading>
-            <Steps
-              items={[
-                'Clique em <strong>Configurações</strong> no menu',
-                'Clique em <strong>Aparência</strong>',
-                'Na seção de banners, clique em <strong>Adicionar banner</strong> ou substitua a imagem existente',
-                'Faça o upload da nova imagem',
-                'Preencha o título e o texto do botão se quiser',
-                'Clique em <strong>Salvar banners</strong>',
-              ]}
-            />
-          </div>
-          <Tip>
-            💡 O banner aparece na página inicial da loja. Use imagens horizontais e de boa
-            qualidade.
-          </Tip>
-        </Section>
-
-        {/* Frete */}
-        <Section icon={Truck} title="Frete">
-          <div className="space-y-3">
-            <SubHeading>Como configurar o frete:</SubHeading>
-            <Steps
-              items={[
-                'Clique em <strong>Configurações</strong>',
-                'Clique em <strong>Frete</strong>',
-                'Configure as opções de entrega disponíveis',
-                'Salve',
-              ]}
-            />
-          </div>
-        </Section>
-
-        {/* Usuários */}
-        <Section icon={Users} title="Usuários do admin">
-          <div className="space-y-3">
-            <SubHeading>Como adicionar um novo administrador:</SubHeading>
-            <Steps
-              items={[
-                'Clique em <strong>Configurações</strong>',
-                'Clique em <strong>Usuários</strong>',
-                'Clique em <strong>Novo usuário</strong>',
-                'Preencha o nome, e-mail e defina a função (Admin ou Operador)',
-                'Salve — a pessoa receberá um e-mail para criar a senha',
-              ]}
-            />
-          </div>
-          <Tip>
-            ⚠️ Só crie usuários admin para pessoas de confiança. Eles terão acesso total ao sistema.
-          </Tip>
-        </Section>
-
-        {/* Páginas */}
-        <Section icon={FileText} title="Páginas">
-          <div className="space-y-3">
-            <SubHeading>
-              Como editar uma página do site (ex: Sobre nós, Política de troca):
-            </SubHeading>
-            <Steps
-              items={[
-                'Clique em <strong>Páginas</strong> no menu',
-                'Clique na página que deseja editar',
-                'Edite o conteúdo no editor',
-                'Salve — a página é atualizada automaticamente no site',
-              ]}
-            />
-          </div>
-        </Section>
-
-        {/* FAQ — ocupa largura total no desktop */}
-        <div className="lg:col-span-2">
-          <Section icon={HelpCircle} title="Dúvidas frequentes">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <p className="font-medium text-stone-800 text-sm">
-                  O produto não aparece na loja — o que fazer?
-                </p>
-                <p className="text-stone-600 text-sm leading-relaxed">
-                  Verifique se o status do produto está como <strong>Ativo</strong> e se ele tem
-                  pelo menos uma variação com estoque maior que zero.
-                </p>
-              </div>
-
-              <div className="space-y-1.5">
-                <p className="font-medium text-stone-800 text-sm">
-                  O cliente disse que não recebeu o e-mail de confirmação — o que fazer?
-                </p>
-                <p className="text-stone-600 text-sm leading-relaxed">
-                  Peça para ele verificar a pasta de spam. Se não estiver lá, abra o pedido no admin
-                  e confira se o e-mail do cliente está correto.
-                </p>
-              </div>
-
-              <div className="space-y-1.5">
-                <p className="font-medium text-stone-800 text-sm">Como cancelar um pedido?</p>
-                <p className="text-stone-600 text-sm leading-relaxed">
-                  Abra o pedido e mude o status para <strong>Cancelado</strong>. Se o pagamento já
-                  foi feito, entre em contato com o cliente para combinar o reembolso.
-                </p>
-              </div>
-
-              <div className="space-y-1.5">
-                <p className="font-medium text-stone-800 text-sm">
-                  Esqueci a senha do admin — o que fazer?
-                </p>
-                <p className="text-stone-600 text-sm leading-relaxed">
-                  Na tela de login, clique em <strong>Esqueci minha senha</strong> e siga as
-                  instruções no e-mail.
-                </p>
-              </div>
+        {/* Main content */}
+        <div className="flex-1 min-w-0 space-y-4">
+          {visibleSections.length === 0 && (
+            <div className="rounded-lg border border-stone-200 bg-white p-10 text-center">
+              <HelpCircle className="mx-auto mb-3 h-8 w-8 text-stone-300" />
+              <p className="text-sm text-stone-500">
+                Nenhuma seção encontrada para{' '}
+                <strong className="text-stone-700">&ldquo;{search}&rdquo;</strong>.
+              </p>
+              <button
+                onClick={() => setSearch('')}
+                className="mt-3 text-xs text-stone-400 underline hover:text-stone-600"
+              >
+                Limpar busca
+              </button>
             </div>
-          </Section>
+          )}
+
+          {visibleSections.map((section) => (
+            <SectionCard
+              key={section.id}
+              section={section}
+              isOpen={effectiveOpen.includes(section.id)}
+              onToggle={() => toggle(section.id)}
+            />
+          ))}
         </div>
       </div>
     </div>
