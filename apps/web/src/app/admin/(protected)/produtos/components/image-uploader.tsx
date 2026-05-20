@@ -34,12 +34,21 @@ export interface UploadedImageItem {
 }
 
 interface ImageUploaderProps {
-  productId: string;
+  productId?: string;
   initialImages?: UploadedImageItem[];
   onChange: (images: UploadedImageItem[]) => void;
+  /** Arquivos selecionados antes do produto existir (fluxo de criação). */
+  pendingFiles?: File[];
+  onPendingFilesChange?: (files: File[]) => void;
 }
 
-export function ImageUploader({ productId, initialImages = [], onChange }: ImageUploaderProps) {
+export function ImageUploader({
+  productId,
+  initialImages = [],
+  onChange,
+  pendingFiles = [],
+  onPendingFilesChange,
+}: ImageUploaderProps) {
   const [images, setImages] = useState<UploadedImageItem[]>(initialImages);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,6 +68,11 @@ export function ImageUploader({ productId, initialImages = [], onChange }: Image
   const onDrop = useCallback(
     async (acceptedFiles: File[]) => {
       setError(null);
+
+      if (!productId) {
+        onPendingFilesChange?.([...pendingFiles, ...acceptedFiles]);
+        return;
+      }
 
       const tempItems: UploadedImageItem[] = acceptedFiles.map((f) => ({
         id: `temp-${crypto.randomUUID()}`,
@@ -96,7 +110,7 @@ export function ImageUploader({ productId, initialImages = [], onChange }: Image
         }),
       );
     },
-    [productId],
+    [productId, pendingFiles, onPendingFilesChange],
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -126,7 +140,9 @@ export function ImageUploader({ productId, initialImages = [], onChange }: Image
       const newIdx = prev.findIndex((img) => img.id === over.id);
       const reordered = arrayMove(prev, oldIdx, newIdx);
       const ids = reordered.filter((img) => !img.uploading).map((img) => img.id);
-      uploadsApi.reorderImages(productId, ids).catch(() => null);
+      if (productId) {
+        uploadsApi.reorderImages(productId, ids).catch(() => null);
+      }
       return reordered;
     });
   };
@@ -165,6 +181,39 @@ export function ImageUploader({ productId, initialImages = [], onChange }: Image
             </div>
           </SortableContext>
         </DndContext>
+      )}
+
+      {!productId && pendingFiles.length > 0 && (
+        <div className="flex flex-wrap gap-3">
+          {pendingFiles.map((file, idx) => (
+            <div key={`${file.name}-${idx}`} className="relative group">
+              {idx === 0 && (
+                <span className="absolute top-1 left-1 z-10 bg-flor-600 text-white text-[10px] px-1 rounded">
+                  Capa
+                </span>
+              )}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={URL.createObjectURL(file)}
+                alt={file.name}
+                className="rounded object-cover w-20 h-20"
+              />
+              <button
+                type="button"
+                onClick={() => onPendingFilesChange?.(pendingFiles.filter((_, i) => i !== idx))}
+                className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <X size={10} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!productId && (
+        <p className="text-xs text-muted-foreground">
+          As imagens serão enviadas automaticamente ao salvar o produto.
+        </p>
       )}
     </div>
   );

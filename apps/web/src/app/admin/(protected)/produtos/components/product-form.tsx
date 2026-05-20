@@ -17,15 +17,16 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { getUserFacingErrorMessage } from '@/lib/errors';
-import { type Product, type ProductVariant } from '@/lib/api/products';
+import { productsApi, type Product, type ProductVariant } from '@/lib/api/products';
 import { type Category } from '@/lib/api/categories';
+import { uploadsApi } from '@/lib/api/uploads';
 import { ImageUploader, type UploadedImageItem } from './image-uploader';
 import { VariantsEditor } from './variants-editor';
-import { AiDescriptionModal } from './ai-description-modal';
-import { useCreateProduct, useUpdateProduct, useUpsertVariants } from '@/hooks/use-products';
+// TODO: revisar feature de IA antes de reativar
+// import { AiDescriptionModal } from './ai-description-modal';
+import { useCreateProduct, useUpdateProduct } from '@/hooks/use-products';
 
 const schema = z
   .object({
@@ -72,20 +73,18 @@ export function ProductForm({ product, categories }: ProductFormProps) {
   const [variants, setVariants] = useState<Array<Partial<ProductVariant> & { stock: number }>>(
     product?.variants ?? [],
   );
-  const [aiOpen, setAiOpen] = useState(false);
+  const [pendingImageFiles, setPendingImageFiles] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
   const [productId, setProductId] = useState(product?.id ?? '');
 
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct(product?.id ?? '');
-  const upsertVariants = useUpsertVariants(productId);
 
   const {
     register,
     handleSubmit,
     control,
     watch,
-    setValue,
     formState: { errors, isDirty },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -108,9 +107,6 @@ export function ProductForm({ product, categories }: ProductFormProps) {
     },
   });
 
-  const name = watch('name');
-  const categoryId = watch('categoryId');
-  const description = watch('description');
   const seoTitle = watch('seoTitle') ?? '';
   const seoDescription = watch('seoDescription') ?? '';
 
@@ -154,7 +150,8 @@ export function ProductForm({ product, categories }: ProductFormProps) {
       }
 
       if (savedId && variants.length > 0) {
-        await upsertVariants.mutateAsync(
+        await productsApi.upsertVariants(
+          savedId,
           variants.map((v) => ({
             id: v.id,
             sku: v.sku,
@@ -166,6 +163,18 @@ export function ProductForm({ product, categories }: ProductFormProps) {
             isActive: v.isActive,
           })),
         );
+      }
+
+      if (savedId && pendingImageFiles.length > 0) {
+        await Promise.all(
+          pendingImageFiles.map((file) => uploadsApi.uploadProductImage(savedId!, file)),
+        );
+      }
+
+      if (!isEdit && savedId) {
+        toast.success('Produto criado com sucesso!');
+        router.push(`/admin/produtos/${savedId}`);
+        return;
       }
 
       router.push('/admin/produtos');
@@ -262,19 +271,7 @@ export function ProductForm({ product, categories }: ProductFormProps) {
 
           {/* Descrição */}
           <section className="bg-white border border-bege-200 rounded-md p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="font-serif text-lg text-flor-800">Descrição</h2>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setAiOpen(true)}
-                className="text-flor-600 border-flor-300 hover:bg-flor-50"
-              >
-                <Sparkles size={14} className="mr-1 text-dourado-500" />
-                Gerar com IA
-              </Button>
-            </div>
+            <h2 className="font-serif text-lg text-flor-800">Descrição</h2>
 
             <div>
               <Label>Descrição completa *</Label>
@@ -301,13 +298,13 @@ export function ProductForm({ product, categories }: ProductFormProps) {
           {/* Imagens */}
           <section className="bg-white border border-bege-200 rounded-md p-6 space-y-4">
             <h2 className="font-serif text-lg text-flor-800">Imagens</h2>
-            {productId ? (
-              <ImageUploader productId={productId} initialImages={images} onChange={setImages} />
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                Salve as informações básicas primeiro para fazer upload de imagens.
-              </p>
-            )}
+            <ImageUploader
+              productId={productId || undefined}
+              initialImages={images}
+              onChange={setImages}
+              pendingFiles={pendingImageFiles}
+              onPendingFilesChange={setPendingImageFiles}
+            />
           </section>
 
           {/* Variações */}
@@ -428,6 +425,7 @@ export function ProductForm({ product, categories }: ProductFormProps) {
         </aside>
       </div>
 
+      {/* TODO: revisar feature de IA antes de reativar
       <AiDescriptionModal
         open={aiOpen}
         onClose={() => setAiOpen(false)}
@@ -436,6 +434,7 @@ export function ProductForm({ product, categories }: ProductFormProps) {
         categoryId={categoryId}
         categories={categories}
       />
+      */}
     </form>
   );
 }
