@@ -79,7 +79,7 @@ export interface ListProductsParams {
 
 function toQuery(params: Record<string, unknown>): string {
   const qs = Object.entries(params)
-    .filter(([, v]) => v !== undefined && v !== '')
+    .filter(([, v]) => v !== undefined && v !== '' && v !== 'all')
     .map(([k, v]) => `${k}=${encodeURIComponent(String(v))}`)
     .join('&');
   return qs ? `?${qs}` : '';
