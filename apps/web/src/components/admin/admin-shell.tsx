@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { AdminLayoutProvider, useAdminLayout } from './admin-layout-context';
 import { AdminSidebar } from './admin-sidebar';
@@ -61,7 +62,7 @@ function AdminShellInner({ user, children }: AdminShellProps) {
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
           <AdminHeader user={user} onMenuClick={() => setMobileOpen(true)} />
           {showBanner && (
-            <div className="flex items-center justify-between gap-3 bg-amber-50 border-b border-amber-200 px-4 py-2 text-sm text-amber-800">
+            <div className="relative z-0 flex shrink-0 items-center justify-between gap-3 border-b border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-800">
               <span className="flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden="true" />
                 Você está usando uma senha temporária. Troque-a antes de continuar.
@@ -74,7 +75,12 @@ function AdminShellInner({ user, children }: AdminShellProps) {
               </button>
             </div>
           )}
-          <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-none px-4 pb-12 pt-4 lg:px-6 lg:pt-6">
+          <main
+            className={cn(
+              'min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-none px-4 pt-4 lg:px-6 lg:pt-6',
+              showBanner ? 'max-sm:pt-5 pb-24 sm:pb-12' : 'pb-12',
+            )}
+          >
             {children}
           </main>
         </div>
