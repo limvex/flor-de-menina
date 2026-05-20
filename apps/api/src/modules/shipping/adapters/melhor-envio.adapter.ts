@@ -99,7 +99,7 @@ export class MelhorEnvioAdapter implements ShippingAdapter {
       redirect_uri: redirectUri,
       response_type: 'code',
       scope:
-        'cart-read cart-write companies-read coupons-read notifications-read products-read profile-read purchases-read shipping-calculate shipping-cancel shipping-checkout shipping-companies shipping-generate shipping-preview shipping-print shipping-share shipping-tracking transactions-read users-read',
+        'cart-read cart-write companies-read coupons-read notifications-read orders-read products-read products-write products-destroy purchases-read shipping-calculate shipping-cancel shipping-checkout shipping-companies shipping-generate shipping-preview shipping-print shipping-share shipping-tracking ecommerce-shared transactions-read users-read',
     });
 
     return `${this.baseUrl}/oauth/authorize?${params.toString()}`;
