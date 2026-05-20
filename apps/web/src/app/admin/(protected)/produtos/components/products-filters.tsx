@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -11,6 +11,11 @@ import {
 } from '@/components/ui/select';
 import { type Category } from '@/lib/api/categories';
 import { type ListProductsParams } from '@/lib/api/products';
+import {
+  getCategoryFilterLabel,
+  getProductStatusFilterLabel,
+  getProductStockFilterLabel,
+} from '@/lib/admin/filter-labels';
 
 interface ProductsFiltersProps {
   params: ListProductsParams;
@@ -20,10 +25,12 @@ interface ProductsFiltersProps {
 
 export function ProductsFilters({ params, categories, onChange }: ProductsFiltersProps) {
   const [search, setSearch] = useState(params.search ?? '');
+  const paramsRef = useRef(params);
+  paramsRef.current = params;
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      onChange({ ...params, search, page: 1 });
+      onChange({ ...paramsRef.current, search: search || undefined, page: 1 });
     }, 300);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -45,7 +52,9 @@ export function ProductsFilters({ params, categories, onChange }: ProductsFilter
         }
       >
         <SelectTrigger className="w-48">
-          <SelectValue placeholder="Categoria" />
+          <SelectValue placeholder="Categoria">
+            {getCategoryFilterLabel(params.categoryId, categories)}
+          </SelectValue>
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">Todas categorias</SelectItem>
@@ -60,11 +69,17 @@ export function ProductsFilters({ params, categories, onChange }: ProductsFilter
       <Select
         value={params.status ?? 'all'}
         onValueChange={(v) =>
-          onChange({ ...params, status: v as ListProductsParams['status'], page: 1 })
+          onChange({
+            ...params,
+            status: v === 'all' ? undefined : (v as ListProductsParams['status']),
+            page: 1,
+          })
         }
       >
         <SelectTrigger className="w-40">
-          <SelectValue placeholder="Status" />
+          <SelectValue placeholder="Status">
+            {getProductStatusFilterLabel(params.status)}
+          </SelectValue>
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">Todos status</SelectItem>
@@ -76,11 +91,17 @@ export function ProductsFilters({ params, categories, onChange }: ProductsFilter
       <Select
         value={params.stock ?? 'all'}
         onValueChange={(v) =>
-          onChange({ ...params, stock: v as ListProductsParams['stock'], page: 1 })
+          onChange({
+            ...params,
+            stock: v === 'all' ? undefined : (v as ListProductsParams['stock']),
+            page: 1,
+          })
         }
       >
         <SelectTrigger className="w-44">
-          <SelectValue placeholder="Estoque" />
+          <SelectValue placeholder="Estoque">
+            {getProductStockFilterLabel(params.stock)}
+          </SelectValue>
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">Todo estoque</SelectItem>
