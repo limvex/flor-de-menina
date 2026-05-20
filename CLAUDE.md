@@ -215,6 +215,8 @@ Atualize esta seção a cada task concluída. Use os emojis:
 
 - `2026-05-14` — Deploy Coolify: crash loop `MODULE_NOT_FOUND: dotenv` na API (imagem pnpm sem `apps/api/node_modules`). Fix: `load-env.ts` só chama `dotenv` quando `NODE_ENV !== 'production'`; produção usa só env injetado pelo painel/Docker.
 
+- `2026-05-20` — `/admin/ajuda` refatorada como guia de primeiros passos (fluxo sequencial de 8 seções numeradas, badges por tipo, bloco FAQ). Proxy webhook Mercado Pago: `POST /api/webhooks/mercado-pago` (Route Handler Next.js) encaminha para API NestJS via `INTERNAL_API_URL`; rewrite em `next.config.ts` mapeia `/webhooks/mercado-pago` → `/api/webhooks/mercado-pago` (URL do painel MP não precisa mudar). Mergeado via PR #80.
+
 ## ⚠️ Coisas que NÃO podem ser esquecidas
 
 - **Páginas institucionais**: API pública `GET /pages` (resumo) e `GET /pages/:slug` (HTML TipTap). Conteúdo só em `dangerouslySetInnerHTML` na loja. Admin em `/admin/paginas`. Loja `/p/[slug]`: **`export const dynamic = 'force-dynamic'`** + **`fetch(..., { cache: 'no-store' })`** (sem ISR — ativo/inativo e conteúdo refletem no próximo acesso). Seed só institucionais: `pnpm db:seed:institutional`.
