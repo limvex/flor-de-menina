@@ -12,7 +12,7 @@ import { UsersModule } from '../users/users.module';
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'dev-secret-change-in-production',
       signOptions: {
-        expiresIn: '15m',
+        expiresIn: '8h',
         issuer: 'flor-de-menina',
       },
     }),
