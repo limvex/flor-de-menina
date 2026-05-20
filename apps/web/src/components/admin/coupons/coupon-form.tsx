@@ -149,8 +149,8 @@ export function CouponForm({ mode, initial, categories, onSubmit }: CouponFormPr
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-        <div className="space-y-6">
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+        <div className="min-w-0 flex-1 space-y-6">
           {/* Informações básicas */}
           <fieldset className="rounded-lg border border-stone-200 p-5 space-y-4">
             <legend className="text-sm font-semibold text-stone-700 px-1">
@@ -383,8 +383,8 @@ export function CouponForm({ mode, initial, categories, onSubmit }: CouponFormPr
           </fieldset>
         </div>
 
-        {/* Preview */}
-        <aside className="lg:sticky lg:top-24 self-start space-y-4">
+        {/* Preview — flex evita área vazia scrollável abaixo do aside */}
+        <aside className="w-full shrink-0 space-y-4 lg:w-80 lg:sticky lg:top-4">
           <div className="rounded-lg border border-stone-200 bg-stone-50 p-4 space-y-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">
               Preview para a cliente

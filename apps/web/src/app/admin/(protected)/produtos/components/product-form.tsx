@@ -179,9 +179,9 @@ export function ProductForm({ product, categories }: ProductFormProps) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Coluna principal */}
-        <div className="lg:col-span-2 space-y-6">
+      <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
+        {/* Coluna principal — flex evita célula vazia do grid na sidebar */}
+        <div className="min-w-0 flex-1 space-y-6">
           {/* Informações básicas */}
           <section className="bg-white border border-bege-200 rounded-md p-6 space-y-4">
             <h2 className="font-serif text-lg text-flor-800">Informações básicas</h2>
@@ -317,8 +317,8 @@ export function ProductForm({ product, categories }: ProductFormProps) {
           </section>
         </div>
 
-        {/* Sidebar */}
-        <div className="space-y-6">
+        {/* Sidebar: altura só do conteúdo (sem esticar com a coluna principal) */}
+        <aside className="w-full shrink-0 space-y-6 lg:w-80 lg:sticky lg:top-4">
           {/* Status */}
           <section className="bg-white border border-bege-200 rounded-md p-6 space-y-4">
             <h2 className="font-serif text-lg text-flor-800">Status</h2>
@@ -425,7 +425,7 @@ export function ProductForm({ product, categories }: ProductFormProps) {
               {saving ? 'Salvando...' : isEdit ? 'Atualizar' : 'Criar produto'}
             </Button>
           </div>
-        </div>
+        </aside>
       </div>
 
       <AiDescriptionModal
