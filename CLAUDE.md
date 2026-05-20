@@ -215,10 +215,17 @@ Atualize esta seção a cada task concluída. Use os emojis:
 
 - `2026-05-14` — Deploy Coolify: crash loop `MODULE_NOT_FOUND: dotenv` na API (imagem pnpm sem `apps/api/node_modules`). Fix: `load-env.ts` só chama `dotenv` quando `NODE_ENV !== 'production'`; produção usa só env injetado pelo painel/Docker.
 
+- `2026-05-20` — **fix/admin-bugs-criticos**: JWT admin `8h` (era 15m); filtros de produtos com labels PT-BR no trigger (SelectValue), debounce de busca sem resetar filtros; upload de imagens no fluxo de criação; IA de descrição desabilitada na UI; scroll extra em formulários (`items-start` + `admin-shell`); redirect pós-criação para `/admin/produtos/[id]`.
 - `2026-05-20` — `/admin/ajuda` refatorada como guia de primeiros passos (fluxo sequencial de 8 seções numeradas, badges por tipo, bloco FAQ). Proxy webhook Mercado Pago: `POST /api/webhooks/mercado-pago` (Route Handler Next.js) encaminha para API NestJS via `INTERNAL_API_URL`; rewrite em `next.config.ts` mapeia `/webhooks/mercado-pago` → `/api/webhooks/mercado-pago` (URL do painel MP não precisa mudar). Mergeado via PR #80.
+
+## 📌 Backlog (próximas sprints)
+
+- [ ] Implementar "Esqueci minha senha" no admin (envio de e-mail com link de reset)
 
 ## ⚠️ Coisas que NÃO podem ser esquecidas
 
+- **JWT admin expira em 8h** (`ACCESS_TOKEN_EXPIRY` em `auth.service.ts` + `auth.module.ts`). Refresh continua 7d. Tokens já emitidos com TTL antigo expiram no prazo original — compatível com sessões existentes.
+- **Geração de descrição com IA no admin** — UI desabilitada (`product-form.tsx`); endpoint da API mantido. Reativar após revisão da feature.
 - **Páginas institucionais**: API pública `GET /pages` (resumo) e `GET /pages/:slug` (HTML TipTap). Conteúdo só em `dangerouslySetInnerHTML` na loja. Admin em `/admin/paginas`. Loja `/p/[slug]`: **`export const dynamic = 'force-dynamic'`** + **`fetch(..., { cache: 'no-store' })`** (sem ISR — ativo/inativo e conteúdo refletem no próximo acesso). Seed só institucionais: `pnpm db:seed:institutional`.
 - **Redis na porta 6379** — adicionado ao docker-compose. Necessário para BullMQ (fila de emails). Subir com `docker compose up -d redis`.
 - **Migration pendente**: `add_email_logs_and_order_shipping`, `20260512130000_institutional_page_og_sort_index`, `20260513120000_add_order_status_history` (#69), `20260513232145_add_home_page_content` (#74), **`20260513240000_add_user_admin_flags`** (#73) — rodar `pnpm --filter @flor/database db:migrate` quando Docker estiver ativo.
