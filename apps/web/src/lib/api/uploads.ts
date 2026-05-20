@@ -1,3 +1,5 @@
+import { snapshotImageFile } from '@/lib/prepare-image-upload';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3333';
 
 export interface UploadedImage {
@@ -11,8 +13,10 @@ export interface UploadedImage {
 
 export const uploadsApi = {
   uploadProductImage: async (productId: string, file: File): Promise<UploadedImage> => {
+    const prepared = await snapshotImageFile(file);
+
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('file', prepared, prepared.name);
 
     const res = await fetch(`${API_URL}/uploads/product-image/${productId}`, {
       method: 'POST',

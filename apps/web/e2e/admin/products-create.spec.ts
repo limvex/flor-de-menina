@@ -8,25 +8,24 @@ test.describe('Criar produto', () => {
 
   test('acessa página de novo produto', async ({ page }) => {
     await page.goto('/admin/produtos/novo');
-    await expect(page.getByText('Novo produto')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('heading', { name: 'Novo produto' })).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test('mostra erros de validação ao submeter vazio', async ({ page }) => {
     await page.goto('/admin/produtos/novo');
-    await page.getByRole('button', { name: 'Criar produto' }).click();
-    await expect(page.getByText('Nome deve ter ao menos 3 caracteres')).toBeVisible({
+    await page.getByRole('button', { name: 'Salvar produto' }).first().click();
+    await expect(page.getByText('Dê um nome ao produto')).toBeVisible({
       timeout: 5000,
     });
   });
 
   test('formula de criação tem campos obrigatórios', async ({ page }) => {
     await page.goto('/admin/produtos/novo');
-    // Verifica campos principais estão presentes
-    await expect(
-      page.locator('input[placeholder*="Vestido"]').or(page.locator('input').first()),
-    ).toBeVisible({ timeout: 5000 });
-    await expect(page.locator('textarea').first()).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Criar produto' })).toBeVisible();
+    await expect(page.getByLabel(/Nome do produto/i)).toBeVisible({ timeout: 5000 });
+    await expect(page.getByLabel(/Preço de venda/i)).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Salvar produto' }).first()).toBeVisible();
   });
 
   test('não exibe botão de geração com IA (desabilitado temporariamente)', async ({ page }) => {
@@ -36,7 +35,7 @@ test.describe('Criar produto', () => {
 
   test('permite selecionar imagens antes de salvar', async ({ page }) => {
     await page.goto('/admin/produtos/novo');
-    await expect(page.getByText(/serão enviadas automaticamente ao salvar/i)).toBeVisible({
+    await expect(page.getByText(/primeira foto é a que aparece na vitrine/i)).toBeVisible({
       timeout: 5000,
     });
   });
@@ -44,7 +43,6 @@ test.describe('Criar produto', () => {
   test('cria produto via API e verifica na lista', async ({ page }) => {
     const API = 'http://localhost:3333';
 
-    // Login na API
     await page.request.post(`${API}/auth/admin/login`, {
       data: { email: 'admin@flordemenina.store', password: 'admin123' },
     });
@@ -69,11 +67,9 @@ test.describe('Criar produto', () => {
     expect(createRes.ok()).toBeTruthy();
     const prod = await createRes.json();
 
-    // Verifica na lista admin
     await page.goto('/admin/produtos');
     await expect(page.getByText(`Vestido Playwright ${ts}`)).toBeVisible({ timeout: 10000 });
 
-    // Limpeza
     await page.request.delete(`${API}/products/${prod.id}`);
   });
 });

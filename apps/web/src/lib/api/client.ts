@@ -4,17 +4,38 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3333';
 
 let refreshPromise: Promise<boolean> | null = null;
 
+async function tryRefreshAdminToken(): Promise<boolean> {
+  try {
+    const res = await fetch(`${API_URL}/auth/admin/refresh`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+async function tryRefreshCustomerToken(): Promise<boolean> {
+  try {
+    const res = await fetch(`${API_URL}/auth/customer/refresh`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 async function tryRefreshToken(): Promise<boolean> {
   if (refreshPromise) return refreshPromise;
-  refreshPromise = fetch(`${API_URL}/auth/customer/refresh`, {
-    method: 'POST',
-    credentials: 'include',
-  })
-    .then((r) => r.ok)
-    .catch(() => false)
-    .finally(() => {
-      refreshPromise = null;
-    });
+  refreshPromise = (async () => {
+    if (await tryRefreshAdminToken()) return true;
+    return tryRefreshCustomerToken();
+  })().finally(() => {
+    refreshPromise = null;
+  });
   return refreshPromise;
 }
 
