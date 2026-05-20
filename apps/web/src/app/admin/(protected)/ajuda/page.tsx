@@ -8,26 +8,30 @@ import {
   ShoppingBag,
   Ticket,
   Paintbrush,
-  Truck,
-  Users,
-  FileText,
   HelpCircle,
   Search,
   ChevronDown,
   ChevronUp,
   AlertTriangle,
   Lightbulb,
+  Settings,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { AdminPageHeader } from '@/components/admin/admin-page-header';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-type Badge = 'Fácil' | 'Médio';
+type Badge =
+  | 'Primeiro passo'
+  | 'Obrigatório primeiro'
+  | 'Depois das categorias'
+  | 'Rotina diária'
+  | 'Opcional'
+  | 'Ajuda';
 
 interface StepsBlock {
   type: 'steps';
-  title: string;
+  title?: string;
   items: string[];
 }
 
@@ -47,7 +51,12 @@ interface WarningBlock {
   text: string;
 }
 
-type ContentBlock = StepsBlock | StatusListBlock | TipBlock | WarningBlock;
+interface FaqBlock {
+  type: 'faq';
+  items: { question: string; answer: string }[];
+}
+
+type ContentBlock = StepsBlock | StatusListBlock | TipBlock | WarningBlock | FaqBlock;
 
 interface Section {
   id: string;
@@ -62,152 +71,148 @@ interface Section {
 
 const SECTIONS: Section[] = [
   {
-    id: 'produtos',
-    icon: Package,
-    title: 'Produtos',
-    badge: 'Médio',
-    description: 'Cadastre, edite e organize os produtos da loja',
+    id: 'config-loja',
+    icon: Settings,
+    title: 'Antes de tudo: configure a loja',
+    badge: 'Primeiro passo',
+    description: 'Faça isso antes de cadastrar qualquer produto',
     content: [
       {
         type: 'steps',
-        title: 'Como cadastrar um produto',
         items: [
-          'Clique em Produtos no menu lateral',
-          'Clique no botão Novo produto (canto superior direito)',
-          'Preencha nome, descrição e preço',
-          'Adicione as fotos (arraste ou clique para selecionar)',
-          'Escolha a categoria',
-          'Adicione variações (tamanhos e cores disponíveis)',
-          'Clique em Salvar produto',
+          'Acesse Configurações → Aparência e suba o banner da home (imagem horizontal, boa qualidade)',
+          'Acesse Configurações → Frete e configure as opções de entrega',
+          'Acesse Configurações → Usuários se quiser adicionar mais pessoas com acesso ao admin',
         ],
       },
       {
-        type: 'steps',
-        title: 'Como editar um produto',
-        items: [
-          'Clique em Produtos no menu',
-          'Encontre o produto na lista e clique nele',
-          'Altere o que precisar e clique em Salvar',
-        ],
-      },
-      {
-        type: 'steps',
-        title: 'Como tirar um produto da loja sem apagar',
-        items: [
-          'Abra o produto',
-          'Mude o status para Inativo',
-          'Salve — o produto some da loja mas fica salvo no sistema',
-        ],
+        type: 'tip',
+        text: 'Essas configurações só precisam ser feitas uma vez.',
       },
     ],
   },
   {
     id: 'categorias',
     icon: Tag,
-    title: 'Categorias',
-    badge: 'Fácil',
-    description: 'Organize os produtos em grupos para facilitar a navegação',
+    title: 'Passo 1: Crie as categorias',
+    badge: 'Obrigatório primeiro',
+    description: 'Você precisa ter categorias antes de cadastrar produtos',
     content: [
       {
         type: 'steps',
-        title: 'Como criar uma categoria',
         items: [
           'Clique em Categorias no menu',
           'Clique em Nova categoria',
-          'Digite o nome (ex: Vestidos, Blusas, Calças)',
+          'Digite o nome (exemplos: Vestidos, Blusas, Calças, Acessórios)',
           'Salve',
+          'Repita para cada categoria que precisar',
         ],
       },
       {
-        type: 'steps',
-        title: 'Como editar ou excluir',
-        items: [
-          'Clique em Categorias',
-          'Clique na categoria desejada',
-          'Edite o nome ou clique em Excluir',
-        ],
+        type: 'tip',
+        text: 'Crie todas as categorias antes de começar a cadastrar produtos. Você pode criar quantas quiser.',
       },
       {
         type: 'warning',
-        text: 'Não exclua uma categoria que ainda tem produtos — mova os produtos primeiro.',
+        text: 'Sem categoria criada, não é possível cadastrar produto.',
+      },
+    ],
+  },
+  {
+    id: 'produtos',
+    icon: Package,
+    title: 'Passo 2: Cadastre os produtos',
+    badge: 'Depois das categorias',
+    description: 'Com as categorias prontas, agora cadastre cada produto',
+    content: [
+      {
+        type: 'steps',
+        items: [
+          'Clique em Produtos no menu',
+          'Clique em Novo produto (canto superior direito)',
+          'Preencha o nome do produto',
+          'Adicione a descrição (conte o tecido, caimento, dicas de uso)',
+          'Coloque o preço',
+          'Escolha a categoria (que você criou no passo anterior)',
+          'Adicione as fotos: clique em upload ou arraste as imagens. Coloque a foto principal primeiro',
+          'Adicione as variações: para cada combinação de tamanho e cor, clique em Adicionar variação',
+          'Em cada variação informe: tamanho (P, M, G...), cor e quantidade em estoque',
+          'Mude o status para Ativo',
+          'Clique em Salvar produto',
+        ],
+      },
+      {
+        type: 'tip',
+        text: 'Adicione sempre pelo menos uma foto de boa qualidade. Produtos sem foto vendem muito menos.',
+      },
+      {
+        type: 'warning',
+        text: 'O produto só aparece na loja se o status estiver como Ativo E tiver pelo menos uma variação com estoque maior que zero.',
       },
     ],
   },
   {
     id: 'estoque',
     icon: BarChart2,
-    title: 'Estoque',
-    badge: 'Fácil',
-    description: 'Controle quantas peças de cada tamanho e cor estão disponíveis',
+    title: 'Passo 3: Acompanhe o estoque',
+    badge: 'Rotina diária',
+    description: 'Mantenha o estoque atualizado para não vender o que não tem',
     content: [
       {
         type: 'steps',
-        title: 'Como ver o estoque atual',
         items: [
           'Clique em Estoque no menu',
-          'Você verá todos os produtos com quantidade disponível por tamanho e cor',
-        ],
-      },
-      {
-        type: 'steps',
-        title: 'Como ajustar o estoque',
-        items: [
-          'Clique em Estoque',
-          'Encontre a variação (ex: Vestido Floral — P — Rosa)',
-          'Clique no item',
-          'Altere a quantidade e salve',
+          'Você verá todas as variações com a quantidade atual',
+          'Quando chegar mercadoria nova, clique na variação e atualize a quantidade',
+          'Quando uma peça for vendida fora da loja (ex: loja física), subtraia do estoque manualmente',
         ],
       },
       {
         type: 'tip',
-        text: 'Quando o estoque de uma variação chega a zero, ela aparece como Esgotado automaticamente na loja.',
+        text: 'Quando o estoque de uma variação chega a zero, ela some automaticamente da loja. Você não precisa fazer nada.',
       },
     ],
   },
   {
     id: 'pedidos',
     icon: ShoppingBag,
-    title: 'Pedidos',
-    badge: 'Fácil',
-    description: 'Acompanhe e atualize todos os pedidos feitos na loja',
+    title: 'Passo 4: Gerencie os pedidos',
+    badge: 'Rotina diária',
+    description: 'Toda vez que alguém comprar, o pedido aparece aqui',
     content: [
       {
         type: 'steps',
-        title: 'Como ver os pedidos',
-        items: ['Clique em Pedidos no menu', 'Você verá todos os pedidos com status, valor e data'],
+        items: [
+          'Clique em Pedidos no menu',
+          'Pedidos novos aparecem com status Pago (pagamento já confirmado pelo sistema)',
+          'Separe o produto para envio',
+          'Quando postar, abra o pedido e mude o status para Enviado — o cliente recebe e-mail automático',
+          'Quando o cliente confirmar recebimento, mude para Entregue',
+        ],
       },
       {
         type: 'status-list',
         title: 'O que significa cada status',
         items: [
-          'Aguardando pagamento — cliente fez o pedido mas ainda não pagou',
-          'Pago — pagamento confirmado, separe para envio',
-          'Enviado — produto saiu para entrega',
-          'Entregue — cliente recebeu',
-          'Cancelado — pedido cancelado',
+          'Aguardando pagamento — cliente não pagou ainda, não separe nada',
+          'Pago — pagamento confirmado, separe e envie',
+          'Enviado — produto postado, aguardando entrega',
+          'Entregue — concluído',
+          'Cancelado — não enviar',
         ],
       },
       {
-        type: 'steps',
-        title: 'Como atualizar o status de um pedido',
-        items: [
-          'Clique no pedido',
-          'Altere o status no campo correspondente',
-          'Salve — o cliente recebe e-mail automático com a atualização',
-        ],
-      },
-      {
-        type: 'tip',
-        text: 'Os dados de entrega do cliente aparecem dentro de cada pedido.',
+        type: 'warning',
+        text: 'Nunca envie um pedido com status Aguardando pagamento. Só envie após confirmar o status Pago.',
       },
     ],
   },
   {
     id: 'cupons',
     icon: Ticket,
-    title: 'Cupons',
-    badge: 'Fácil',
-    description: 'Crie códigos de desconto para promoções e campanhas',
+    title: 'Cupons de desconto',
+    badge: 'Opcional',
+    description: 'Crie códigos promocionais para divulgar nas redes sociais',
     content: [
       {
         type: 'steps',
@@ -215,9 +220,10 @@ const SECTIONS: Section[] = [
         items: [
           'Clique em Cupons no menu',
           'Clique em Novo cupom',
-          'Defina o código (ex: BEMVINDA10), tipo (porcentagem ou valor fixo) e valor',
-          'Defina a data de validade se quiser',
-          'Salve',
+          'Defina o código (ex: BEMVINDA10 — use letras maiúsculas sem espaço)',
+          'Escolha o tipo: Porcentagem (ex: 10%) ou Valor fixo (ex: R$ 20,00)',
+          'Defina a validade se quiser',
+          'Salve e divulgue o código para suas clientes',
         ],
       },
       {
@@ -226,7 +232,7 @@ const SECTIONS: Section[] = [
         items: [
           'Clique no cupom',
           'Mude o status para Inativo',
-          'Salve — o cupom para de funcionar imediatamente',
+          'Salve — para de funcionar na hora',
         ],
       },
     ],
@@ -234,125 +240,59 @@ const SECTIONS: Section[] = [
   {
     id: 'aparencia',
     icon: Paintbrush,
-    title: 'Aparência',
-    badge: 'Fácil',
-    description: 'Troque o banner da página inicial e personalize a loja',
+    title: 'Aparência da loja',
+    badge: 'Opcional',
+    description: 'Troque o banner da home quando quiser divulgar novidades',
     content: [
       {
         type: 'steps',
-        title: 'Como trocar o banner da home',
         items: [
-          'Clique em Configurações no menu',
-          'Clique em Aparência',
-          'Na seção de banners, clique em Adicionar banner ou substitua a imagem existente',
-          'Faça o upload da nova imagem',
-          'Preencha o título e texto do botão se quiser',
-          'Clique em Salvar banners',
+          'Clique em Configurações → Aparência',
+          'Clique em Adicionar banner ou substitua o existente',
+          'Faça upload da imagem (use foto horizontal, mínimo 1200px de largura)',
+          'Preencha título e texto do botão se quiser',
+          'Salve banners',
         ],
       },
       {
         type: 'tip',
-        text: 'Use imagens horizontais e de boa qualidade. O banner aparece na página inicial da loja.',
+        text: 'Troque o banner em datas especiais: Dia das Mães, Black Friday, lançamento de coleção.',
       },
     ],
   },
   {
-    id: 'frete',
-    icon: Truck,
-    title: 'Frete',
-    badge: 'Médio',
-    description: 'Configure as opções de entrega disponíveis para os clientes',
-    content: [
-      {
-        type: 'steps',
-        title: 'Como configurar o frete',
-        items: [
-          'Clique em Configurações',
-          'Clique em Frete',
-          'Configure as opções de entrega disponíveis',
-          'Salve',
-        ],
-      },
-    ],
-  },
-  {
-    id: 'usuarios',
-    icon: Users,
-    title: 'Usuários',
-    badge: 'Médio',
-    description: 'Gerencie quem tem acesso ao painel administrativo',
-    content: [
-      {
-        type: 'steps',
-        title: 'Como adicionar um novo administrador',
-        items: [
-          'Clique em Configurações',
-          'Clique em Usuários',
-          'Clique em Novo usuário',
-          'Preencha nome, e-mail e defina a função (Admin ou Operador)',
-          'Salve — a pessoa receberá e-mail para criar a senha',
-        ],
-      },
-      {
-        type: 'warning',
-        text: 'Só crie usuários admin para pessoas de confiança. Eles terão acesso total ao sistema.',
-      },
-    ],
-  },
-  {
-    id: 'paginas',
-    icon: FileText,
-    title: 'Páginas',
-    badge: 'Fácil',
-    description: 'Edite textos institucionais como Sobre nós e Política de trocas',
-    content: [
-      {
-        type: 'steps',
-        title: 'Como editar uma página',
-        items: [
-          'Clique em Páginas no menu',
-          'Clique na página que deseja editar',
-          'Edite o conteúdo no editor',
-          'Salve — a página é atualizada automaticamente no site',
-        ],
-      },
-    ],
-  },
-  {
-    id: 'duvidas',
+    id: 'problemas',
     icon: HelpCircle,
-    title: 'Dúvidas frequentes',
-    badge: 'Fácil',
-    description: 'Respostas para as perguntas mais comuns',
+    title: 'Problemas comuns',
+    badge: 'Ajuda',
+    description: 'O que fazer quando algo não funcionar como esperado',
     content: [
       {
-        type: 'steps',
-        title: 'O produto não aparece na loja — o que fazer?',
+        type: 'faq',
         items: [
-          'Verifique se o status do produto está como Ativo',
-          'Confira se ele tem pelo menos uma variação com estoque maior que zero',
+          {
+            question: 'O produto não aparece na loja',
+            answer: 'Verifique: status está como Ativo? Tem variação com estoque maior que zero?',
+          },
+          {
+            question: 'O cliente não recebeu e-mail de confirmação',
+            answer:
+              'Peça para verificar spam. Confira se o e-mail do cliente está correto no pedido.',
+          },
+          {
+            question: 'Preciso cancelar um pedido',
+            answer:
+              'Abra o pedido, mude para Cancelado. Se já foi pago, combine o reembolso com a cliente diretamente.',
+          },
+          {
+            question: 'Esqueci a senha',
+            answer: 'Na tela de login clique em Esqueci minha senha e siga o e-mail.',
+          },
+          {
+            question: 'Quero tirar um produto da loja sem apagar',
+            answer: 'Abra o produto e mude o status para Inativo.',
+          },
         ],
-      },
-      {
-        type: 'steps',
-        title: 'O cliente não recebeu o e-mail de confirmação',
-        items: [
-          'Peça para verificar a pasta de spam',
-          'Se não estiver lá, abra o pedido e confirme se o e-mail do cliente está correto',
-        ],
-      },
-      {
-        type: 'steps',
-        title: 'Como cancelar um pedido',
-        items: [
-          'Abra o pedido e mude o status para Cancelado',
-          'Se o pagamento já foi feito, entre em contato com o cliente para combinar o reembolso',
-        ],
-      },
-      {
-        type: 'steps',
-        title: 'Esqueci a senha do admin',
-        items: ['Na tela de login, clique em Esqueci minha senha', 'Siga as instruções no e-mail'],
       },
     ],
   },
@@ -366,6 +306,17 @@ const STATUS_COLORS: Record<number, string> = {
   2: 'bg-blue-500',
   3: 'bg-green-700',
   4: 'bg-red-500',
+};
+
+// ─── Badge config ─────────────────────────────────────────────────────────────
+
+const BADGE_STYLES: Record<Badge, string> = {
+  'Primeiro passo': 'border-blue-200 bg-blue-50 text-blue-700',
+  'Obrigatório primeiro': 'border-red-200 bg-red-50 text-red-700',
+  'Depois das categorias': 'border-amber-200 bg-amber-50 text-amber-700',
+  'Rotina diária': 'border-green-200 bg-green-50 text-green-700',
+  Opcional: 'border-stone-200 bg-stone-50 text-stone-600',
+  Ajuda: 'border-sky-200 bg-sky-50 text-sky-700',
 };
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -437,25 +388,34 @@ function WarningBlock({ block }: { block: WarningBlock }) {
   );
 }
 
+function FaqBlock({ block }: { block: FaqBlock }) {
+  return (
+    <ul className="space-y-4">
+      {block.items.map((item, i) => (
+        <li key={i} className="space-y-1">
+          <p className="text-sm font-semibold text-stone-800">{item.question}</p>
+          <p className="text-sm text-stone-600 leading-relaxed">{item.answer}</p>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function BlockRenderer({ block }: { block: ContentBlock }) {
   if (block.type === 'steps') return <StepsBlock block={block} />;
   if (block.type === 'status-list') return <StatusListBlock block={block} />;
   if (block.type === 'tip') return <TipBlock block={block} />;
   if (block.type === 'warning') return <WarningBlock block={block} />;
+  if (block.type === 'faq') return <FaqBlock block={block} />;
   return null;
 }
 
 function BadgeChip({ badge }: { badge: Badge }) {
-  if (badge === 'Fácil') {
-    return (
-      <span className="inline-flex items-center rounded-full border border-green-200 bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">
-        Fácil
-      </span>
-    );
-  }
   return (
-    <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
-      Médio
+    <span
+      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${BADGE_STYLES[badge]}`}
+    >
+      {badge}
     </span>
   );
 }
@@ -532,8 +492,8 @@ export default function AjudaPage() {
   return (
     <div>
       <AdminPageHeader
-        title="Central de Ajuda"
-        description="Tudo que você precisa saber para usar o painel."
+        title="Guia de primeiros passos"
+        description="Siga essa ordem para colocar a loja no ar do zero."
       />
 
       {/* Buscador */}
