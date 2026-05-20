@@ -55,7 +55,7 @@ export function AdminOrdersListClient({ accessToken }: { accessToken: string }) 
       <div className="flex flex-wrap items-center gap-3">
         <Select value={status} onValueChange={(v) => onStatusChange(v ?? 'all')}>
           <SelectTrigger className="w-52">
-            <SelectValue placeholder="Status" />
+            <SelectValue placeholder="Status">{ORDER_STATUS_LABELS[status] ?? status}</SelectValue>
           </SelectTrigger>
           <SelectContent>
             {Object.entries(ORDER_STATUS_LABELS).map(([value, label]) => (
