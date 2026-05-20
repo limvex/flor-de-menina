@@ -221,6 +221,7 @@ Atualize esta seção a cada task concluída. Use os emojis:
 ## 📌 Backlog (próximas sprints)
 
 - [ ] Implementar "Esqueci minha senha" no admin (envio de e-mail com link de reset)
+- [ ] Limpar 15 warnings de lint do CI (uso de `<img>` em vez de `<Image>`, imports não usados, `watch()` do react-hook-form não memoizado)
 
 ## ⚠️ Coisas que NÃO podem ser esquecidas
 

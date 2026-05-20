@@ -26,7 +26,10 @@ interface ProductsFiltersProps {
 export function ProductsFilters({ params, categories, onChange }: ProductsFiltersProps) {
   const [search, setSearch] = useState(params.search ?? '');
   const paramsRef = useRef(params);
-  paramsRef.current = params;
+
+  useEffect(() => {
+    paramsRef.current = params;
+  }, [params]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
