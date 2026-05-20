@@ -8,7 +8,7 @@ export default async function AdminProtectedLayout({ children }: { children: Rea
   if (!user) redirect('/admin/login');
 
   return (
-    <div className="light">
+    <div className="light h-dvh overflow-hidden">
       <AdminShell user={user}>{children}</AdminShell>
       <Toaster position="top-right" theme="light" richColors />
     </div>

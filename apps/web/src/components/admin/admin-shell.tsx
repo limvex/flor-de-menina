@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { AdminLayoutProvider, useAdminLayout } from './admin-layout-context';
@@ -19,6 +19,20 @@ function AdminShellInner({ user, children }: AdminShellProps) {
   const [showBanner, setShowBanner] = useState(user.mustChangePassword);
   const [changePwOpen, setChangePwOpen] = useState(false);
   const { sidebarCollapsed } = useAdminLayout();
+
+  // Evita scroll duplo: conteúdo longo em <main> não pode encadear scroll no <html>.
+  useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+    const prevHtmlOverflow = html.style.overflow;
+    const prevBodyOverflow = body.style.overflow;
+    html.style.overflow = 'hidden';
+    body.style.overflow = 'hidden';
+    return () => {
+      html.style.overflow = prevHtmlOverflow;
+      body.style.overflow = prevBodyOverflow;
+    };
+  }, []);
 
   return (
     <>
@@ -60,7 +74,7 @@ function AdminShellInner({ user, children }: AdminShellProps) {
               </button>
             </div>
           )}
-          <main className="flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain px-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] pt-4 lg:px-6 lg:pb-6 lg:pt-6">
+          <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-none px-4 pb-12 pt-4 lg:px-6 lg:pt-6">
             {children}
           </main>
         </div>

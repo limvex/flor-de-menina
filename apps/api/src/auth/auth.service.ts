@@ -31,7 +31,7 @@ export interface AuthUser {
   createdAt: Date;
 }
 
-const ACCESS_TOKEN_EXPIRY = '15m';
+const ACCESS_TOKEN_EXPIRY = '8h';
 const REFRESH_TOKEN_EXPIRY = '7d';
 const BCRYPT_ROUNDS = 12;
 

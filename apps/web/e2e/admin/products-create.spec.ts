@@ -29,20 +29,16 @@ test.describe('Criar produto', () => {
     await expect(page.getByRole('button', { name: 'Criar produto' })).toBeVisible();
   });
 
-  test('abre modal de IA ao clicar no botão', async ({ page }) => {
+  test('não exibe botão de geração com IA (desabilitado temporariamente)', async ({ page }) => {
     await page.goto('/admin/produtos/novo');
-    await page.getByRole('button', { name: /Gerar com IA/i }).click();
-    await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('button', { name: /Gerar com IA/i })).toHaveCount(0);
   });
 
-  test('modal IA fecha ao cancelar', async ({ page }) => {
+  test('permite selecionar imagens antes de salvar', async ({ page }) => {
     await page.goto('/admin/produtos/novo');
-    await page.getByRole('button', { name: /Gerar com IA/i }).click();
-    const dialog = page.getByRole('dialog');
-    await expect(dialog).toBeVisible({ timeout: 5000 });
-    // Fecha com ESC
-    await page.keyboard.press('Escape');
-    await expect(dialog).not.toBeVisible({ timeout: 3000 });
+    await expect(page.getByText(/serão enviadas automaticamente ao salvar/i)).toBeVisible({
+      timeout: 5000,
+    });
   });
 
   test('cria produto via API e verifica na lista', async ({ page }) => {
