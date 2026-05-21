@@ -98,7 +98,7 @@ export function PdpClient({ product, isAuthenticated }: Props) {
 
           <StockIndicator stock={stockOfSelected} isOutOfStock={product.isOutOfStock ?? false} />
 
-          <ShippingCalculator />
+          <ShippingCalculator variantId={selectedVariantId} subtotal={currentPrice} />
 
           <div className="space-y-3">
             <AddToCartButton

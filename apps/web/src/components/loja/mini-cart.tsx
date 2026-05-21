@@ -31,7 +31,7 @@ export function MiniCart() {
       <SheetContent
         side="right"
         showCloseButton={false}
-        className="flex w-full flex-col sm:max-w-md p-0"
+        className="z-[60] flex w-full flex-col sm:max-w-md p-0"
       >
         <SheetHeader className="flex flex-row items-center justify-between border-b border-stone-100 px-6 py-4">
           <SheetTitle className="font-serif text-xl font-normal text-stone-800">

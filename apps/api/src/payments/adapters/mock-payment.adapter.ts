@@ -198,6 +198,7 @@ export class MockPaymentAdapter implements PaymentGatewayAdapter {
     rawBody: string;
     signature: string;
     requestId: string;
+    dataId?: string;
   }): boolean {
     return (
       input.signature === 'MOCK_VALID' || input.signature.startsWith('mock_')

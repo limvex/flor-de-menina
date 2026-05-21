@@ -1,3 +1,4 @@
+import { createHmac } from 'crypto';
 import {
   Injectable,
   Logger,
@@ -300,6 +301,7 @@ export class MercadoPagoAdapter implements PaymentGatewayAdapter {
     rawBody: string;
     signature: string;
     requestId: string;
+    dataId?: string;
   }): boolean {
     const secret = this.config.get<string>('MP_WEBHOOK_SECRET')?.trim();
     const allowInsecure =
@@ -308,22 +310,51 @@ export class MercadoPagoAdapter implements PaymentGatewayAdapter {
     if (!secret) {
       if (allowInsecure) {
         this.logger.warn(
-          'validateWebhookSignature: MP_WEBHOOK_SECRET vazio — ALLOW_WEBHOOK_WITHOUT_SECRET=true (somente dev); aceitando webhook sem validar assinatura.',
+          'validateWebhookSignature: MP_WEBHOOK_SECRET vazio — ALLOW_WEBHOOK_WITHOUT_SECRET=true; aceitando webhook sem validar assinatura.',
         );
-        void input;
         return true;
       }
       this.logger.warn(
-        'validateWebhookSignature: MP_WEBHOOK_SECRET vazio — configure o segredo do painel MP ou defina ALLOW_WEBHOOK_WITHOUT_SECRET=true em dev local.',
+        'validateWebhookSignature: MP_WEBHOOK_SECRET vazio — configure o segredo do painel MP.',
       );
       return false;
     }
-    void input;
-    void secret;
-    this.logger.warn(
-      'validateWebhookSignature: validação HMAC completa ainda não implementada',
+
+    // x-signature formato: "ts=<timestamp>,v1=<hmac>"
+    const parts = Object.fromEntries(
+      input.signature.split(',').map((p) => p.split('=')),
     );
-    return false;
+    const ts = parts['ts'];
+    const v1 = parts['v1'];
+
+    if (!ts || !v1) {
+      if (allowInsecure) {
+        this.logger.warn(
+          'validateWebhookSignature: x-signature ausente/inválido — ALLOW_WEBHOOK_WITHOUT_SECRET=true; aceitando.',
+        );
+        return true;
+      }
+      this.logger.warn(
+        `validateWebhookSignature: x-signature ausente ou malformado: "${input.signature}"`,
+      );
+      return false;
+    }
+
+    // string assinada pelo MP: "id:<dataId>;request-id:<requestId>;ts:<ts>;"
+    const dataId = input.dataId ?? '';
+    const manifest = `id:${dataId};request-id:${input.requestId};ts:${ts};`;
+
+    const expected = createHmac('sha256', secret)
+      .update(manifest)
+      .digest('hex');
+
+    const valid = expected === v1;
+    if (!valid) {
+      this.logger.warn(
+        `validateWebhookSignature: assinatura inválida requestId=${input.requestId}`,
+      );
+    }
+    return valid;
   }
 
   async getInstallmentOptions(amount: number): Promise<InstallmentOption[]> {

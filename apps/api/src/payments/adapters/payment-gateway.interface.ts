@@ -61,6 +61,7 @@ export interface PaymentGatewayAdapter {
     rawBody: string;
     signature: string;
     requestId: string;
+    dataId?: string;
   }): boolean;
 
   getInstallmentOptions(amount: number): Promise<InstallmentOption[]>;

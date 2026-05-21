@@ -10,6 +10,7 @@ import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { fetchAdminOrderById } from '@/lib/api/admin-orders';
 import { getStatusLabel } from '@/lib/orders/status-labels';
+import { getShippingLabel } from '@/lib/shipping-labels';
 
 const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -119,19 +120,25 @@ export function AdminPedidoDetailClient({
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-muted-foreground">Frete</dt>
-                  <dd className="tabular-nums">{brl.format(data.shippingCost)}</dd>
+                  <dd className="tabular-nums">
+                    {brl.format(data.shipping?.cost ?? data.shippingCost)}
+                  </dd>
                 </div>
-                <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Desconto</dt>
-                  <dd className="tabular-nums">− {brl.format(data.discount)}</dd>
-                </div>
+                {(() => {
+                  const shippingDiscount = (data.shipping?.cost ?? 0) - data.shippingCost;
+                  const totalDiscount = data.discount + shippingDiscount;
+                  if (totalDiscount <= 0) return null;
+                  return (
+                    <div className="flex justify-between text-green-700">
+                      <dt>Desconto{data.couponCode ? ` (cupom ${data.couponCode})` : ''}</dt>
+                      <dd className="tabular-nums">− {brl.format(totalDiscount)}</dd>
+                    </div>
+                  );
+                })()}
                 <div className="flex justify-between border-t border-flor-100 pt-2 font-medium">
                   <dt>Total</dt>
                   <dd className="tabular-nums text-flor-900">{brl.format(data.total)}</dd>
                 </div>
-                {data.couponCode && (
-                  <p className="text-xs text-muted-foreground pt-1">Cupom: {data.couponCode}</p>
-                )}
               </dl>
             </section>
           </div>
@@ -173,7 +180,7 @@ export function AdminPedidoDetailClient({
               <dl className="grid gap-2 text-sm sm:grid-cols-2">
                 <div>
                   <dt className="text-muted-foreground">Serviço</dt>
-                  <dd>{data.shipping.serviceName}</dd>
+                  <dd>{getShippingLabel(data.shipping.serviceName)}</dd>
                 </div>
                 <div>
                   <dt className="text-muted-foreground">Custo</dt>

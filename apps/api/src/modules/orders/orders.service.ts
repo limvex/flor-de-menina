@@ -158,6 +158,10 @@ export class OrdersService {
           finalShippingCost = couponResult.finalShipping;
         }
 
+        // Para FREE_SHIPPING o desconto real é o custo original do frete
+        const shippingDiscount = shippingCost - finalShippingCost;
+        const totalDiscount = discount + shippingDiscount;
+
         const total = subtotal - discount + finalShippingCost;
 
         // 5. Gerar número do pedido sequencial
@@ -190,8 +194,8 @@ export class OrdersService {
             number: orderNumber,
             cpf: dto.cpf,
             subtotal,
-            shippingCost: finalShippingCost,
-            discount,
+            shippingCost,
+            discount: totalDiscount,
             total,
             couponCode: couponCode ?? undefined,
             shippingAddress,
@@ -233,18 +237,18 @@ export class OrdersService {
             provider: ShippingProvider.MOCK,
             serviceName: `${dto.shippingOption.carrier} ${dto.shippingOption.service}`,
             estimatedDays: dto.shippingOption.estimatedDays,
-            cost: finalShippingCost,
+            cost: shippingCost,
           },
         });
 
         // 9.5. Registrar uso do cupom (dentro da transação — idempotência)
-        if (couponCode && discount > 0) {
+        if (couponCode && totalDiscount > 0) {
           await this.couponsService.applyCoupon(
             tx,
             order.id,
             couponCode,
             userId,
-            discount,
+            totalDiscount,
           );
         }
 

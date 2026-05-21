@@ -342,10 +342,16 @@ export class PaymentsService {
     requestId: string;
     body: Record<string, unknown>;
   }) {
+    const bodyData = input.body.data as Record<string, unknown> | undefined;
+    const dataId: string | undefined = bodyData?.id
+      ? String(bodyData.id)
+      : undefined;
+
     const valid = this.adapter.validateWebhookSignature({
       rawBody: input.rawBody,
       signature: input.signature,
       requestId: input.requestId,
+      dataId,
     });
 
     if (!valid) {
@@ -359,10 +365,6 @@ export class PaymentsService {
       (input.body.action as string) || (input.body.type as string) || 'unknown';
     const externalEventIdRaw = String(input.body.id ?? '');
     const externalEventId: string = externalEventIdRaw || input.requestId;
-    const bodyData = input.body.data as Record<string, unknown> | undefined;
-    const dataId: string | undefined = bodyData?.id
-      ? String(bodyData.id)
-      : undefined;
 
     if (!dataId) {
       this.logger.warn(`Webhook sem data.id: ${eventType}`);
@@ -522,32 +524,12 @@ export class PaymentsService {
       return { ok: true, paymentId: txResult.paymentId, newStatus };
     }
 
-    const buildItemName = (i: (typeof fullOrder.items)[number]) => {
-      const parts = [i.variantSize, i.variantColor].filter(Boolean);
-      return parts.length > 0
-        ? `${i.productName} (${parts.join('/')})`
-        : i.productName;
-    };
-
     if (txResult.newStatus === PaymentStatus.APPROVED) {
-      this.emailService
-        .sendOrderConfirmation({
-          orderId: fullOrder.id,
-          orderNumber: fullOrder.number,
-          customerName: fullOrder.user.name,
-          customerEmail: fullOrder.user.email,
-          total: Number(fullOrder.total),
-          items: fullOrder.items.map((i) => ({
-            name: buildItemName(i),
-            quantity: i.quantity,
-            price: Number(i.unitPrice),
-          })),
-        })
-        .catch((err) => {
-          this.logger.error(
-            `sendOrderConfirmation falhou: orderId=${fullOrder.id} error=${String(err)}`,
-          );
-        });
+      this.emailService.sendPaymentApproved(fullOrder.id).catch((err) => {
+        this.logger.error(
+          `sendPaymentApproved falhou: orderId=${fullOrder.id} error=${String(err)}`,
+        );
+      });
     } else if (
       txResult.newStatus === PaymentStatus.REJECTED ||
       txResult.newStatus === PaymentStatus.CANCELLED

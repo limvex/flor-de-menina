@@ -181,6 +181,10 @@ export class EmailService {
     await this.mailService.sendPaymentApproved(payload.orderId);
   }
 
+  async sendPaymentApproved(orderId: string): Promise<void> {
+    await this.mailService.sendPaymentApproved(orderId);
+  }
+
   async sendPaymentFailure(payload: PaymentFailureEmailPayload) {
     this.logger.log(
       `[EMAIL] payment_failure order=${payload.orderNumber} to=${payload.customerEmail}`,

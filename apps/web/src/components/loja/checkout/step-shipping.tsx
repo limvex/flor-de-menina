@@ -10,6 +10,7 @@ import { quoteShipping } from '@/lib/api/orders';
 import { useCart } from '@/contexts/cart-context';
 import { useCheckout } from '@/contexts/checkout-context';
 import { formatPrice } from '@/lib/format';
+import { getShippingLabel } from '@/lib/shipping-labels';
 import type { ShippingOption } from '@flor/types';
 
 export function StepShipping() {
@@ -112,7 +113,9 @@ export function StepShipping() {
                   <Truck className="h-5 w-5 text-flor-500" aria-hidden="true" />
                   <div>
                     <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium text-flor-800">{opt.label}</p>
+                      <p className="text-sm font-medium text-flor-800">
+                        {getShippingLabel(opt.service)}
+                      </p>
                     </div>
                     <p className="text-xs text-flor-500">
                       {opt.carrier} · {opt.estimatedDays} dias úteis
