@@ -254,7 +254,13 @@ export class PaymentsService {
       where: { id: paymentId },
       include: {
         order: {
-          select: { id: true, number: true, status: true, userId: true },
+          select: {
+            id: true,
+            number: true,
+            status: true,
+            userId: true,
+            user: { select: { name: true, email: true } },
+          },
         },
       },
     });
@@ -314,6 +320,24 @@ export class PaymentsService {
           .sendPaymentApproved(payment.orderId)
           .catch((err) =>
             this.logger.error(`sendPaymentApproved polling falhou: ${err}`),
+          );
+      }
+
+      if (
+        newStatus === PaymentStatus.REJECTED ||
+        newStatus === PaymentStatus.CANCELLED
+      ) {
+        this.emailService
+          .sendPaymentFailure({
+            orderId: payment.orderId,
+            orderNumber: payment.order.number,
+            customerName: payment.order.user.name,
+            customerEmail: payment.order.user.email,
+            reason:
+              updated.failureReason ?? 'Pagamento não autorizado pelo banco',
+          })
+          .catch((err) =>
+            this.logger.error(`sendPaymentFailure polling falhou: ${err}`),
           );
       }
 
