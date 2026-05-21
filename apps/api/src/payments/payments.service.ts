@@ -310,6 +310,11 @@ export class PaymentsService {
           where: { id: payment.orderId },
           data: { status: OrderStatus.PAID },
         });
+        this.emailService
+          .sendPaymentApproved(payment.orderId)
+          .catch((err) =>
+            this.logger.error(`sendPaymentApproved polling falhou: ${err}`),
+          );
       }
 
       this.logger.log(
